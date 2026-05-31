@@ -1,0 +1,23 @@
+# Treat generated hardware artifacts as binary in diffs.
+*.epro binary
+*.pdf binary
+*.png binary
+*.gif binary
+*.zip binary
+*.step binary
+*.stp binary
+*.stl binary
+*.3mf binary
+*.obj binary
+*.f3d binary
+*.fcstd binary
+*.blend binary
+*.dxf text
+*.svg text
+
+# Keep text files normalized in the repository.
+*.md text eol=lf
+*.csv text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.txt text eol=lf

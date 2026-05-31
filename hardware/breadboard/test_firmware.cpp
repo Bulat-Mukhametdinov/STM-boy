@@ -1,4 +1,6 @@
 /*
+  SPDX-License-Identifier: MIT
+
   STM32 button debugger + ST7735S UI + display test + mini game + W25Q128 storage
   Arduino IDE
 

@@ -1,0 +1,60 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Build outputs
+build/
+dist/
+out/
+*.o
+*.obj
+*.a
+*.lib
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.lss
+*.sym
+*.d
+
+# Arduino / PlatformIO
+.pio/
+*.ino.cpp
+*.eep
+
+# Python helpers
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# EDA/editor autosaves and lock files
+*.autosave
+*.backup
+*.bck
+*.lck
+*.lock
+*_backup.*
+
+# CAD temporary files
+*.stl~
+*.step~
+*.stp~
+*.f3d~
+*.fcstd1
+*.blend1
