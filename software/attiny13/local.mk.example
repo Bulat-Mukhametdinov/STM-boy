@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT
+#
+# Copy this file to local.mk when avr-gcc or avrdude are not in PATH.
+# local.mk is ignored by git.
+
+# Windows examples:
+# AVR_GCC := C:/Users/you/.mplab/app-finder/apps/avr-gcc/v7.3.0/avr8-gnu-toolchain-win32_x86_64/bin/avr-gcc.exe
+# AVR_OBJCOPY := C:/Users/you/.mplab/app-finder/apps/avr-gcc/v7.3.0/avr8-gnu-toolchain-win32_x86_64/bin/avr-objcopy.exe
+# AVR_SIZE := C:/Users/you/.mplab/app-finder/apps/avr-gcc/v7.3.0/avr8-gnu-toolchain-win32_x86_64/bin/avr-size.exe
+# AVRDUDE := C:/Users/you/AppData/Local/Arduino15/packages/arduino/tools/avrdude/8.0.0-arduino1/bin/avrdude.exe

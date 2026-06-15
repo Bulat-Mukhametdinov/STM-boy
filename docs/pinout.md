@@ -61,6 +61,17 @@ sync with the schematic and firmware whenever a signal moves.
 | +V | ATTINY supply rail |
 | GND | Common ground |
 
+## ATTINY13A Runtime Signals
+
+| ATTINY13A pin | Runtime signal | ISP sharing | Notes |
+| --- | --- | --- | --- |
+| PB0 | PWR | ISP_MOSI | Active-low button input with internal pull-up. |
+| PB1 | Unused | ISP_MISO | Reserved for programming only. |
+| PB2 | OFF_ACK | ISP_SCK | STM32 acknowledgement input. |
+| PB3 | OFF_REQ | Not shared | Active-low Hi-Z/open-drain style output to STM32. |
+| PB4 | EN | Not shared | Active-high enable for the 3.3 V regulator. |
+| PB5 | RESET | ISP_RST | Keep reset enabled for normal ISP recovery. |
+
 ## Breadboard Test Firmware Pinout
 
 The table below matches

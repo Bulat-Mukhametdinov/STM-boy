@@ -51,16 +51,18 @@ STM-boy/
       acrylic-panel.dxf
       spacers-and-fasteners.md
     breadboard/
-  firmware/
+  software/
     stm32/
-    attiny13a-power-controller/
+    attiny13/
   releases/
     v0.1/
 ```
 
 The current repository already has `hardware/pcb`, `hardware/breadboard`, and
-basic docs. The most important next directories are `firmware/`,
-`hardware/mechanical/`, and revisioned release packages.
+basic docs. It also includes `software/attiny13` for the ATTINY13A
+power-controller firmware. The most important next directories are
+`software/stm32`, richer `hardware/mechanical/` assets, and revisioned release
+packages.
 
 ## Licensing Options
 

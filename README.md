@@ -5,8 +5,9 @@ learning platform. It combines a color TFT display, USB-C, external SPI flash,
 amplified audio, LiPo power management, and a dedicated hardware power
 controller on a compact custom PCB.
 
-> Status: hardware rev v0.1 is documented. The firmware in this repository is
-> currently a breadboard validation sketch, not a finished console firmware.
+> Status: hardware rev v0.1 is documented. The ATTINY13A power-controller
+> firmware is included under `software/attiny13`; the STM32 console firmware is
+> not included yet.
 
 ![PCB design](PCB_design.png)
 
@@ -46,6 +47,7 @@ block description and design notes.
 | [hardware/pcb](hardware/pcb) | PCB source/export files, schematics, PCB PDF, BOM, and Gerbers. |
 | [hardware/mechanical](hardware/mechanical) | 3D models, enclosure/front-panel files, and mechanical assembly notes. |
 | [hardware/breadboard](hardware/breadboard) | Breadboard validation firmware, wiring notes, and demo GIF. |
+| [software/attiny13](software/attiny13) | ATTINY13A soft-power controller firmware and USBasp flashing notes. |
 | [docs](docs) | Project documentation, pinout, bring-up notes, and open hardware checklist. |
 | [PCB_design.png](PCB_design.png) | Main visual preview for the board. |
 
@@ -60,6 +62,8 @@ block description and design notes.
 - For fabrication files and notes, see [hardware/pcb/README.md](hardware/pcb/README.md).
 - For the breadboard prototype, see
   [hardware/breadboard/wiring.md](hardware/breadboard/wiring.md).
+- For the ATTINY13A power controller, see
+  [software/attiny13/README.md](software/attiny13/README.md).
 
 ## Current Artifacts
 
@@ -71,6 +75,8 @@ block description and design notes.
 - Mechanical/CAD package: [hardware/mechanical](hardware/mechanical)
 - Breadboard test firmware:
   [hardware/breadboard/test_firmware.cpp](hardware/breadboard/test_firmware.cpp)
+- ATTINY13A power-controller firmware:
+  [software/attiny13](software/attiny13)
 
 ## Public Release Checklist
 

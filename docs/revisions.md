@@ -15,13 +15,14 @@ Included artifacts:
 - Gerbers: `hardware/pcb/Gerber_file.zip`.
 - Mechanical/CAD notes: `hardware/mechanical/README.md`.
 - Breadboard validation firmware: `hardware/breadboard/test_firmware.cpp`.
+- ATTINY13A power-controller firmware: `software/attiny13`.
 
 Test status:
 
 - Breadboard firmware exists for display, buttons, external flash, and demo UI.
+- ATTINY13A firmware builds and includes USBasp flashing documentation.
 - Custom PCB bring-up log is not recorded yet.
-- Production firmware is not included yet.
-- ATTINY13A power-controller firmware is not included yet.
+- STM32 production console firmware is not included yet.
 - Mechanical files should be checked against the manufactured PCB before being
   marked as production-ready.
 
