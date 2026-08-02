@@ -1,0 +1,24 @@
+#ifndef DISPLAY_CONFIG_H
+#define DISPLAY_CONFIG_H
+
+#include "stm32f4xx_hal.h"
+
+#include "board_pins.h"
+
+#define DISPLAY_HOR_RES 160
+#define DISPLAY_VER_RES 128
+#define DISPLAY_BUFFER_LINES 20
+
+#define ST7735_SPI_INSTANCE SPI1
+#define ST7735_SPI_BAUDRATE_PRESCALER SPI_BAUDRATEPRESCALER_4
+
+/* ST7735 GPIO pins live in board_pins.h */
+#define ST7735_BL_ACTIVE_STATE GPIO_PIN_SET
+
+#define ST7735_WIDTH DISPLAY_HOR_RES
+#define ST7735_HEIGHT DISPLAY_VER_RES
+#define ST7735_X_SHIFT 0
+#define ST7735_Y_SHIFT 0
+#define ST7735_MADCTL 0xA0
+
+#endif

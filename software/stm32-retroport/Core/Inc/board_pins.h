@@ -1,0 +1,93 @@
+#ifndef BOARD_PINS_H
+#define BOARD_PINS_H
+
+/*
+ * Single source of truth for every GPIO pin used by the firmware.
+ *
+ * Pin assignments mirror HARDWARE.md. When the wiring changes, update this
+ * header (and HARDWARE.md) instead of editing individual drivers.
+ */
+
+#include "stm32f4xx_hal.h"
+
+/* Power and battery status.
+ * NOTE: the real board has BAT_STAT and CHRG_STAT swapped vs the original
+ * schematic/pinout doc: BAT_STAT is on PA1 (ADC1_IN1), CHRG_STAT on PA0.
+ * Verified on hardware (shorting CHRG_STAT pulled the BAT ADC to 0). */
+#define POWER_BAT_STAT_GPIO_PORT GPIOA
+#define POWER_BAT_STAT_PIN GPIO_PIN_1
+#define POWER_BAT_ADC_CHANNEL 1u
+#define POWER_CHRG_STAT_GPIO_PORT GPIOA
+#define POWER_CHRG_STAT_PIN GPIO_PIN_0
+#define POWER_OFF_REQ_GPIO_PORT GPIOA
+#define POWER_OFF_REQ_PIN GPIO_PIN_2
+#define POWER_OFF_ACK_GPIO_PORT GPIOA
+#define POWER_OFF_ACK_PIN GPIO_PIN_3
+#define POWER_VBUS_GPIO_PORT GPIOA
+#define POWER_VBUS_PIN GPIO_PIN_9
+
+/* Buttons (active-low). Real board: X=PB12, A=PB13, B=PB14, Y=PB15. */
+#define BTN_A_GPIO_PORT GPIOB
+#define BTN_A_PIN GPIO_PIN_13
+#define BTN_B_GPIO_PORT GPIOB
+#define BTN_B_PIN GPIO_PIN_14
+#define BTN_X_GPIO_PORT GPIOB
+#define BTN_X_PIN GPIO_PIN_12
+#define BTN_Y_GPIO_PORT GPIOB
+#define BTN_Y_PIN GPIO_PIN_15
+
+/* Joystick (active-low). Real board: UP=PB9, DOWN=PB8, LEFT=PB7, RIGHT=PB6, CE=PA10. */
+#define BTN_UP_GPIO_PORT GPIOB
+#define BTN_UP_PIN GPIO_PIN_9
+#define BTN_LEFT_GPIO_PORT GPIOB
+#define BTN_LEFT_PIN GPIO_PIN_7
+#define BTN_RIGHT_GPIO_PORT GPIOB
+#define BTN_RIGHT_PIN GPIO_PIN_6
+#define BTN_CENTER_GPIO_PORT GPIOA
+#define BTN_CENTER_PIN GPIO_PIN_10
+#define BTN_DOWN_GPIO_PORT GPIOB
+#define BTN_DOWN_PIN GPIO_PIN_8
+
+/* ST7735S display on SPI1 */
+#define ST7735_SCK_GPIO_PORT GPIOA
+#define ST7735_SCK_PIN GPIO_PIN_5
+#define ST7735_MOSI_GPIO_PORT GPIOA
+#define ST7735_MOSI_PIN GPIO_PIN_7
+#define ST7735_CS_GPIO_PORT GPIOA
+#define ST7735_CS_PIN GPIO_PIN_4
+#define ST7735_DC_GPIO_PORT GPIOB
+#define ST7735_DC_PIN GPIO_PIN_0
+#define ST7735_RST_GPIO_PORT GPIOB
+#define ST7735_RST_PIN GPIO_PIN_1
+#define ST7735_BL_GPIO_PORT GPIOA
+#define ST7735_BL_PIN GPIO_PIN_6
+#define ST7735_SPI_AF GPIO_AF5_SPI1
+
+/* W25Q128 external flash on SPI3 */
+#define W25Q_CS_GPIO_PORT GPIOA
+#define W25Q_CS_PIN GPIO_PIN_15
+#define W25Q_SCK_GPIO_PORT GPIOB
+#define W25Q_SCK_PIN GPIO_PIN_3
+#define W25Q_MISO_GPIO_PORT GPIOB
+#define W25Q_MISO_PIN GPIO_PIN_4
+#define W25Q_MOSI_GPIO_PORT GPIOB
+#define W25Q_MOSI_PIN GPIO_PIN_5
+#define W25Q_SPI_INSTANCE SPI3
+#define W25Q_SPI_AF GPIO_AF6_SPI3
+#define W25Q_SPI_BAUDRATE_PRESCALER SPI_BAUDRATEPRESCALER_4
+
+/* PAM8302 audio */
+#define AUDIO_PWM_GPIO_PORT GPIOA
+#define AUDIO_PWM_PIN GPIO_PIN_8
+#define AUDIO_PWM_AF GPIO_AF1_TIM1
+#define AUDIO_AMP_SD_GPIO_PORT GPIOB
+#define AUDIO_AMP_SD_PIN GPIO_PIN_2
+
+/* USB FS (OTG) CDC */
+#define USB_FS_DM_GPIO_PORT GPIOA
+#define USB_FS_DM_PIN GPIO_PIN_11
+#define USB_FS_DP_GPIO_PORT GPIOA
+#define USB_FS_DP_PIN GPIO_PIN_12
+#define USB_FS_AF GPIO_AF10_OTG_FS
+
+#endif /* BOARD_PINS_H */

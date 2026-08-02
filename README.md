@@ -5,9 +5,12 @@ learning platform. It combines a color TFT display, USB-C, external SPI flash,
 amplified audio, LiPo power management, and a dedicated hardware power
 controller on a compact custom PCB.
 
-> Status: hardware rev v0.1 is documented. The ATTINY13A power-controller
-> firmware is included under `software/attiny13`; the STM32 console firmware is
-> not included yet.
+> Status: hardware rev v0.1 is documented and one board has been assembled and
+> brought up. Firmware for the ATTINY13A power controller, STM32 hardware
+> bring-up, and the RetroPort console shell is included under `software/`.
+> Bring-up results and open issues are in
+> [docs/bring-up-log-v0.1.md](docs/bring-up-log-v0.1.md) and
+> [docs/revisions.md](docs/revisions.md).
 
 ![PCB design](PCB_design.png)
 
@@ -48,6 +51,8 @@ block description and design notes.
 | [hardware/mechanical](hardware/mechanical) | 3D models, enclosure/front-panel files, and mechanical assembly notes. |
 | [hardware/breadboard](hardware/breadboard) | Breadboard validation firmware, wiring notes, and demo GIF. |
 | [software/attiny13](software/attiny13) | ATTINY13A soft-power controller firmware and USBasp flashing notes. |
+| [software/stm32-bringup](software/stm32-bringup) | STM32 hardware validation firmware for a newly assembled board. |
+| [software/stm32-retroport](software/stm32-retroport) | RetroPort console firmware: LVGL shell, emulators, ROM-pack upload. |
 | [docs](docs) | Project documentation, pinout, bring-up notes, and open hardware checklist. |
 | [PCB_design.png](PCB_design.png) | Main visual preview for the board. |
 
@@ -56,7 +61,11 @@ block description and design notes.
 - Review the project architecture in
   [docs/hardware-overview.md](docs/hardware-overview.md).
 - Check PCB and breadboard pin assignments in [docs/pinout.md](docs/pinout.md).
-- Before powering a new PCB, follow [docs/bring-up.md](docs/bring-up.md).
+- Before powering a new PCB, follow [docs/bring-up.md](docs/bring-up.md), then
+  compare against the recorded results in
+  [docs/bring-up-log-v0.1.md](docs/bring-up-log-v0.1.md).
+- To validate a freshly assembled board, flash
+  [software/stm32-bringup](software/stm32-bringup) before the console firmware.
 - Review mechanical/CAD notes in [docs/mechanical.md](docs/mechanical.md).
 - Check current hardware status in [docs/revisions.md](docs/revisions.md).
 - For fabrication files and notes, see [hardware/pcb/README.md](hardware/pcb/README.md).
@@ -77,6 +86,12 @@ block description and design notes.
   [hardware/breadboard/test_firmware.cpp](hardware/breadboard/test_firmware.cpp)
 - ATTINY13A power-controller firmware:
   [software/attiny13](software/attiny13)
+- STM32 hardware bring-up firmware:
+  [software/stm32-bringup](software/stm32-bringup)
+- RetroPort console firmware:
+  [software/stm32-retroport](software/stm32-retroport)
+- v0.1 bring-up log:
+  [docs/bring-up-log-v0.1.md](docs/bring-up-log-v0.1.md)
 
 ## Public Release Checklist
 
@@ -87,8 +102,8 @@ Before calling it a polished open hardware release, add or finish:
 
 - Assembly drawings, pick-and-place files, and manufacturing notes.
 - Acrylic/front-panel drawings if the transparent cover is part of the design.
-- A tested bring-up log with voltage, current, charging, display, flash, audio,
-  and USB checks.
+- Power consumption measurements to complete the bring-up log, which currently
+  covers functional checks but not idle, backlight, charge, or deep-off current.
 - At least one release package containing Gerbers, BOM, placement files,
   schematics, and source design files for the same hardware revision.
 
