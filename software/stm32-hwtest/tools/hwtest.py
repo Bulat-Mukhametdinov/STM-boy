@@ -567,9 +567,11 @@ def run_process(cmdline: list[str], timeout: float = 120.0,
         proc.kill()
         proc.wait()
     th.join(timeout=5)
+    if proc.stdout is not None:
+        proc.stdout.close()
     text = b"".join(chunks).decode("utf-8", errors="replace")
     lines = split_output_lines(text)
-    errors = [ln.strip() for ln in lines if ERROR_LINE_RE.match(ln)]
+    errors = [clean_text(ln) for ln in lines if ERROR_LINE_RE.match(clean_text(ln))]
     return ProcResult(proc.returncode if proc.returncode is not None else -1, text, lines,
                       time.monotonic() - t0, timed_out, errors)
 
@@ -603,7 +605,9 @@ def cli_available() -> Optional[str]:
 def _progress_filter() -> Callable[[str], None]:
     """Print CLI lines, but collapse progress-bar updates to the 100% line."""
     def show(line: str) -> None:
-        s = line.rstrip()
+        s = clean_text(line)
+        if not s:
+            return
         m = PROGRESS_RE.search(s)
         if m and ("█" in s or len(re.sub(r"[\s\d%▀-▟#=\-\[\]|]", "", s)) == 0):
             if m.group(1) != "100":
@@ -907,7 +911,13 @@ def enter_dfu(port_name: str, serial_no: Optional[str], method: str = "auto",
             notes.append(f"touch: {touch_1200(port_name)}")
             used = "cmd+touch"
         dfu = wait_for_dfu(serial_no, max(0.5, timeout - (time.monotonic() - t0)))
-    return DfuEntry(used, dfu, time.monotonic() - t0, notes)
+    entry = DfuEntry(used, dfu, time.monotonic() - t0, notes)
+    HWLOG.entry(f"Enter DFU from application ({used})",
+                f"{'dfu command' if used.startswith('cmd') else '1200-baud touch'} on {port_name} (sn={serial_no})",
+                (f"OK DFU device {dfu.index} sn={dfu.serial} after {entry.seconds:.2f} s" if dfu
+                 else f"FAIL no DFU device within {timeout:.0f} s"),
+                notes)
+    return entry
 
 
 # --------------------------------------------------------------------------
@@ -1063,11 +1073,17 @@ class BoardLock:
                     continue
                 holder = read_lock(self.path) or {}
                 if time.monotonic() >= deadline:
+                    HWLOG.entry("Board lock busy", self.cmd,
+                                f"ERROR locked by pid {holder.get('pid')} ({holder.get('cmd')!r} since "
+                                f"{holder.get('time')}){' after waiting' if announced else ''}")
                     raise LockBusy(f"board is locked by pid {holder.get('pid')} "
                                    f"({holder.get('cmd')!r} since {holder.get('time')}); "
                                    f"use --wait-lock [SECONDS] to wait. Lock file: {self.path}")
                 if not announced:
                     OUT.say(f"waiting for board lock held by pid {holder.get('pid')} ({holder.get('cmd')!r})...")
+                    HWLOG.entry("Waiting for board lock", self.cmd,
+                                f"waiting up to {self.wait:.0f} s; held by pid {holder.get('pid')} "
+                                f"({holder.get('cmd')!r} since {holder.get('time')})")
                     announced = True
                 time.sleep(0.5)
 
@@ -1368,6 +1384,10 @@ def cmd_ports(args: argparse.Namespace) -> int:
             OUT.say(f"  sn={s}")
         if pnp and cli and not dfu:
             OUT.warn(DRIVER_HINT)
+    note("CDC: " + (", ".join(f"{c.device} sn={c.serial}" for c in cdc) or "none"))
+    note("DFU (CLI): " + (", ".join(f"{d.index} sn={d.serial}" for d in dfu) or (cli_err or "none")))
+    if pnp is not None:
+        note("DFU (PnP): " + (", ".join(pnp) or "none"))
     OUT.emit({"ok": True, "cdc": [c.to_json() for c in cdc], "dfu": [d.to_json() for d in dfu],
               "dfu_pnp": pnp, "cli": cli, "cli_error": cli_err or None})
     return EXIT_OK
@@ -1384,6 +1404,8 @@ def cmd_info(args: argparse.Namespace) -> int:
     if not OUT.json_mode:
         OUT.say(f"# {cdc.device} sn={cdc.serial}")
         OUT.say(json.dumps(info, indent=2))
+    note(f"{cdc.device}: fw={info.get('fw')} build={info.get('build')} clk={info.get('clk')} "
+         f"busy={info.get('busy')} reset={info.get('reset')} uid={info.get('uid')}")
     OUT.emit(info)
     return EXIT_OK
 
@@ -1417,6 +1439,10 @@ def cmd_cmd(args: argparse.Namespace) -> int:
         rc = {"pass": EXIT_OK, "fail": EXIT_FAIL}.get(tx.final.arg, EXIT_ABORT)
     if tx.status == "timeout":
         OUT.error(f"no terminal line for {text!r} within {args.timeout}s")
+    note(f"{cdc.device}: status={tx.status} final={tx.final.text if tx.final else 'none (timeout)'} "
+         f"lines={len(tx.msgs)}")
+    for r in tx.results[:5]:
+        note(f"@R {json.dumps(r)[:200]}")
     OUT.emit({"ok": rc == 0, "status": tx.status, "final": tx.final.text if tx.final else None,
               "lines": [m.text for m in tx.msgs],
               "results": tx.results, "saved_binaries": saved, "exit_code": rc})
@@ -1492,6 +1518,9 @@ def cmd_run(args: argparse.Namespace) -> int:
             OUT.emit({"ok": False, "error": f"busy: {busy}"})
             return EXIT_ABORT
         OUT.say(f"# {dev.name} sn={cdc.serial} fw={(info or {}).get('fw')} -> {command}")
+        HWLOG.entry(f"Run suite {suite} (start)", command,
+                    f"started on {dev.name} sn={cdc.serial}",
+                    [f"Firmware: fw={(info or {}).get('fw')} build={(info or {}).get('build')} busy={busy}"])
         answers = _stdin_answers() if args.answer_from_host else None
 
         def on_prompt(obj: Any) -> None:
@@ -1513,6 +1542,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     for f in failed:
         OUT.say(f"#   FAIL {f}")
     OUT.say(f"# results: {path}")
+    note(f"Suite {suite}: {outcome.status.upper()} results={len(outcome.results)} pass={npass} fail={nfail}"
+         + (f" ({outcome.error})" if outcome.error else ""))
+    if failed:
+        note("Failed: " + ", ".join(failed[:20]))
+    note(f"Results file: {path}")
     OUT.emit({"ok": outcome.status == "pass", "status": outcome.status, "suite": suite,
               "exit_code": outcome.exit_code, "results_file": str(path), "n_results": len(outcome.results),
               "n_pass": npass, "n_fail": nfail, "failed": failed, "error": outcome.error or None})
@@ -1640,6 +1674,12 @@ def cmd_flash(args: argparse.Namespace) -> int:
         OUT.say(f"# OK: running fw={info.get('fw')} build={info.get('build')} reset={info.get('reset')}")
     else:
         OUT.error(f"flash failed: {app.note}")
+    note(f"Image: {image} ({report['size']} bytes), expected id: {expect or 'not checked'}")
+    note(f"Programmer: exit code {res.rc}, verified={verified}"
+         + (f", errors: {'; '.join(res.errors[:3])}" if res.errors else ""))
+    note(f"App after start: {'running fw=%s build=%s' % ((app.info or {}).get('fw'), (app.info or {}).get('build')) if app.ok else 'FAIL ' + app.note}"
+         f", CDC enumerations={app.enumerations}")
+    note("Timing: " + ", ".join(f"{k}={v:.2f}s" for k, v in timings.items()))
     OUT.emit({"ok": ok, "serial": sn, "timings": {k: round(v, 3) for k, v in timings.items()}, **report})
     return EXIT_OK if ok else EXIT_FAIL
 
@@ -1785,6 +1825,12 @@ def cmd_dfu_test(args: argparse.Namespace) -> int:
                 break
             c["pass"] = not c.get("reasons")
             cycles.append(c)
+            HWLOG.entry(f"DFU test cycle {i + 1}/{args.cycles}",
+                        f"trigger={c.get('trigger')}{'+spin' if c.get('spin') else ''} op={c.get('op', '-')}",
+                        ("PASS" if c["pass"] else "FAIL " + "; ".join(c.get("reasons", []))),
+                        [f"app->dfu={c.get('app_to_dfu_s')} s, dfu->app={c.get('dfu_to_app_s')} s, "
+                         f"serial_match={c.get('serial_match')}, upload_match={c.get('upload_match', '-')}, "
+                         f"enumerations={c.get('enumerations')}"])
             OUT.say(f"  cycle {i + 1:2d}/{args.cycles} {c.get('trigger', '?'):5s}{'+spin' if c.get('spin') else '     '} "
                     f"{c.get('op', '-'):26s} app->dfu {fmt_s(c.get('app_to_dfu_s'))}  "
                     f"dfu->app {fmt_s(c.get('dfu_to_app_s'))}  {'PASS' if c['pass'] else 'FAIL ' + '; '.join(c['reasons'])}")
@@ -1816,6 +1862,12 @@ def cmd_dfu_test(args: argparse.Namespace) -> int:
     OUT.say(f"# results: {path}\n")
     OUT.say(MANUAL_INSTRUCTIONS)
     ok = summary["cycles"] == args.cycles and summary["failed"] == 0
+    note(f"DFU test: {summary['passed']}/{args.cycles} cycles passed")
+    for k in ("app_to_dfu", "dfu_to_app"):
+        s = summary[k]
+        if s.get("n"):
+            note(f"{k}: min {s['min']} / median {s['median']} / max {s['max']} s")
+    note(f"Results file: {path}")
     OUT.emit({"ok": ok, "results_file": str(path), **summary})
     return EXIT_OK if ok else EXIT_FAIL
 
@@ -1910,7 +1962,6 @@ def dfu_test_manual(args: argparse.Namespace) -> int:
                 ok_all &= bool(rr.get("ok")) and bool(r2["cdc_absent"])
             report["steps"]["recovery"] = r2
     report["ok"] = ok_all
-    d = results_dir_for(args.out, None if not sn else {"uid": None})
     info_now = None
     if sn and find_cdc_ports(sn):
         try:
@@ -1924,6 +1975,10 @@ def dfu_test_manual(args: argparse.Namespace) -> int:
     path = d / f"{started.strftime('%Y%m%d-%H%M%S')}-dfu-test-manual.json"
     path.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
     OUT.say(f"\n# manual DFU test: {'PASS' if ok_all else 'FAIL'}; results: {path}")
+    for name, st in report["steps"].items():
+        note(f"Step {name}: {'skipped' if st.get('skipped') else ('OK' if st.get('ok') or (st.get('recovery') or {}).get('ok') else 'FAIL')}"
+             f"{' - ' + st['error'] if st.get('error') else ''}")
+    note(f"Results file: {path}")
     OUT.emit({"results_file": str(path), **report})
     return EXIT_OK if ok_all else EXIT_FAIL
 
@@ -1944,6 +1999,7 @@ def cmd_lock_status(args: argparse.Namespace) -> int:
 # CLI
 # --------------------------------------------------------------------------
 HW_COMMANDS = {"info", "cmd", "monitor", "run", "dfu", "flash", "dfu-test"}
+LOGGED_COMMANDS = HW_COMMANDS | {"ports"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1955,6 +2011,9 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--wait-lock", type=float, nargs="?", const=600.0, default=0.0, metavar="SECONDS",
                         help="wait for the board lock instead of failing (default wait 600 s)")
     common.add_argument("--open-timeout", type=float, default=3.0, help="seconds to wait for the port to open")
+    common.add_argument("--log", metavar="PATH",
+                        help=f"hardware work log to append to (default {HWLOG.path}; env HWTEST_LOG)")
+    common.add_argument("--no-log", action="store_true", help="do not append to the hardware work log")
 
     p = argparse.ArgumentParser(
         prog="hwtest.py", description="Host tool for the stm32-hwtest firmware (STM-boy).",
@@ -2029,25 +2088,44 @@ def main(argv: Optional[list[str]] = None) -> int:
             stream.reconfigure(errors="replace")  # type: ignore[union-attr]
         except (AttributeError, ValueError):
             pass
-    args = build_parser().parse_args(argv)
+    argv_list = list(argv) if argv is not None else sys.argv[1:]
+    args = build_parser().parse_args(argv_list)
     OUT.json_mode = bool(getattr(args, "json", False))
+    HWLOG.enabled = not args.no_log
+    if args.log:
+        HWLOG.path = Path(args.log)
+    SESSION_NOTES.clear()
+    cmdline = "hwtest.py " + subprocess.list2cmdline(argv_list)
+    logged = args.command in LOGGED_COMMANDS
     lock: Optional[BoardLock] = None
+    rc = EXIT_ABORT
+    verdict = "ERROR"
     try:
         if args.command in HW_COMMANDS:
-            lock = BoardLock(" ".join([args.command] + (argv if argv is not None else sys.argv[2:])),
-                             wait=args.wait_lock)
+            lock = BoardLock(cmdline, wait=args.wait_lock)
             lock.acquire()
-        return int(args.func(args))
+        rc = int(args.func(args))
+        verdict = "OK" if rc == EXIT_OK else "FAIL"
+        return rc
     except HwtestError as e:
         OUT.error(str(e))
         OUT.emit({"ok": False, "error": str(e), "exit_code": e.exit_code})
-        return e.exit_code
+        rc = e.exit_code
+        note(f"Error: {type(e).__name__}: {e}")
+        return rc
     except KeyboardInterrupt:
         OUT.error("interrupted")
+        note("Interrupted by user (Ctrl+C)")
         return EXIT_ABORT
+    except Exception as e:  # unexpected bug: log it, then re-raise for the traceback
+        note(f"Unexpected exception: {type(e).__name__}: {e}")
+        raise
     finally:
         if lock is not None:
             lock.release()
+        if logged:
+            HWLOG.entry(f"hwtest.py {args.command}", cmdline,
+                        f"{verdict} (exit code {rc})", list(SESSION_NOTES))
 
 
 if __name__ == "__main__":

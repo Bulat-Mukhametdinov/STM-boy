@@ -1,0 +1,4 @@
+# hwtest runtime files
+tools/.board.lock
+tools/results/**/*.bin
+__pycache__/

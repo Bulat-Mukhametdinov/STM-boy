@@ -103,7 +103,7 @@ Limits enforced by the packer:
 | ROMs per pack | 160 |
 | CHIP-8 / SUPER-CHIP ROM size | 3584 bytes (`4096 - 0x200`) |
 | ZX Spectrum snapshot size | 49179 bytes (`.sna`) |
-| ROM-pack flash region | 15 MiB at offset `0x100000` |
+| ROM-pack flash region | 14 MiB at offset `0x100000` |
 
 Optional CHIP-8 metadata (proper titles, quirk flags, tick rates) can be pulled
 from the [CHIP-8 database](https://github.com/chip-8/chip-8-database):
@@ -131,7 +131,8 @@ unreliable; see [Known Issues](#known-issues).
 | Region | Offset | Size | Purpose |
 | --- | --- | --- | --- |
 | State/settings | `0x000000` | 1 MiB | Settings log in the first 4 KiB sector. |
-| ROM pack | `0x100000` | Remaining | `RPRP` multi-system ROM-pack image. |
+| ROM pack | `0x100000` | 14 MiB | `RPRP` multi-system ROM-pack image. |
+| Reserved (stm32-hwtest) | `0xF00000` | 1 MiB | Scratch/battery log, overclock journal, HWCAL record at `0xFFF000`. Never written by RetroPort; see `../stm32-hwtest/README.md`. |
 
 ## Project Layout
 

@@ -72,6 +72,7 @@ SRC_OWN := \
   Src/crc.c \
   Src/hwcal.c \
   Src/fw_id.c \
+  Src/syscalls.c \
   Src/drv/lcd.c \
   Src/drv/gfx.c \
   Src/drv/font5x7_full.c \
@@ -147,8 +148,10 @@ $(BIN): $(ELF) tools/append_crc.py
 	$(PYTHON) tools/append_crc.py $@
 
 # HEX is generated from the patched bin so both carry the same trailer.
+# Only the data section is relocated (same bytes as --change-addresses), so
+# no bogus "start address = 0x08000000" (type 05) record is emitted.
 $(HEX): $(BIN)
-	$(OBJCOPY) -I binary -O ihex --change-addresses 0x08000000 $< $@
+	$(OBJCOPY) -I binary -O ihex --change-section-address .data=0x08000000 $< $@
 
 $(BUILD)/fw_id.json: $(ELF)
 	@printf '{"fw":"%s","build":%s}\n' '$(FW_HASH)' '$(BUILD_TIME)' > $@

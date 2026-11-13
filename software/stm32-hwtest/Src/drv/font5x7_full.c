@@ -2,9 +2,9 @@
  *
  * Source/license: this is the classic public-domain 5x7 dot-matrix character
  * set (the HD44780-style glyph shapes reproduced in countless public-domain
- * LCD examples), transcribed by hand for this project and checked visually
- * (see README "font check"). No copyright is claimed on it; treat it as
- * public domain / CC0. */
+ * LCD examples), transcribed by hand for this project and checked by rendering
+ * every glyph as ASCII art on the host. No copyright is claimed on it; treat
+ * it as public domain / CC0. */
 
 #include "font.h"
 

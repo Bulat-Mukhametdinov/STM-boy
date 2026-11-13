@@ -41,3 +41,11 @@ Format: `### YYYY-MM-DD HH:MM:SS — action` followed by command and result.
 - Note: BOR off is worth reconsidering for battery operation (document
   recommendation only — this project never writes option bytes).
 - Board left in DFU mode, waiting for the first hwtest build.
+
+### 2026-11-13 14:56:06 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none

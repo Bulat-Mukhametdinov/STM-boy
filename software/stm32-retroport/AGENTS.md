@@ -345,7 +345,8 @@ The W25Q128 is `16 MiB` and is manually driven over SPI3 in `Core/Src/w25q128.c`
 | Region         | Offset     | Size            | Purpose                                                      |
 |----------------|------------|-----------------|--------------------------------------------------------------|
 | State/settings | `0x000000` | `1 MiB`         | Reserved state area; settings currently use the first sector |
-| ROM pack       | `0x100000` | remaining flash | RPRP multi-system ROM-pack image                             |
+| ROM pack       | `0x100000` | `14 MiB`        | RPRP multi-system ROM-pack image                             |
+| hwtest reserve | `0xF00000` | `1 MiB`         | stm32-hwtest scratch / OC journal / HWCAL (`0xFFF000`); never written here |
 
 Settings use a tiny append-only record log in the first `4 KiB` sector:
 
