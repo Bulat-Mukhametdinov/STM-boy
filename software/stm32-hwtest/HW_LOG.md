@@ -1500,3 +1500,385 @@ Format: `### YYYY-MM-DD HH:MM:SS — action` followed by command and result.
 
 - Recovery rehearsal: **PASS** (15:29:58). Broken 1 KB image flashed via DFU (sector 0 only), CDC did not reappear for 10 s (board "bricked"), user did BOOT0+RESET 55 s later, DFU detected, good image `8cff8b6` reflashed, app came back with the expected build.
 - Conclusion: P0b DFU checks complete — automatic 20/20, BOOT0 path PASS, recovery PASS. Minor tool bug: results of step 1 / broken image landed in `tools/results/unknown/` (info not available at that point).
+
+### 2026-11-13 15:39:40 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-13 15:39:43 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 3.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:02.224
+- Output: Time elapsed during verifying operation: 00:00:00.357
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 15:39:44 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin --wait-lock 900`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (48320 bytes), expected id: {'fw': '7734c40+dirty', 'build': 1794573569}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7734c40+dirty build=1794573569, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.62s, program=3.02s, dfu_to_app=0.77s, total=4.50s
+
+### 2026-11-13 15:39:45 — Run suite display.info (start) [auto]
+
+- Command: `run display.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7734c40+dirty build=1794573569 busy=idle
+
+### 2026-11-13 15:39:45 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.info`
+- Result: OK (exit code 0)
+- Suite display.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-153945-display.info.json
+
+### 2026-11-13 15:39:51 — Run suite display.cal (start) [auto]
+
+- Command: `run display.cal t=4`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7734c40+dirty build=1794573569 busy=idle
+
+### 2026-11-13 15:39:56 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.cal t=4`
+- Result: FAIL (exit code 2)
+- Suite display.cal: ABORT results=2 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-153951-display.cal.json
+
+### 2026-11-13 15:39:56 — hwtest.py info [auto]
+
+- Command: `hwtest.py info --json`
+- Result: OK (exit code 0)
+- COM10: fw=7734c40+dirty build=1794573569 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-13 15:40:00 — P1 early build: display.cal + provisional LCD offsets (manual note)
+
+- Flashed an early P1 build (7734c40+dirty) so the user can run `display.cal` now.
+- Compiled LCD defaults changed from xoff=3/yoff=1 (stm32-bringup) to **xoff=2/yoff=2**
+  (provisional): user reported on P0 that the 1 px border was missing on the top and right
+  edges. With MADCTL 0xA0 (MV=1) the column axis is 162 px, so xoff=3 puts x=159 at RAM
+  column 162 (out of range) -> valid xoff 0..2; yoff range 0..4. `display.cal` is the
+  source of truth; the result is kept in RAM only (no W25Q writes in P1).
+- Backlight now runs from TIM3_CH1 PWM on PA6 (AF2), full on by default.
+- Result: flash OK; `display.info` PASS (SPI1 BIDI TX-only, PA5/PA7 AF5, PA6 AF2 = TIM3,
+  full-frame fill 27.4 ms at 12 MHz); `display.cal t=4` -> prompt shown, timed out cleanly
+  (@A timeout, @DONE abort, board idle).
+
+### 2026-11-13 15:40:34 — Run suite display.cal (start) [auto]
+
+- Command: `run display.cal`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7734c40+dirty build=1794573569 busy=idle
+
+### 2026-11-13 15:40:35 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.cal --wait-lock 900`
+- Result: FAIL (exit code 1)
+- Suite display.cal: FAIL results=2 pass=1 fail=1
+- Failed: display.cal/offset
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-154034-display.cal.json
+
+### 2026-11-13 15:41:03 — display.cal (landscape) attempt 1 (manual note)
+
+- Result: cancelled — user pressed B by accident before nudging (start xoff=2 yoff=2). Restarting.
+
+### 2026-11-13 15:41:04 — Run suite display.cal (start) [auto]
+
+- Command: `run display.cal`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7734c40+dirty build=1794573569 busy=idle
+
+### 2026-11-13 15:41:40 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.cal --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.cal: PASS results=11 pass=11 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-154104-display.cal.json
+
+### 2026-11-13 15:42:04 — display.cal (landscape) attempt 2 (manual note)
+
+- Command: `py -3.14 tools/hwtest.py run display.cal` (fw 7734c40+dirty)
+- User nudged xoff 2->1->0->1->2->1->0->1 and yoff 2->3->2, saved with A.
+- Result: **PASS. Landscape MADCTL 0xA0: xoff=1, yoff=2** (valid ranges xoff 0..2, yoff 0..4). All 4 border edges visible, no magenta.
+- Old bring-up values COLSTART=3/ROWSTART=1 were wrong (right column and top row lost).
+
+### 2026-11-13 15:42:41 — Run suite display.cal (start) [auto]
+
+- Command: `run display.cal port`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7734c40+dirty build=1794573569 busy=idle
+
+### 2026-11-13 15:43:10 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.cal port --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.cal: PASS results=2 pass=2 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-154241-display.cal.json
+
+### 2026-11-13 15:43:22 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-13 15:43:26 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 3.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:02.625
+- Output: Time elapsed during verifying operation: 00:00:00.372
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 15:43:26 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin --wait-lock 900`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (50952 bytes), expected id: {'fw': '7734c40+dirty', 'build': 1794573792}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7734c40+dirty build=1794573792, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=3.45s, dfu_to_app=0.77s, total=4.90s
+
+### 2026-11-13 15:43:27 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q read 0 256 --save-bin tools/results/tmp`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-13 15:43:39 — display.cal (portrait) (manual note)
+
+- Command: `py -3.14 tools/hwtest.py run display.cal port` (fw 7734c40+dirty)
+- Result: **PASS, saved without nudging: portrait MADCTL 0x00 xoff=2, yoff=1** (ranges x 0..4, y 0..2). Orientation of MADCTL 0x00 not yet validated (orientation suite pending).
+- Cross-check: consistent with landscape (0xA0) xoff=1/yoff=2 — same physical RAM offsets with axes swapped (132-axis offset 2, 162-axis offset 1).
+
+### 2026-11-13 15:43:53 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q scan 0 0x1000000 0x10000 --timeout 120`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q scan lines=2
+- @R {"t": "w25q_scan", "addr": "000000", "len": 16777216, "step": 65536, "granules": 256, "blank": 250, "used": 6, "nonff_bytes": 207297, "first_nonff": "000000", "last_nonff": "FFFFFF", "ranges": [["0000
+
+### 2026-11-13 15:43:55 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q scan F00000 0x100000 4096 --timeout 60`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q scan lines=2
+- @R {"t": "w25q_scan", "addr": "F00000", "len": 1048576, "step": 4096, "granules": 256, "blank": 255, "used": 1, "nonff_bytes": 4096, "first_nonff": "FFF000", "last_nonff": "FFFFFF", "ranges": [["FFF000",
+
+### 2026-11-13 15:44:30 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q read 000000 256 --save-bin tools/results/002800343435511331323538/w25q/a000000`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-13 15:44:31 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q read 100000 256 --save-bin tools/results/002800343435511331323538/w25q/a100000`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-13 15:44:32 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q read FFF000 4096 --save-bin tools/results/002800343435511331323538/w25q/aFFF000`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-13 15:45:15 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q read 100000 65536 --timeout 30 --save-bin tools/results/002800343435511331323538/w25q/pack_100000`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-13 15:45:16 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q read 110000 65536 --timeout 30 --save-bin tools/results/002800343435511331323538/w25q/pack_110000`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-13 15:45:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q read 120000 65536 --timeout 30 --save-bin tools/results/002800343435511331323538/w25q/pack_120000`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-13 15:45:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q read 130000 0x3670 --timeout 30 --save-bin tools/results/002800343435511331323538/w25q/pack_130000`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-13 15:45:27 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q scan 0 0x100000 4096 --timeout 30`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q scan lines=2
+- @R {"t": "w25q_scan", "addr": "000000", "len": 1048576, "step": 4096, "granules": 256, "blank": 255, "used": 1, "nonff_bytes": 644, "first_nonff": "000000", "last_nonff": "0002DF", "ranges": [["000000",
+
+### 2026-11-13 15:45:29 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q scan 100000 0x100000 4096 --timeout 30`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q scan lines=2
+- @R {"t": "w25q_scan", "addr": "100000", "len": 1048576, "step": 4096, "granules": 256, "blank": 204, "used": 52, "nonff_bytes": 202557, "first_nonff": "100000", "last_nonff": "13366A", "ranges": [["10000
+
+### 2026-11-13 15:45:59 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd w25q crc 0 0x1000000 --timeout 60`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q crc lines=2
+- @R {"t": "w25q_crc", "addr": "000000", "len": 16777216, "crc32": "8C5A3340", "ms": 28654, "spi_hz": 12000000}
+
+### 2026-11-13 15:47:00 — W25Q128 read-only layout investigation (manual note)
+
+Why: HWCAL sector 0xFFF000 reported `foreign`. New read-only commands `w25q scan/read/crc`
+(nothing written). Dumps: `tools/results/002800343435511331323538/w25q/` (.bin are
+git-ignored; .txt hexdumps next to them).
+
+- Whole chip, 64 KB granules: 250/256 blank; used = `000000-010000`, `100000-140000`,
+  `FF0000-1000000`. Whole-chip CRC-32 (zlib) = `8C5A3340` (16 MB in 28.7 s at 12 MHz).
+- `000000-001000` (4 KB scan): stm32-retroport settings log, 16-byte records with magic
+  `RFS1` (0x31534652), 644 non-FF bytes, rest of the first 1 MB blank.
+- `100000-134000`: RetroPort ROM pack, `RPRP` v2, header 64 B, entry 72 B, **142 entries**
+  (110 CHIP-8, 31 SCHIP, 1 ZX48), data_offset 0x2830, data 0x30E40 B, pack_size
+  **0x33670 (205.6 KB)** -> ends at 0x133670 (last ROM byte 0x13366A). Pack CRC and all 142
+  per-ROM CRCs verify; bytes after pack_size in the last sector are 0xFF.
+- Last 1 MB `F00000-FFFFFF` (4 KB scan): 255/256 sectors blank; **only 0xFFF000-0xFFFFFF is
+  used**, and it holds a pure walking-ones test pattern `01 02 04 08 10 20 40 80` repeated
+  over all 4096 bytes. It is not RPRP/RFS1/HWCAL data and nothing in this repo (bringup,
+  retroport, hwtest, git history) writes it -> leftover of some earlier flash test (factory
+  or an uncommitted test firmware).
+- Result: **the reserved hwtest region does not overlap any user data.** The ROM pack uses
+  ~1.4 % of its 14 MiB window and is ~13.8 MB away from 0xF00000. HWCAL `foreign` is caused
+  only by the test pattern; `hwcal init force` would be safe (not done: W25Q writes are
+  forbidden in P1; the user decides).
+
+### 2026-11-13 15:49:02 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.63 s
+- cmd: @OK dfu
+
+### 2026-11-13 15:49:06 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 3.6 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:02.749
+- Output: Time elapsed during verifying operation: 00:00:00.414
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 15:49:07 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin --wait-lock 900`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (56160 bytes), expected id: {'fw': '7734c40+dirty', 'build': 1794574126}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7734c40+dirty build=1794574126, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.63s, program=3.63s, dfu_to_app=0.76s, total=5.10s
+
+### 2026-11-13 15:49:07 — Run suite pins (start) [auto]
+
+- Command: `run pins`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7734c40+dirty build=1794574126 busy=idle
+
+### 2026-11-13 15:49:09 — hwtest.py run [auto]
+
+- Command: `hwtest.py run pins`
+- Result: FAIL (exit code 1)
+- Suite pins: FAIL results=44 pass=43 fail=1
+- Failed: pins/PB2
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-154907-pins.json
+
+### 2026-11-13 15:49:51 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-13 15:49:55 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 3.6 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:02.757
+- Output: Time elapsed during verifying operation: 00:00:00.414
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 15:49:56 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin --wait-lock 900`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (56528 bytes), expected id: {'fw': '7734c40+dirty', 'build': 1794574188}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7734c40+dirty build=1794574188, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=3.62s, dfu_to_app=0.76s, total=5.06s
+
+### 2026-11-13 15:49:57 — Run suite pins (start) [auto]
+
+- Command: `run pins`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7734c40+dirty build=1794574188 busy=idle
+
+### 2026-11-13 15:49:59 — hwtest.py run [auto]
+
+- Command: `hwtest.py run pins`
+- Result: FAIL (exit code 1)
+- Suite pins: FAIL results=46 pass=43 fail=1
+- Failed: pins/PB2
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-154957-pins.json
+
+### 2026-11-13 15:50:00 — pins suite results (manual note)
+
+- Firmware 7734c40+dirty build 1794574188 (P1 work in progress). `run pins`: 29/30 pins as
+  expected, 13/13 bridge tests clean (no neighbour follows an open-drain low), W25Q JEDEC OK
+  after the restore, whole run 1.18 s.
+- Expected and seen: PA0 CHRG TIED_HIGH (not charging), PA2 OFF_REQ WEAK_HIGH (100k),
+  PA3 OFF_ACK FLOATING, PA4/PA15 TIED_HIGH (10k), PA6 BLK TIED_LOW (NPN base), PA9 VBUS
+  TIED_HIGH, PA5/PA7/PB0/PB1/PB3/PB4/PB5/PA8 FLOATING, all 9 buttons FLOATING, PB10/PC13-15
+  FLOATING. PA1 BAT_STAT reads 1 (info only).
+- **Mismatch: PB2 AMP_SD reads TIED_LOW, expected WEAK_LOW (R23 100k).** With the internal
+  pull-up (~40k) the pin did not read 1 within 500 us (re-run with rise-time measurement:
+  rise_us = 500 = never). 100k alone would give ~2.4 V. So the effective pull-down is well
+  below ~40k: either the PAM8302A SD pin has its own pull-down, or R23 is not 100k / there
+  is a leak to GND. Harmless for function (amp stays off), but worth checking with a
+  multimeter (resistance PB2 net to GND with the board off) before relying on a weak
+  pull-down there.
+
+### 2026-11-13 16:00:00 — hardware work stopped (manual note)
+
+- The user unplugged the board. Last firmware on the board: 7734c40+dirty build 1794574188
+  (has display.info/display.cal/pins/W25Q commands; NOT the final P1 build).
+- Final P1 build (display.orient/rgb/invert/gamma/bars/gradient/spi, backlight,
+  backlight.user, input.live/chord/bounce, Tests menu) is built only: zero warnings at
+  -O2/-Os/-O3, never flashed or run. Next session: `make dfu`, then `run selftest`, `run pins`,
+  `run backlight`, `run display.info`, then the [U] suites (see README / PROTOCOL.md).
+
+- Correction (16:08:32): the "16:00:00" stop-note time above is approximate; final -O2 build
+  is 7734c40+dirty build 1794575292 (zero warnings at -O2/-Os/-O3), not flashed.

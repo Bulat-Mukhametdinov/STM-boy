@@ -56,8 +56,8 @@ void hwcal_defaults(hwcal_t *c)
     };
     memset(c, 0, sizeof(*c));
     c->madctl_land = 0xA0;   /* MY|MV, RGB (stm32-bringup) */
-    c->xoff_land = 3;
-    c->yoff_land = 1;
+    c->xoff_land = 1;    /* display.cal 2026-11-13, see lcd_cfg_defaults() */
+    c->yoff_land = 2;
     c->madctl_port = 0x00;   /* portrait defaults are unverified until P1 */
     c->xoff_port = 2;
     c->yoff_port = 1;

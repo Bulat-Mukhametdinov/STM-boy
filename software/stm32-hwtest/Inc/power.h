@@ -18,4 +18,10 @@ bool power_vbus(void);      /* USB VBUS present (PA9 high) */
 bool power_charging(void);  /* charger CHG asserted (PA0 low) */
 bool power_off_req(void);   /* raw OFF_REQ asserted */
 
+/* While inhibited, power_poll() ignores OFF_REQ (used by the pins suite,
+   which briefly pulls PA2 down). Releasing re-arms only after PA2 has been
+   seen high again. Keep inhibit windows short: a real POWER request is
+   handled late (the ATtiny cuts power 2.5 s after OFF_REQ regardless). */
+void power_inhibit(bool on);
+
 #endif

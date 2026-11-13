@@ -17,6 +17,11 @@ void log_poll(void);                       /* push the next chunk to USB if idle
 void log_flush(uint32_t timeout_ms);       /* drain until empty or timeout */
 bool log_write(const char *s, size_t n);   /* all-or-nothing; false = dropped */
 void log_puts(const char *s);
+/* Binary-safe write that never drops part of the data: waits for ring space
+   (pumping USB) and gives up only after `timeout_ms` without progress or when
+   USB is gone (returns false; the host then sees a short/CRC-failing frame).
+   Used for @B payloads. Do not interleave other output while it runs. */
+bool log_write_blocking(const void *data, size_t n, uint32_t timeout_ms);
 void log_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 uint32_t log_drops(void);
 uint32_t log_pending(void);

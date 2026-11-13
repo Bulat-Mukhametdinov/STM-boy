@@ -74,6 +74,12 @@ SRC_OWN := \
   Src/fw_id.c \
   Src/syscalls.c \
   Src/drv/lcd.c \
+  Src/drv/backlight.c \
+  Src/ui/t_display.c \
+  Src/ui/t_flash.c \
+  Src/ui/t_pins.c \
+  Src/ui/t_input.c \
+  Src/ui/t_backlight.c \
   Src/drv/gfx.c \
   Src/drv/font5x7_full.c \
   Src/drv/input.c \

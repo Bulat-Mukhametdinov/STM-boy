@@ -2,6 +2,7 @@
    P0: skeleton, DFU loop, CDC protocol, LCD + menu, input, HWCAL, CRC. */
 
 #include "main.h"
+#include "backlight.h"
 #include "board.h"
 #include "clock.h"
 #include "cmd.h"
@@ -69,6 +70,7 @@ int main(void)
     hwcal_load();
     apply_hwcal_to_hw();
 
+    backlight_init();         /* TIM3_CH1 PWM on PA6, output off until the screen is drawn */
     lcd_init();
     gfx_fill(COLOR_BLACK);
     lcd_backlight(true);

@@ -31,4 +31,7 @@ void cmd_emit_info(const char *prefix);
 void cmd_capture_reset_cause(void);
 const char *cmd_reset_cause(void);
 
+/* W25Q read-only sub-commands read/crc/scan (Src/ui/t_flash.c); true = handled. */
+bool w25q_cmd_ext(int argc, char **argv);
+
 #endif

@@ -31,4 +31,22 @@ ui_answer_t ui_prompt(const char *id, const char *text, const char *const *answe
                       uint32_t timeout_ms);
 const char *ui_answer_str(ui_answer_t a);
 
+/* Building blocks for custom interactive screens (calibration, live views):
+   ui_prompt_emit() sends the @P line only (no screen change); every @P must
+   later be closed by exactly one ui_answer_emit() with the same id (the host
+   suspends its idle timeout while a prompt is open). `answer` is free text,
+   e.g. "ok", "fail", "timeout", "abort", "done", "skip". */
+void ui_prompt_emit(const char *id, const char *text, const char *const *answers,
+                    uint32_t timeout_ms);
+void ui_answer_emit(const char *id, const char *answer);
+
+/* Host-side answer (`answer <id> ok|fail` command). The pending answer is
+   consumed by ui_prompt() / ui_host_answer_take() when the id matches the
+   open prompt. */
+void ui_host_answer_set(const char *id, ui_answer_t a);
+bool ui_host_answer_take(const char *id, ui_answer_t *a);
+
+/* Button-map drawing shared by the menu "Button view" and input.live. */
+void ui_draw_button_map(uint16_t held, bool full, uint16_t seen);
+
 #endif

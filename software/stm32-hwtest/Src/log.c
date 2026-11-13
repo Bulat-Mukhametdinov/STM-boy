@@ -102,6 +102,30 @@ void log_puts(const char *s)
     log_write(s, strlen(s));
 }
 
+bool log_write_blocking(const void *data, size_t n, uint32_t timeout_ms)
+{
+    const char *p = data;
+    uint32_t t0 = HAL_GetTick();
+    while (n) {
+        uint32_t room = LOG_RING_SIZE - (s_head - s_tail);
+        if (room == 0u) {
+            if (!usb_configured() || (uint32_t)(HAL_GetTick() - t0) >= timeout_ms) {
+                s_drops++;
+                return false;
+            }
+            log_poll();
+            continue;
+        }
+        size_t k = (n < room) ? n : room;
+        put(p, k);
+        p += k;
+        n -= k;
+        t0 = HAL_GetTick(); /* timeout = no progress for timeout_ms */
+        log_poll();
+    }
+    return true;
+}
+
 static void vwrite(const char *prefix, const char *fmt, va_list ap, const char *suffix)
 {
     char buf[512];

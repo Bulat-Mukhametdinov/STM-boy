@@ -10,6 +10,16 @@
 static bool s_armed;
 static bool s_counting;
 static uint32_t s_low_start;
+static volatile bool s_inhibit;
+
+void power_inhibit(bool on)
+{
+    s_inhibit = on;
+    s_counting = false;
+    if (!on) {
+        s_armed = false; /* re-arm only after OFF_REQ is seen high again */
+    }
+}
 
 void power_init(void)
 {
@@ -49,7 +59,7 @@ void power_poll(void)
         s_counting = false;
         return;
     }
-    if (!s_armed) {
+    if (!s_armed || s_inhibit) {
         return;
     }
     if (!s_counting) {

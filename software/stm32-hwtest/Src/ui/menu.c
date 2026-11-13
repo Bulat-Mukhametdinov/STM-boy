@@ -27,10 +27,11 @@ typedef enum {
     SCR_BUTTONS,
     SCR_DISPLAY,
     SCR_USBINFO,
+    SCR_TESTS,    /* scrolling list of all suites */
 } screen_t;
 
 static const char *const s_items[] = {
-    "Self test", "Button view", "Display info", "USB/Info", "Enter DFU", "Reboot",
+    "Self test", "Tests...", "Button view", "Display info", "USB/Info", "Enter DFU", "Reboot",
 };
 #define N_ITEMS ((int)(sizeof(s_items) / sizeof(s_items[0])))
 
@@ -45,6 +46,11 @@ static uint32_t s_last_refresh;
 static uint8_t s_usb_state = 0xFF;
 static uint16_t s_btn_drawn = 0xFFFF;
 static uint32_t s_b_hold_start;
+static int s_tsel, s_ttop;    /* Tests list: selection, first visible row */
+
+#define T_Y0   12
+#define T_DY   11
+#define T_ROWS 9
 
 void ui_invalidate(void)
 {
@@ -121,15 +127,32 @@ static const btn_box_t s_boxes[BTN_COUNT] = {
     [BTN_POWER] = {64, 14, 32, 14, "PWR", COLOR_MAGENTA},
 };
 
-static void draw_box(int i, bool on)
+static void draw_box_ex(int i, bool on, bool seen)
 {
     const btn_box_t *b = &s_boxes[i];
-    uint16_t bg = on ? b->color : COLOR_BLACK;
+    uint16_t bg = on ? b->color : (seen ? COLOR_DARKGRAY : COLOR_BLACK);
     uint16_t fg = on ? COLOR_BLACK : b->color;
     lcd_fill_rect(b->x, b->y, b->w, b->h, bg);
     gfx_rect(b->x, b->y, b->w, b->h, b->color);
     int16_t tw = (int16_t)(6 * (int16_t)__builtin_strlen(b->label) - 1);
     gfx_text((int16_t)(b->x + (b->w - tw) / 2), (int16_t)(b->y + (b->h - 7) / 2), b->label, fg, bg, 1);
+}
+
+static void draw_box(int i, bool on) { draw_box_ex(i, on, false); }
+
+/* Shared with input.live: redraws boxes whose held/seen state changed
+   (all of them when `full`). Seen-but-released boxes are dark grey. */
+void ui_draw_button_map(uint16_t held, bool full, uint16_t seen)
+{
+    static uint16_t s_h, s_s;
+    for (int i = 0; i < BTN_COUNT; i++) {
+        uint16_t m = BTN_MASK(i);
+        if (full || ((held ^ s_h) & m) || ((seen ^ s_s) & m)) {
+            draw_box_ex(i, (held & m) != 0u, (seen & m) != 0u);
+        }
+    }
+    s_h = held;
+    s_s = seen;
 }
 
 static void draw_buttons(bool full)
@@ -229,16 +252,68 @@ static void run_selftest(void)
     s_dirty = false; /* keep the console visible */
 }
 
+/* ---------------------------------------------------------------- tests list */
+
+static void draw_test_row(int i)
+{
+    int row = i - s_ttop;
+    if (row < 0 || row >= T_ROWS || i >= g_suite_count) {
+        return;
+    }
+    bool sel = (i == s_tsel);
+    uint16_t fg = sel ? COLOR_BLACK : ((g_suites[i].flags & SUITE_F_USER) ? COLOR_YELLOW : COLOR_WHITE);
+    uint16_t bg = sel ? COLOR_CYAN : COLOR_BLACK;
+    int16_t y = (int16_t)(T_Y0 + row * T_DY);
+    lcd_fill_rect(0, (int16_t)(y - 1), (int16_t)lcd_width(), T_DY, bg);
+    char b[28];
+    snprintf(b, sizeof(b), "%s%s", g_suites[i].name, (g_suites[i].flags & SUITE_F_USER) ? " [U]" : "");
+    gfx_text(4, (int16_t)(y + 1), b, fg, bg, 1);
+}
+
+static void draw_tests(void)
+{
+    gfx_fill(COLOR_BLACK);
+    ui_status_bar();
+    for (int i = s_ttop; i < s_ttop + T_ROWS && i < g_suite_count; i++) {
+        draw_test_row(i);
+    }
+    gfx_text(2, (int16_t)(lcd_height() - 9), "A run  B back  [U]=human", COLOR_GRAY, COLOR_BLACK, 1);
+}
+
+static void tests_move(int d)
+{
+    int old = s_tsel;
+    s_tsel = (s_tsel + d + g_suite_count) % g_suite_count;
+    if (s_tsel < s_ttop || s_tsel >= s_ttop + T_ROWS) {
+        s_ttop = (s_tsel < s_ttop) ? s_tsel : s_tsel - T_ROWS + 1;
+        draw_tests();
+        return;
+    }
+    draw_test_row(old);
+    draw_test_row(s_tsel);
+}
+
+static void run_suite_index(int i)
+{
+    char *argv[1] = {(char *)g_suites[i].name};
+    input_flush();
+    suite_run(&g_suites[i], 1, argv);
+    gfx_text(2, (int16_t)(lcd_height() - 9), "A/B: back", COLOR_GRAY, COLOR_BLACK, 1);
+    s_scr = SCR_RESULT;
+    s_dirty = false; /* keep the console visible */
+}
+
 static void select_item(int i)
 {
     switch (i) {
     case 0:
         run_selftest();
         return;
-    case 1: s_scr = SCR_BUTTONS; s_b_hold_start = 0; break;
-    case 2: s_scr = SCR_DISPLAY; break;
-    case 3: s_scr = SCR_USBINFO; break;
-    case 4:
+    case 1: s_scr = SCR_TESTS; break;
+    case 2: s_scr = SCR_BUTTONS; s_b_hold_start = 0; break;
+    case 3: s_scr = SCR_DISPLAY; break;
+    case 4: s_scr = SCR_USBINFO; break;
+    case 5:
         ui_con_begin("Enter DFU");
         ui_con_line(COLOR_YELLOW, "Rebooting to the ST");
         ui_con_line(COLOR_YELLOW, "system bootloader...");
@@ -247,7 +322,7 @@ static void select_item(int i)
         log_flush(50);
         HAL_Delay(300);
         dfu_request();
-    case 5:
+    case 6:
         log_printf("ui: reboot\r\n");
         log_flush(50);
         NVIC_SystemReset();
@@ -268,6 +343,7 @@ void ui_task(void)
         case SCR_BUTTONS: draw_buttons(true); break;
         case SCR_DISPLAY: draw_display_info(); break;
         case SCR_USBINFO: draw_usb_info(true); break;
+        case SCR_TESTS: draw_tests(); break;
         case SCR_RESULT: break;
         }
         s_last_refresh = now;
@@ -291,6 +367,18 @@ void ui_task(void)
             break;
         case SCR_BUTTONS:
             break; /* all buttons are under test; exit = hold B */
+        case SCR_TESTS:
+            if (ev.button == BTN_UP || ev.button == BTN_DOWN) {
+                tests_move(ev.button == BTN_UP ? -1 : 1);
+            } else if (ev.button == BTN_A || ev.button == BTN_CENTER) {
+                run_suite_index(s_tsel);
+                return;
+            } else if (ev.button == BTN_B) {
+                s_scr = SCR_MENU;
+                ui_invalidate();
+                return;
+            }
+            break;
         default:
             if (ev.button == BTN_B || (s_scr == SCR_RESULT && ev.button == BTN_A)) {
                 s_scr = SCR_MENU;

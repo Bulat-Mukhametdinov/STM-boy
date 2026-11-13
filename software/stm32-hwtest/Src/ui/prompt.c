@@ -11,6 +11,7 @@
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #define CON_TOP   22
 #define CON_LINE  9
@@ -53,30 +54,54 @@ const char *ui_answer_str(ui_answer_t a)
     }
 }
 
-static void emit_answer(const char *id, ui_answer_t a)
+/* ---------------------------------------------------------------- host answers */
+
+static char s_host_id[48];
+static ui_answer_t s_host_ans;
+static bool s_host_pending;
+
+void ui_host_answer_set(const char *id, ui_answer_t a)
+{
+    snprintf(s_host_id, sizeof(s_host_id), "%s", id);
+    s_host_ans = a;
+    s_host_pending = true;
+}
+
+bool ui_host_answer_take(const char *id, ui_answer_t *a)
+{
+    if (!s_host_pending || strcmp(id, s_host_id) != 0) {
+        return false;
+    }
+    s_host_pending = false;
+    *a = s_host_ans;
+    return true;
+}
+
+/* ---------------------------------------------------------------- @P / @A */
+
+void ui_answer_emit(const char *id, const char *answer)
 {
     static jb_t j;
     /* PROTOCOL.md: @A {"id","answer"}; the extra "t" is harmless and uniform. */
     jb_begin(&j, "answer");
     jb_str(&j, "id", id);
-    jb_str(&j, "answer", ui_answer_str(a));
+    jb_str(&j, "answer", answer);
     jb_end(&j);
     jb_emit(&j, "@A ");
 }
 
-ui_answer_t ui_prompt(const char *id, const char *text, const char *const *answers,
-                      uint32_t timeout_ms)
+void ui_prompt_emit(const char *id, const char *text, const char *const *answers,
+                    uint32_t timeout_ms)
 {
     static const char *const def_answers[] = {"A=ok", "B=fail", NULL};
     static jb_t j;
-    char arr[96];
+    char arr[160];
     size_t n = 0;
 
     if (!answers) {
         answers = def_answers;
     }
-
-    /* @P {"t":"prompt","id":..,"text":..,"answers":[..]} */
+    s_host_pending = false; /* a stale host answer never applies to a new prompt */
     arr[n++] = '[';
     for (int i = 0; answers[i] && n < sizeof(arr) - 8u; i++) {
         n += (size_t)snprintf(&arr[n], sizeof(arr) - n, "%s\"%s\"", i ? "," : "", answers[i]);
@@ -93,6 +118,16 @@ ui_answer_t ui_prompt(const char *id, const char *text, const char *const *answe
     jb_u32(&j, "timeout_ms", timeout_ms);
     jb_end(&j);
     jb_emit(&j, "@P ");
+}
+
+ui_answer_t ui_prompt(const char *id, const char *text, const char *const *answers,
+                      uint32_t timeout_ms)
+{
+    static const char *const def_answers[] = {"A=ok", "B=fail", NULL};
+    if (!answers) {
+        answers = def_answers;
+    }
+    ui_prompt_emit(id, text, answers, timeout_ms);
 
     /* Screen */
     gfx_fill(COLOR_BLACK);
@@ -117,6 +152,9 @@ ui_answer_t ui_prompt(const char *id, const char *text, const char *const *answe
             if (ev.button == BTN_A) { ans = UI_ANS_OK; break; }
             if (ev.button == BTN_B) { ans = UI_ANS_FAIL; break; }
         }
+        if (ui_host_answer_take(id, &ans)) {
+            break;
+        }
         if (abort_requested()) { ans = UI_ANS_ABORT; break; }
         uint32_t el = HAL_GetTick() - t0;
         if (timeout_ms) {
@@ -130,7 +168,7 @@ ui_answer_t ui_prompt(const char *id, const char *text, const char *const *answe
             }
         }
     }
-    emit_answer(id, ans);
+    ui_answer_emit(id, ui_answer_str(ans));
     ui_con_begin(id);
     ui_con_line(ans == UI_ANS_OK ? COLOR_GREEN : COLOR_RED, "answer: %s", ui_answer_str(ans));
     return ans;

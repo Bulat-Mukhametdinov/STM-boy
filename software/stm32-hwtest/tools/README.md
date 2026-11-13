@@ -29,8 +29,12 @@ Exit codes: `0` ok/pass, `1` fail, `2` abort/timeout/no device/error, `3` board 
 keeps waiting. The idle timeout (`--timeout`, the time allowed without any device line) is
 paused while a prompt is open. Instead, `--prompt-timeout` limits how long a prompt can stay
 unanswered (600 s by default). With `--answer-from-host`, you can also type `a`/`ok` or
-`b`/`fail` on the host. The tool then sends `answer <id> ok|fail`. This command is not in the
-P0 protocol table, so the device may reply `@ERR answer ...`.
+`b`/`fail` on the host. The tool then sends `answer <id> ok|fail`, which the firmware accepts
+since P1 (it acts like pressing A / B on the device). Use it only when a human is actually
+looking at the device.
+
+W25Q dumps: `py -3.14 tools/hwtest.py cmd w25q read 100000 65536 --save-bin DIR`; long
+`w25q crc` / `w25q scan` runs need `--timeout 120`.
 
 ## Board lock
 

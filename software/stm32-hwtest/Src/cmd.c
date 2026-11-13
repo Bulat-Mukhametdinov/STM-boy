@@ -14,6 +14,7 @@
 #include "noinit.h"
 #include "power.h"
 #include "suites.h"
+#include "ui.h"
 #include "usb.h"
 #include "w25q.h"
 #include "stm32f4xx_hal.h"
@@ -143,7 +144,11 @@ static void cmd_help(void)
              "  hwcal get      show the calibration record\r\n"
              "  hwcal init [force]  write defaults (force: overwrite foreign data / existing record)\r\n"
              "  w25q id        JEDEC + unique id of the external flash\r\n"
-             "  run <suite> [args]  e.g. run selftest, run spin 5000\r\n");
+             "  w25q read <addr_hex> <len>   binary dump (@B), len <= 65536\r\n"
+             "  w25q crc <addr_hex> <len>    zlib CRC-32 of a range (any length)\r\n"
+             "  w25q scan <addr_hex> <len> [step]  non-0xFF ranges at step granularity\r\n"
+             "  run <suite> [args]  e.g. run selftest, run spin 5000, run display.cal\r\n"
+             "  answer <id> ok|fail  answer the open device prompt from the host\r\n");
     proto_ok("help");
 }
 
@@ -173,7 +178,11 @@ static void cmd_w25q(int argc, char **argv)
         proto_ok("w25q id");
         return;
     }
-    proto_err("w25q", "usage: w25q id");
+    if (w25q_cmd_ext(argc, argv)) {
+        return;
+    }
+    proto_err("w25q", "usage: w25q id | read <addr_hex> <len> | crc <addr_hex> <len> | "
+                      "scan <addr_hex> <len> [step]");
 }
 
 static void cmd_hwcal(int argc, char **argv)
@@ -202,19 +211,40 @@ static void cmd_hwcal(int argc, char **argv)
     proto_err("hwcal", "usage: hwcal get | hwcal init [force]");
 }
 
+/* @R {"t":"suites","list":[...],"user":[...]}  ("user" = [U] suites that need
+   a human at the device; their prompts time out). */
 static void cmd_suites(void)
 {
-    char buf[160];
+    static char buf[1024];
     size_t n = 0;
-    n += (size_t)snprintf(&buf[n], sizeof(buf) - n, "{\"t\":\"suites\",\"list\":[");
-    for (int i = 0; i < g_suite_count && n < sizeof(buf); i++) {
+    n += (size_t)snprintf(&buf[n], sizeof(buf) - n, "@R {\"t\":\"suites\",\"list\":[");
+    for (int i = 0; i < g_suite_count && n < sizeof(buf) - 64u; i++) {
         n += (size_t)snprintf(&buf[n], sizeof(buf) - n, "%s\"%s\"", i ? "," : "", g_suites[i].name);
     }
-    if (n < sizeof(buf)) {
-        snprintf(&buf[n], sizeof(buf) - n, "]}");
+    n += (size_t)snprintf(&buf[n], sizeof(buf) - n, "],\"user\":[");
+    bool first = true;
+    for (int i = 0; i < g_suite_count && n < sizeof(buf) - 16u; i++) {
+        if (g_suites[i].flags & SUITE_F_USER) {
+            n += (size_t)snprintf(&buf[n], sizeof(buf) - n, "%s\"%s\"", first ? "" : ",", g_suites[i].name);
+            first = false;
+        }
     }
-    res_printf("%s", buf);
+    if (n < sizeof(buf) - 6u) {
+        n += (size_t)snprintf(&buf[n], sizeof(buf) - n, "]}\r\n");
+        log_write(buf, n);
+    }
     proto_ok("suites");
+}
+
+/* answer <prompt id> ok|fail : answer the open device prompt from the host. */
+static void cmd_answer(int argc, char **argv)
+{
+    if (argc < 3 || (strcmp(argv[2], "ok") != 0 && strcmp(argv[2], "fail") != 0)) {
+        proto_err("answer", "usage: answer <id> ok|fail");
+        return;
+    }
+    ui_host_answer_set(argv[1], strcmp(argv[2], "ok") == 0 ? UI_ANS_OK : UI_ANS_FAIL);
+    proto_ok("answer");
 }
 
 static void wait_flush_ms(uint32_t ms)
@@ -301,6 +331,8 @@ static void dispatch(char *line, bool restricted)
         proto_ok("reset");
         wait_flush_ms(50);
         NVIC_SystemReset();
+    } else if (strcmp(c, "answer") == 0) {
+        cmd_answer(argc, argv);
     } else if (restricted) {
         proto_err(c, "busy");
     } else if (strcmp(c, "crc") == 0) {
