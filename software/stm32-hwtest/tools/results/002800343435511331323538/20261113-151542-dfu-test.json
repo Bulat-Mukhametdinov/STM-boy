@@ -1,0 +1,661 @@
+{
+  "kind": "dfu-test",
+  "host_time_start": "2026-11-13T15:15:42+03:00",
+  "host_time_end": "2026-11-13T15:17:22+03:00",
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "image": "build\\hwtest.bin",
+  "image_size": 43336,
+  "expect": {
+    "fw": "8cff8b6",
+    "build": 1794572106
+  },
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "8cff8b6",
+    "build": 1794572106,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": false,
+    "reset": "por",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "cold",
+    "boot_count": 1,
+    "csr": "0E000000",
+    "clock": "ok",
+    "hwcal_state": "foreign",
+    "w25q": true,
+    "uptime_ms": 21067,
+    "vbus": true,
+    "chg": false,
+    "faults": 0
+  },
+  "summary": {
+    "cycles": 20,
+    "passed": 16,
+    "failed": 4,
+    "app_to_dfu": {
+      "n": 16,
+      "min": 0.477,
+      "median": 0.614,
+      "max": 0.704,
+      "mean": 0.619
+    },
+    "app_to_dfu_by_trigger": {
+      "cmd": {
+        "n": 8,
+        "min": 0.579,
+        "median": 0.611,
+        "max": 0.658,
+        "mean": 0.616
+      },
+      "touch": {
+        "n": 8,
+        "min": 0.477,
+        "median": 0.635,
+        "max": 0.704,
+        "mean": 0.623
+      }
+    },
+    "dfu_to_app": {
+      "n": 16,
+      "min": 0.728,
+      "median": 0.76,
+      "max": 0.775,
+      "mean": 0.758
+    },
+    "program": {
+      "n": 8,
+      "min": 2.829,
+      "median": 2.891,
+      "max": 2.916,
+      "mean": 2.886
+    },
+    "failures": [
+      {
+        "cycle": 5,
+        "reasons": [
+          "no DFU within 10 s (touch during spin)"
+        ]
+      },
+      {
+        "cycle": 10,
+        "reasons": [
+          "no DFU within 10 s (touch during spin)"
+        ]
+      },
+      {
+        "cycle": 15,
+        "reasons": [
+          "no DFU within 10 s (touch during spin)"
+        ]
+      },
+      {
+        "cycle": 20,
+        "reasons": [
+          "no DFU within 10 s (touch during spin)"
+        ]
+      }
+    ]
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "cmd",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.611,
+      "dfu_notes": [
+        "cmd: @OK dfu"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4",
+        "option_bytes": [
+          "Bank          : 0x00",
+          "Address       : 0x1fffc000",
+          "Size          : 16 Bytes",
+          "Read Out Protection:",
+          "RDP          : 0xAA (Level 0, no protection)",
+          "PCROP Protection:",
+          "SPRMOD       : 0x0 (PCROP disabled. nWPRi bits used for Write protection on sector i)",
+          "BOR Level:",
+          "BOR_LEV      : 0x3 (BOR  OFF    reset threshold level from 1.80 to 2.10 V)",
+          "User Configuration:",
+          "WDG_SW       : 0x1 (Software watchdog)",
+          "nRST_STOP    : 0x1 (No reset generated)",
+          "nRST_STDBY   : 0x1 (No reset generated)",
+          "Write Protection:",
+          "WRP0         : 0x1 (Write protection not active)",
+          "WRP1         : 0x1 (Write protection not active)",
+          "WRP2         : 0x1 (Write protection not active)",
+          "WRP3         : 0x1 (Write protection not active)",
+          "WRP4         : 0x1 (Write protection not active)",
+          "WRP5         : 0x1 (Write protection not active)",
+          "WRP6         : 0x1 (Write protection not active)",
+          "WRP7         : 0x1 (Write protection not active)"
+        ]
+      },
+      "op": "write+verify,upload,start",
+      "program_s": 2.829,
+      "upload_match": true,
+      "dfu_to_app_s": 0.761,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 2,
+      "trigger": "touch",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.617,
+      "dfu_notes": [
+        "touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "start",
+      "dfu_to_app_s": 0.736,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 3,
+      "trigger": "cmd",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.609,
+      "dfu_notes": [
+        "cmd: @OK dfu"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "write+verify+start",
+      "program_s": 2.89,
+      "dfu_to_app_s": 0.76,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 4,
+      "trigger": "touch",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.654,
+      "dfu_notes": [
+        "touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "start",
+      "dfu_to_app_s": 0.768,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 5,
+      "trigger": "touch",
+      "spin": true,
+      "reasons": [
+        "no DFU within 10 s (touch during spin)"
+      ],
+      "app_to_dfu_s": null,
+      "dfu_notes": [
+        "touch: exception (expected): could not open port 'COM10': PermissionError(13, 'Access is denied.', None, 5)"
+      ],
+      "pass": false
+    },
+    {
+      "cycle": 6,
+      "trigger": "touch",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.594,
+      "dfu_notes": [
+        "touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "start",
+      "dfu_to_app_s": 0.775,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 7,
+      "trigger": "cmd",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.658,
+      "dfu_notes": [
+        "cmd: @OK dfu"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "write+verify+start",
+      "program_s": 2.892,
+      "dfu_to_app_s": 0.757,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 8,
+      "trigger": "touch",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.689,
+      "dfu_notes": [
+        "touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "start",
+      "dfu_to_app_s": 0.773,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 9,
+      "trigger": "cmd",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.579,
+      "dfu_notes": [
+        "cmd: @OK dfu"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "write+verify+start",
+      "program_s": 2.895,
+      "dfu_to_app_s": 0.744,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 10,
+      "trigger": "touch",
+      "spin": true,
+      "reasons": [
+        "no DFU within 10 s (touch during spin)"
+      ],
+      "app_to_dfu_s": null,
+      "dfu_notes": [
+        "touch: exception (expected): could not open port 'COM10': PermissionError(13, 'Access is denied.', None, 5)"
+      ],
+      "pass": false
+    },
+    {
+      "cycle": 11,
+      "trigger": "cmd",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.64,
+      "dfu_notes": [
+        "cmd: @OK dfu"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "write+verify+start",
+      "program_s": 2.894,
+      "dfu_to_app_s": 0.755,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 12,
+      "trigger": "touch",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.672,
+      "dfu_notes": [
+        "touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "start",
+      "dfu_to_app_s": 0.759,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 13,
+      "trigger": "cmd",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.61,
+      "dfu_notes": [
+        "cmd: @OK dfu"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "write+verify+start",
+      "program_s": 2.891,
+      "dfu_to_app_s": 0.76,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 14,
+      "trigger": "touch",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.704,
+      "dfu_notes": [
+        "touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "start",
+      "dfu_to_app_s": 0.765,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 15,
+      "trigger": "touch",
+      "spin": true,
+      "reasons": [
+        "no DFU within 10 s (touch during spin)"
+      ],
+      "app_to_dfu_s": null,
+      "dfu_notes": [
+        "touch: exception (expected): could not open port 'COM10': PermissionError(13, 'Access is denied.', None, 5)"
+      ],
+      "pass": false
+    },
+    {
+      "cycle": 16,
+      "trigger": "touch",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.575,
+      "dfu_notes": [
+        "touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "start",
+      "dfu_to_app_s": 0.747,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 17,
+      "trigger": "cmd",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.597,
+      "dfu_notes": [
+        "cmd: @OK dfu"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "write+verify+start",
+      "program_s": 2.916,
+      "dfu_to_app_s": 0.728,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 18,
+      "trigger": "touch",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.477,
+      "dfu_notes": [
+        "touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "start",
+      "dfu_to_app_s": 0.772,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 19,
+      "trigger": "cmd",
+      "spin": false,
+      "reasons": [],
+      "app_to_dfu_s": 0.621,
+      "dfu_notes": [
+        "cmd: @OK dfu"
+      ],
+      "serial_match": true,
+      "bootloader": {
+        "product id": "STM32  BOOTLOADER",
+        "sn": "315A356C3435",
+        "dfu protocol": "1.1",
+        "board": "--",
+        "device id": "0x431",
+        "device name": "STM32F411xC/E",
+        "flash size": "512 KBytes (default)",
+        "device type": "MCU",
+        "revision id": "--",
+        "device cpu": "Cortex-M4"
+      },
+      "op": "write+verify+start",
+      "program_s": 2.879,
+      "dfu_to_app_s": 0.76,
+      "enumerations": 1,
+      "info_ok": true,
+      "reset_cause": "sft",
+      "pass": true
+    },
+    {
+      "cycle": 20,
+      "trigger": "touch",
+      "spin": true,
+      "reasons": [
+        "no DFU within 10 s (touch during spin)"
+      ],
+      "app_to_dfu_s": null,
+      "dfu_notes": [
+        "touch: exception (expected): could not open port 'COM10': PermissionError(13, 'Access is denied.', None, 5)"
+      ],
+      "pass": false
+    }
+  ]
+}

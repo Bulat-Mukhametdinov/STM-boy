@@ -855,11 +855,25 @@ def send_dfu_command(port_name: str, dev: Optional[Device] = None, timeout: floa
             dev.close()
 
 
-def touch_1200(port_name: str) -> str:
+def touch_1200(port_name: str, dev: Optional["Device"] = None) -> str:
     """1200-baud touch.  The device resets inside SET_LINE_CODING, so any
-    exception here is expected and counts as success; the DFU wait decides."""
+    exception here is expected and counts as success; the DFU wait decides.
+
+    If `dev` is an already-open connection (e.g. a busy device running a
+    suite), the line coding is changed on that handle: Windows COM ports are
+    exclusive, so a second open would fail and no SET_LINE_CODING would ever
+    reach the device."""
     if serial is None:
         raise HwtestError("pyserial is not installed")
+    if dev is not None:
+        try:
+            dev.port.baudrate = 1200
+            time.sleep(0.05)
+            return "line coding set to 1200 on the open handle"
+        except Exception as e:  # noqa: BLE001 - intended
+            return f"exception on open handle (expected): {e}"
+        finally:
+            dev.close()
     try:
         s = serial.Serial(port_name, 1200, timeout=0.2)
         try:
@@ -899,9 +913,8 @@ def enter_dfu(port_name: str, serial_no: Optional[str], method: str = "auto",
         elif method == "cmd":
             return DfuEntry("cmd", None, time.monotonic() - t0, notes)
     if not used:
-        if dev is not None:
-            dev.close()
-        notes.append(f"touch: {touch_1200(port_name)}")
+        notes.append(f"touch: {touch_1200(port_name, dev)}")
+        dev = None
         used = "touch"
     first_wait = timeout if used == "touch" or method == "cmd" else min(timeout, 4.0)
     dfu = wait_for_dfu(serial_no, first_wait - (time.monotonic() - t0))
@@ -1736,9 +1749,11 @@ def _dfu_cycle(i: int, sn: str, image: Path, data: bytes, expect: Optional[dict]
             dev.drain(0.5)
         except HwtestError as e:
             reasons.append(f"could not start 'run spin 8000': {e}")
-    entry = enter_dfu(cdc.device, sn, method, timeout=10.0, dev=dev if method == "cmd" else None)
-    if dev is not None:
-        dev.close()
+    # The spin connection stays open and is handed over: for "touch" the line
+    # coding is switched to 1200 on that same handle (the real-world case of
+    # a host connected to a busy device). enter_dfu closes it.
+    entry = enter_dfu(cdc.device, sn, method, timeout=10.0, dev=dev)
+    dev = None
     c["app_to_dfu_s"] = round(entry.seconds, 3) if entry.dfu else None
     c["dfu_notes"] = entry.notes
     if entry.dfu is None:
