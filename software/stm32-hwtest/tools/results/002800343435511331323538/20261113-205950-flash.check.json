@@ -1,0 +1,92 @@
+{
+  "kind": "run",
+  "suite": "flash.check",
+  "command": "run flash.check",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE flash.check pass",
+  "error": "",
+  "host_time_start": "2026-11-13T20:59:50+03:00",
+  "host_time_end": "2026-11-13T20:59:51+03:00",
+  "duration_s": 0.106,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "7cd4231+dirty",
+    "build": 1794592561,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": false,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 158,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "foreign",
+    "w25q": true,
+    "uptime_ms": 105418,
+    "vbus": true,
+    "chg": false,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "test",
+      "suite": "flash.check",
+      "name": "image_crc",
+      "pass": true,
+      "calc": "37FB8CBD",
+      "stored": "37FB8CBD",
+      "len": 152924,
+      "us": 3501,
+      "image_pct_of_512k": 29
+    },
+    {
+      "t": "test",
+      "suite": "flash.check",
+      "name": "flash_size",
+      "pass": true,
+      "flash_kb": 512,
+      "expect_kb": 512,
+      "uid": "002800343435511331323538",
+      "dev_id": "431",
+      "rev_id": "1000"
+    },
+    {
+      "t": "test",
+      "suite": "flash.check",
+      "name": "option_bytes",
+      "pass": true,
+      "optcr": "0FFFAAED",
+      "rdp": "AA",
+      "rdp_level": "0",
+      "bor_lev": 3,
+      "bor": "0 / off (1.80-2.10 V)",
+      "wdg_sw": 1,
+      "nrst_stop": 1,
+      "nrst_stdby": 1,
+      "nwrp": "FF",
+      "write_protected": false,
+      "notes": [
+        "BOR is OFF: no brown-out reset, relevant on a sagging battery (SWD/option bytes change needed to enable)",
+        "RDP level 0: flash readable over SWD/DFU"
+      ]
+    }
+  ],
+  "prompts": [],
+  "answers": [],
+  "binaries": [],
+  "log": []
+}

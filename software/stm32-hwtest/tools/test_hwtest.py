@@ -41,6 +41,7 @@ class FakeBoard:
     def __init__(self) -> None:
         self.pending_prompt: str | None = None
         self.running: str | None = None
+        self.sink = 0
 
     @staticmethod
     def line(s: str) -> bytes:
@@ -69,6 +70,15 @@ class FakeBoard:
                     + self.line("@R " + json.dumps({"t": "test", "suite": "selftest", "name": "lcd",
                                                     "pass": ans == "ok"}))
                     + self.line(f"@DONE selftest {'pass' if ans == 'ok' else 'fail'}"))
+        if c == "usbbench" and len(tok) == 3:
+            n = int(tok[2])
+            if tok[1] == "tx":
+                data = bytes(i & 255 for i in range(n))
+                return (self.line(f"@B {n} {zlib.crc32(data):08x}") + data
+                        + self.line("@R " + json.dumps({"t": "usbbench", "dir": "tx", "bytes": n, "us": 1000, "kBps": 262, "ok": True}))
+                        + self.line("@OK usbbench tx"))
+            self.sink = n
+            return self.line("@R " + json.dumps({"t": "usbbench", "dir": "rx", "state": "ready", "bytes": n}))
         if c == "abort":
             if self.running:
                 s, self.running = self.running, None
@@ -133,6 +143,13 @@ class FakeSerial:
     def write(self, data: bytes) -> int:
         if self.vanished:
             raise hwtest.SerialException("WriteFile failed")
+        if self.board.sink:
+            self.board.sink = max(0, self.board.sink - len(data))
+            if self.board.sink == 0:
+                self.push(FakeBoard.line("@R " + json.dumps({"t": "usbbench", "dir": "rx", "bytes": 4096, "got": 4096,
+                                                              "us": 500, "kBps": 8000, "ok": True}))
+                          + FakeBoard.line("@OK usbbench rx"))
+            return len(data)
         self.tx += data
         while b"\n" in self.tx:
             i = self.tx.index(b"\n")
@@ -329,6 +346,21 @@ REAL_LIST_USB = (
     "  Device ID              : 0x0431\r\n\r\n")
 
 
+class TestUsbBench(unittest.TestCase):
+    def test_both_directions(self) -> None:
+        dev, fs = make_dev()
+        r = hwtest.usbbench_run(dev, 4096, timeout=5.0, chunk=1024)
+        self.assertEqual(r["tx"]["status"], "ok")
+        self.assertTrue(r["tx"]["crc_ok"])
+        self.assertEqual(r["tx"]["received"], 4096)
+        self.assertEqual(r["rx"]["status"], "ok")
+        self.assertEqual(r["rx"]["device_got"], 4096)
+
+    def test_parser(self) -> None:
+        a = hwtest.build_parser().parse_args(["usbbench", "--bytes", "1024", "--direction", "tx"])
+        self.assertEqual((a.bytes, a.direction), (1024, "tx"))
+
+
 class TestCliParsing(unittest.TestCase):
     def test_list_usb_real_capture(self) -> None:
         devs = hwtest.parse_dfu_list(REAL_LIST_USB)
@@ -495,7 +527,7 @@ class TestCliEntry(unittest.TestCase):
 
     def test_help(self) -> None:
         for sub in ([], ["ports"], ["info"], ["cmd"], ["monitor"], ["run"], ["dfu"], ["flash"],
-                    ["dfu-test"], ["lock-status"]):
+                    ["dfu-test"], ["usbbench"], ["lock-status"]):
             r = self.run_tool(*sub, "--help")
             self.assertEqual(r.returncode, 0, f"{sub}: {r.stderr}")
             self.assertIn("usage:", r.stdout)

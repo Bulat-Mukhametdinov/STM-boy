@@ -77,6 +77,14 @@ SRC_OWN := \
   Src/drv/backlight.c \
   Src/ui/t_display.c \
   Src/ui/t_flash.c \
+  Src/ui/t_w25q.c \
+  Src/ui/t_mem.c \
+  Src/bench/b_core.c \
+  Src/bench/b_cpu.c \
+  Src/bench/b_mem.c \
+  Src/bench/b_sys.c \
+  Src/bench/b_lcd.c \
+  Src/bench/b_io.c \
   Src/ui/t_pins.c \
   Src/ui/t_input.c \
   Src/ui/t_backlight.c \
@@ -145,7 +153,7 @@ $(BUILD)/Src/fw_id.o: CFLAGS_OWN += -DFW_GIT_HASH=\"$(FW_HASH)\" -DFW_BUILD_TIME
 $(BUILD)/Src/fw_id.o: FORCE
 
 $(ELF): $(OBJ) $(LDSCRIPT)
-	$(CC) $(LDFLAGS) $(OBJ) -o $@
+	$(CC) $(LDFLAGS) $(OBJ) -lm -o $@
 	$(SIZE) $@
 
 # Canonical image: raw bin with the CRC trailer patched in.

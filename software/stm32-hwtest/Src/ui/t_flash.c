@@ -1,5 +1,5 @@
 /* W25Q read-only host commands (P1): read (binary @B dump), crc, scan.
-   Nothing here erases or programs the external flash. */
+   erase4k is the only writer (guarded by the driver). */
 
 #include "cmd.h"
 #include "crc.h"
@@ -217,12 +217,61 @@ static void w25q_cmd_scan(int argc, char **argv)
     proto_ok("w25q scan");
 }
 
+/* w25q erase4k <addr_hex> [force] : 4 KB erase (write guard: >= 0xF00000; 0xFFF000 needs force) */
+static void w25q_cmd_erase4k(int argc, char **argv)
+{
+    uint32_t addr, us = 0;
+    char m[120];
+    if (argc < 3 || !parse_hex(argv[2], &addr)) {
+        proto_err("w25q", "usage: w25q erase4k <addr_hex> [force]");
+        return;
+    }
+    if (addr >= 0xFFF000u && !(argc >= 4 && strcmp(argv[3], "force") == 0)) {
+        proto_err("w25q", "0xFFF000 (HWCAL) needs the extra 'force' token");
+        return;
+    }
+    uint8_t sr1a = w25q_read_sr1();
+    w25q_status_t st = w25q_erase_cmd(0x20u, addr, &us);
+    uint8_t sr1 = w25q_read_sr1();
+    uint8_t b[16];
+    bool blank = false;
+    if (w25q_read(addr, b, sizeof(b)) == W25Q_OK) {
+        blank = true;
+        for (unsigned i = 0; i < sizeof(b); i++) blank &= (b[i] == 0xFFu);
+    }
+    res_printf("{\"t\":\"w25q_erase4k\",\"addr\":\"%06" PRIX32 "\",\"st\":%d,\"st_s\":\"%s\",\"sr1_before\":\"%02X\","
+               "\"sr1\":\"%02X\",\"us\":%" PRIu32 ",\"first16_blank\":%s}",
+               addr, (int)st, w25q_status_str(st), (unsigned)sr1a, (unsigned)sr1, us, blank ? "true" : "false");
+    if (st != W25Q_OK) {
+        snprintf(m, sizeof(m), "erase4k failed: st=%d(%s) sr1=%02X", (int)st, w25q_status_str(st), (unsigned)sr1);
+        proto_err("w25q", m);
+        return;
+    }
+    proto_ok("w25q erase4k");
+}
+
+/* w25q lock <addr_hex> : read-only. 0x3D individual block/sector lock bit (only effective when SR3.WPS=1) */
+static void w25q_cmd_lock(int argc, char **argv)
+{
+    uint32_t addr;
+    if (argc < 3 || !parse_hex(argv[2], &addr) || addr >= W25Q_SIZE) {
+        proto_err("w25q", "usage: w25q lock <addr_hex>");
+        return;
+    }
+    uint8_t v = w25q_read_lock(addr);
+    res_printf("{\"t\":\"w25q_lock\",\"addr\":\"%06" PRIX32 "\",\"lock\":\"%02X\",\"sr1\":\"%02X\",\"sr2\":\"%02X\",\"sr3\":\"%02X\"}",
+               addr, (unsigned)v, (unsigned)w25q_read_sr1(), (unsigned)w25q_read_reg(0x35u), (unsigned)w25q_read_reg(0x15u));
+    proto_ok("w25q lock");
+}
+
 /* Returns true if the sub-command was handled here. */
 bool w25q_cmd_ext(int argc, char **argv)
 {
     if (argc < 2) return false;
     if (strcmp(argv[1], "read") == 0) { w25q_cmd_read(argc, argv); return true; }
     if (strcmp(argv[1], "crc") == 0) { w25q_cmd_crc(argc, argv); return true; }
+    if (strcmp(argv[1], "erase4k") == 0) { w25q_cmd_erase4k(argc, argv); return true; }
+    if (strcmp(argv[1], "lock") == 0) { w25q_cmd_lock(argc, argv); return true; }
     if (strcmp(argv[1], "scan") == 0) { w25q_cmd_scan(argc, argv); return true; }
     return false;
 }

@@ -9,6 +9,7 @@
 
 #include "log.h"
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #define HWCAL_MAGIC     0x31435748u  /* "HWC1" little-endian */
@@ -85,6 +86,7 @@ hwcal_err_t hwcal_save(const hwcal_t *c, bool force);
 hwcal_err_t hwcal_init(bool force);  /* write defaults */
 const char *hwcal_state_str(hwcal_state_t s);
 const char *hwcal_err_str(hwcal_err_t e);
+const char *hwcal_fail_str(char *buf, size_t n); /* last flash failure: step/status/SR1-3 */
 void hwcal_to_json(jb_t *j);         /* adds all fields + status */
 
 #endif

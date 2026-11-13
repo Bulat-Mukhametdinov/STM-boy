@@ -34,6 +34,7 @@
 #include "w25q.h"
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 hwcal_t g_hwcal;
@@ -41,6 +42,28 @@ hwcal_t g_hwcal;
 static hwcal_state_t s_state = HWCAL_NO_FLASH;
 static uint32_t s_seq;
 static int s_slot = -1; /* 0 = A, 1 = B */
+
+/* Last failure details for diagnostics: which step, w25q status, SR1/SR2/SR3 afterwards. */
+static const char *s_fail_step = "";
+static int s_fail_st;
+static uint8_t s_fail_sr[3];
+
+static hwcal_err_t fail(const char *step, w25q_status_t st)
+{
+    s_fail_step = step;
+    s_fail_st = (int)st;
+    s_fail_sr[0] = w25q_read_sr1();
+    s_fail_sr[1] = w25q_read_reg(0x35u);
+    s_fail_sr[2] = w25q_read_reg(0x15u);
+    return HWCAL_ERR_FLASH;
+}
+
+const char *hwcal_fail_str(char *buf, size_t n)
+{
+    snprintf(buf, n, "step=%s st=%d sr1=%02X sr2=%02X sr3=%02X", s_fail_step, s_fail_st,
+             (unsigned)s_fail_sr[0], (unsigned)s_fail_sr[1], (unsigned)s_fail_sr[2]);
+    return buf;
+}
 
 static uint32_t half_addr(int slot)
 {
@@ -171,6 +194,7 @@ char hwcal_slot(void) { return (s_slot < 0) ? '-' : (char)('A' + s_slot); }
 static hwcal_err_t program_record(int slot, const hwcal_t *c, uint32_t seq)
 {
     hwcal_hdr_t h;
+    w25q_status_t st;
     h.magic = 0xFFFFFFFFu; /* programmed last */
     h.version = HWCAL_VERSION;
     h.len = (uint16_t)sizeof(hwcal_t);
@@ -178,19 +202,39 @@ static hwcal_err_t program_record(int slot, const hwcal_t *c, uint32_t seq)
     h.crc32 = record_crc(&h, c, sizeof(hwcal_t));
 
     uint32_t base = half_addr(slot);
-    if (w25q_program(base + 4u, (const uint8_t *)&h + 4u, sizeof(h) - 4u) != W25Q_OK ||
-        w25q_program(base + sizeof(h), c, sizeof(hwcal_t)) != W25Q_OK) {
-        return HWCAL_ERR_FLASH;
+    st = w25q_program(base + 4u, (const uint8_t *)&h + 4u, sizeof(h) - 4u);
+    if (st != W25Q_OK) {
+        return fail("program_hdr", st);
+    }
+    st = w25q_program(base + sizeof(h), c, sizeof(hwcal_t));
+    if (st != W25Q_OK) {
+        return fail("program_body", st);
     }
     uint32_t magic = HWCAL_MAGIC;
-    if (w25q_program(base, &magic, sizeof(magic)) != W25Q_OK) {
-        return HWCAL_ERR_FLASH;
+    st = w25q_program(base, &magic, sizeof(magic));
+    if (st != W25Q_OK) {
+        return fail("program_magic", st);
     }
     hwcal_t back;
     uint32_t back_seq;
-    if (!read_half(slot, &back, &back_seq) || back_seq != seq ||
-        memcmp(&back, c, sizeof(hwcal_t)) != 0) {
-        return HWCAL_ERR_FLASH;
+    if (!read_half(slot, &back, &back_seq)) {
+        return fail("verify_read", W25Q_OK);
+    }
+    if (back_seq != seq || memcmp(&back, c, sizeof(hwcal_t)) != 0) {
+        return fail("verify_compare", W25Q_OK);
+    }
+    return HWCAL_OK;
+}
+
+static hwcal_err_t erase_hwcal(void)
+{
+    /* erase + read back: the sector must be all 0xFF afterwards */
+    w25q_status_t st = w25q_erase_sector(HWCAL_SECTOR);
+    if (st != W25Q_OK) {
+        return fail("erase", st);
+    }
+    if (!range_blank(HWCAL_SECTOR, 2u * HWCAL_HALF_SIZE)) {
+        return fail("erase_verify", W25Q_OK);
     }
     return HWCAL_OK;
 }
@@ -210,8 +254,9 @@ hwcal_err_t hwcal_save(const hwcal_t *c, bool force)
             if (!force) {
                 return HWCAL_ERR_FOREIGN;
             }
-            if (w25q_erase_sector(HWCAL_SECTOR) != W25Q_OK) {
-                return HWCAL_ERR_FLASH;
+            hwcal_err_t ee = erase_hwcal();
+            if (ee != HWCAL_OK) {
+                return ee;
             }
         }
         target = 0;
@@ -219,8 +264,9 @@ hwcal_err_t hwcal_save(const hwcal_t *c, bool force)
         target = 1 - s_slot;
         if (!range_blank(half_addr(target), HWCAL_HALF_SIZE)) {
             /* Both halves used: erase (window documented above), new -> A. */
-            if (w25q_erase_sector(HWCAL_SECTOR) != W25Q_OK) {
-                return HWCAL_ERR_FLASH;
+            hwcal_err_t ee = erase_hwcal();
+            if (ee != HWCAL_OK) {
+                return ee;
             }
             target = 0;
         }

@@ -1,0 +1,73 @@
+{
+  "kind": "run",
+  "suite": "ram.march",
+  "command": "run ram.march",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE ram.march pass",
+  "error": "",
+  "host_time_start": "2026-11-13T20:59:51+03:00",
+  "host_time_end": "2026-11-13T20:59:51+03:00",
+  "duration_s": 0.144,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "7cd4231+dirty",
+    "build": 1794592561,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": false,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 158,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "foreign",
+    "w25q": true,
+    "uptime_ms": 106138,
+    "vbus": true,
+    "chg": false,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "test",
+      "suite": "ram.march",
+      "name": "march_c_minus",
+      "pass": true,
+      "tested_bytes": 128000,
+      "untested_bytes": 3072,
+      "errors": 0,
+      "ms": 43,
+      "backgrounds": [
+        "00000000",
+        "55555555"
+      ],
+      "block": 1024,
+      "msp": "2001FBC8",
+      "untested": [
+        [
+          "2001F400",
+          "20020000"
+        ]
+      ],
+      "first_errors": []
+    }
+  ],
+  "prompts": [],
+  "answers": [],
+  "binaries": [],
+  "log": []
+}

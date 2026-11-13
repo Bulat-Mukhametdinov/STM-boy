@@ -30,5 +30,9 @@ uint32_t usb_rx_drops(void);
 extern volatile bool g_usb_abort_req;
 /* Set from the USB ISR on DTR rising edge; consumed by the main loop (@HELLO). */
 extern volatile bool g_usb_dtr_rise;
+/* usbbench rx: total bytes received on the OUT endpoint; while the sink flag is set the
+   bytes are only counted and discarded (no line parsing). */
+extern volatile uint32_t g_usb_rx_bytes;
+extern volatile bool g_usb_rx_sink;
 
 #endif

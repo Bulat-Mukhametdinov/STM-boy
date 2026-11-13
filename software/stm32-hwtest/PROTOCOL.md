@@ -105,3 +105,27 @@ that the freshly built image is the one running.
 `build/hwtest.bin` is the canonical image (CRC trailer patched in by
 `tools/append_crc.py`), flashed at `0x08000000`. `build/hwtest.elf` is for
 debugging. `build/hwtest.hex` is generated from the patched bin.
+
+## P3 suites (memory) and commands
+
+| Suite | Results |
+| --- | --- |
+| `w25q.info` | `test` `jedec` (+uid), `status_regs` (SR1/2/3 + BP/TB/SEC/CMP/SRL/QE/LB/WPS decode), `sfdp` (signature, rev, density) |
+| `w25q.readcrc` | `test` `crc_6mhz`/`crc_12mhz`/`crc_24mhz` (whole 16 MB, HW CRC unit, `ms`, `kBps`), `match` |
+| `w25q.scratch confirm=yes` | DESTRUCTIVE, scratch 0xF00000-0xFDFFFF only: `blank_scan`, `erase_4k/32k/64k` (min/max/avg ms vs datasheet typ/max 45/400, 120/1600, 150/2000), `page_program` (vs 0.4/3 ms), `pattern_0x55/0xAA/addr/lfsr`, `final_erase` |
+| `w25q.sector` | per scratch sector: backup, erase, pattern, verify, restore, verify |
+| `w25q.pd` | 0xB9/0xAB timing, JEDEC while down, release-to-first-valid-JEDEC time, 0xAB device ID |
+| `ram.march` | transparent March C- (two backgrounds) per 1 KB block, IRQs off per block; `untested` lists live stack + .noinit |
+| `flash.check` | `image_crc`, `flash_size` (+UID, DBGMCU id), `option_bytes` (RDP, BOR, WRP, notes; read-only) |
+
+The W25Q driver refuses any program/erase below 0xF00000. New commands: `hwcal set key=value ...` (edit the RAM
+calibration), `hwcal save [force]` (write it to the W25Q; refuses a foreign sector without `force`),
+`usbbench rx|tx <bytes>` (CDC throughput; host side: `hwtest.py usbbench [--bytes N] [--direction tx|rx|both]`).
+
+## P5 benchmark suites
+
+All `bench.*` suites emit `@R {"t":"bench","suite","name","cyc_min","cyc_med","us"[,"unit","per_unit"][,"mbps"],
+"clk","ws","art","opt","loc"[,extras]}` (1 warm-up + 7 reps, min/median, IRQs masked per rep for short kernels).
+`bench.cpu`, `bench.mem`, `bench.flash`, `bench.irq`, `bench.lcd`, `bench.gfx`, `bench.w25q` (read-only),
+`bench.audio`, `bench.sys` (`stop=1` is accepted but only reports "not implemented"), `bench.all` (all of them, then
+two `@R {"t":"budget",...}` lines). `tools/gen_budget.py results.json` renders the results as markdown.

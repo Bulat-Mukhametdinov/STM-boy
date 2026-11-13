@@ -1462,6 +1462,71 @@ def cmd_cmd(args: argparse.Namespace) -> int:
     return rc
 
 
+def usbbench_run(dev: Device, nbytes: int = 262144, directions: tuple = ("tx", "rx"),
+                 timeout: float = 30.0, chunk: int = 4096) -> dict:
+    """CDC throughput test against the firmware's `usbbench` command.
+    tx = device -> host (@B frame, CRC checked); rx = host -> device (raw bytes, counted by the device)."""
+    out: dict = {"bytes": nbytes}
+    if "tx" in directions:
+        t0 = time.monotonic()
+        tx = dev.transact(f"usbbench tx {nbytes}", timeout=timeout)
+        el = time.monotonic() - t0
+        frames = [m for m in tx.msgs if m.kind == "B"]
+        res = [r for r in tx.results if isinstance(r, dict) and r.get("dir") == "tx"]
+        got = len(frames[0].data or b"") if frames else 0
+        out["tx"] = {"status": tx.status, "received": got, "crc_ok": frames[0].crc_ok if frames else None,
+                     "host_s": round(el, 4), "host_kBps": round(got / 1000.0 / el, 1) if el > 0 else 0.0,
+                     "device_kBps": res[0].get("kBps") if res else None}
+    if "rx" in directions:
+        dev.send(f"usbbench rx {nbytes}")
+        ready = False
+        end = time.monotonic() + 5.0
+        while time.monotonic() < end and not ready:
+            m = dev.read_msg(0.2)
+            if m is not None and m.kind == "R" and isinstance(m.obj, dict) and m.obj.get("state") == "ready":
+                ready = True
+            elif m is not None and m.kind == "ERR":
+                break
+        if not ready:
+            out["rx"] = {"status": "not_ready"}
+        else:
+            block = b"U" * chunk
+            t0 = time.monotonic()
+            left = nbytes
+            while left > 0:
+                n = min(left, chunk)
+                dev.port.write(block[:n])
+                left -= n
+            el = time.monotonic() - t0
+            res = None
+            end = time.monotonic() + timeout
+            while time.monotonic() < end:
+                m = dev.read_msg(0.2)
+                if m is None:
+                    continue
+                if m.kind == "R" and isinstance(m.obj, dict) and m.obj.get("dir") == "rx" and "got" in m.obj:
+                    res = m.obj
+                if m.kind in ("OK", "ERR") and m.cmd_token == "usbbench":
+                    break
+            out["rx"] = {"status": "ok" if res and res.get("ok") else "fail", "device_got": res.get("got") if res else None,
+                         "host_s": round(el, 4), "host_kBps": round(nbytes / 1000.0 / el, 1) if el > 0 else 0.0,
+                         "device_kBps": res.get("kBps") if res else None}
+    return out
+
+
+def cmd_usbbench(args: argparse.Namespace) -> int:
+    cdc = resolve_cdc(target_port(args), target_serial(args))
+    dirs = ("tx", "rx") if args.direction == "both" else (args.direction,)
+    with connect(cdc, timeout=args.open_timeout) as dev:
+        r = usbbench_run(dev, args.bytes, dirs, timeout=args.timeout)
+    ok = all(r.get(d, {}).get("status") == "ok" and r.get(d, {}).get("crc_ok", True) is not False for d in dirs)
+    for d in dirs:
+        note(f"usbbench {d}: {json.dumps(r.get(d))}")
+        OUT.say(f"usbbench {d}: {json.dumps(r.get(d))}")
+    OUT.emit({"ok": ok, **r})
+    return EXIT_OK if ok else EXIT_FAIL
+
+
 def cmd_monitor(args: argparse.Namespace) -> int:
     cdc = resolve_cdc(target_port(args), target_serial(args))
     sn = cdc.serial
@@ -2013,7 +2078,7 @@ def cmd_lock_status(args: argparse.Namespace) -> int:
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
-HW_COMMANDS = {"info", "cmd", "monitor", "run", "dfu", "flash", "dfu-test"}
+HW_COMMANDS = {"info", "cmd", "monitor", "run", "dfu", "flash", "dfu-test", "usbbench"}
 LOGGED_COMMANDS = HW_COMMANDS | {"ports"}
 
 
@@ -2048,6 +2113,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--timeout", type=float, default=10.0)
     s.add_argument("--save-bin", metavar="DIR", help="save @B binary payloads into DIR")
     s.set_defaults(func=cmd_cmd)
+
+    s = sub.add_parser("usbbench", parents=[common], help="CDC throughput test (device->host @B frame, host->device raw)")
+    s.add_argument("--bytes", type=int, default=262144, help="bytes per direction (multiple of 256, <= 1 MB)")
+    s.add_argument("--direction", choices=("tx", "rx", "both"), default="both")
+    s.add_argument("--timeout", type=float, default=30.0)
+    s.set_defaults(func=cmd_usbbench)
 
     s = sub.add_parser("monitor", parents=[common], help="print all device lines (Ctrl+C to quit)")
     s.add_argument("--no-reconnect", action="store_true", help="exit when the port disappears")

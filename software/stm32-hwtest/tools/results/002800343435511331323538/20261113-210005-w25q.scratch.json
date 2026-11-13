@@ -1,0 +1,151 @@
+{
+  "kind": "run",
+  "suite": "w25q.scratch",
+  "command": "run w25q.scratch confirm=yes",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE w25q.scratch pass",
+  "error": "",
+  "host_time_start": "2026-11-13T21:00:05+03:00",
+  "host_time_end": "2026-11-13T21:00:12+03:00",
+  "duration_s": 7.666,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "7cd4231+dirty",
+    "build": 1794592561,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": false,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 158,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "foreign",
+    "w25q": true,
+    "uptime_ms": 119551,
+    "vbus": true,
+    "chg": false,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "blank_scan",
+      "pass": true,
+      "bytes": 917504,
+      "non_ff": 0,
+      "first_non_ff": "000000"
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "erase_4k",
+      "pass": true,
+      "n": 3,
+      "min_ms": 52,
+      "max_ms": 56,
+      "avg_ms": 54,
+      "typ_ms": 45,
+      "datasheet_max_ms": 400,
+      "min_us": 52432,
+      "max_us": 56907
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "erase_32k",
+      "pass": true,
+      "n": 2,
+      "min_ms": 230,
+      "max_ms": 232,
+      "avg_ms": 231,
+      "typ_ms": 120,
+      "datasheet_max_ms": 1600,
+      "min_us": 230675,
+      "max_us": 232369
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "erase_64k",
+      "pass": true,
+      "n": 2,
+      "min_ms": 268,
+      "max_ms": 274,
+      "avg_ms": 271,
+      "typ_ms": 150,
+      "datasheet_max_ms": 2000,
+      "min_us": 268949,
+      "max_us": 274284
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "page_program",
+      "pass": true,
+      "n": 816,
+      "min_us": 368,
+      "max_us": 376,
+      "avg_us": 370,
+      "typ_us": 400,
+      "datasheet_max_us": 3000
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "pattern_0x55",
+      "pass": true,
+      "bytes": 65536,
+      "mismatch": 0
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "pattern_0xAA",
+      "pass": true,
+      "bytes": 65536,
+      "mismatch": 0
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "pattern_addr",
+      "pass": true,
+      "bytes": 65536,
+      "mismatch": 0
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "pattern_lfsr",
+      "pass": true,
+      "bytes": 65536,
+      "mismatch": 0
+    },
+    {
+      "t": "test",
+      "suite": "w25q.scratch",
+      "name": "final_erase",
+      "pass": true
+    }
+  ],
+  "prompts": [],
+  "answers": [],
+  "binaries": [],
+  "log": []
+}

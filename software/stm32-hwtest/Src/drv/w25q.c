@@ -167,10 +167,17 @@ w25q_status_t w25q_read(uint32_t addr, void *buf, size_t len)
     return W25Q_OK;
 }
 
+/* Driver-level write guard: nothing below the hwtest area (RetroPort ROM pack,
+   settings, ...) may ever be programmed or erased by this firmware. */
+static bool write_ok(uint32_t addr, size_t len)
+{
+    return addr >= W25Q_HWTEST_BASE && range_ok(addr, len);
+}
+
 w25q_status_t w25q_program(uint32_t addr, const void *buf, size_t len)
 {
     const uint8_t *p = buf;
-    if (!range_ok(addr, len) || (buf == NULL && len)) {
+    if (!write_ok(addr, len) || (buf == NULL && len)) {
         return W25Q_ERR_PARAM;
     }
     while (len) {
@@ -200,7 +207,7 @@ w25q_status_t w25q_program(uint32_t addr, const void *buf, size_t len)
 
 w25q_status_t w25q_erase_sector(uint32_t addr)
 {
-    if ((addr % W25Q_SECTOR_SIZE) != 0u || !range_ok(addr, W25Q_SECTOR_SIZE)) {
+    if ((addr % W25Q_SECTOR_SIZE) != 0u || !write_ok(addr, W25Q_SECTOR_SIZE)) {
         return W25Q_ERR_PARAM;
     }
     w25q_status_t st = wait_ready(TIMEOUT_PAGE_MS);
@@ -242,4 +249,221 @@ const char *w25q_status_str(w25q_status_t s)
     case W25Q_ERR_NOT_PRESENT: return "not_present";
     default: return "?";
     }
+}
+
+/* ================================================================ P3/P5 extensions */
+
+uint8_t w25q_read_reg(uint8_t cmd)
+{
+    CS_LOW();
+    xfer(cmd);
+    uint8_t v = xfer(0xFF);
+    end();
+    return v;
+}
+
+w25q_status_t w25q_read_sfdp(uint8_t *buf, size_t n)
+{
+    CS_LOW();
+    send_cmd_addr(0x5Au, 0);
+    xfer(0xFF); /* 8 dummy clocks */
+    for (size_t i = 0; i < n; i++) {
+        buf[i] = xfer(0xFF);
+    }
+    end();
+    return W25Q_OK;
+}
+
+/* Erase with 0x20 (4K) / 0x52 (32K) / 0xD8 (64K). *us = BUSY time (SR1 polled). */
+w25q_status_t w25q_erase_cmd(uint8_t cmd, uint32_t addr, uint32_t *us)
+{
+    uint32_t size = (cmd == 0x20u) ? 4096u : (cmd == 0x52u) ? 32768u : (cmd == 0xD8u) ? 65536u : 0u;
+    if (size == 0u || (addr % size) != 0u || !write_ok(addr, size)) {
+        return W25Q_ERR_PARAM;
+    }
+    w25q_status_t st = wait_ready(TIMEOUT_ERASE_MS);
+    if (st != W25Q_OK) {
+        return st;
+    }
+    write_enable();
+    CS_LOW();
+    send_cmd_addr(cmd, addr);
+    end();
+    uint32_t t0 = DWT->CYCCNT;
+    st = wait_ready(4000u);
+    if (us) {
+        *us = (DWT->CYCCNT - t0) / (SystemCoreClock / 1000000u);
+    }
+    return st;
+}
+
+/* 0x3D read block/sector lock: bit0 = locked (only honoured when SR3.WPS=1). */
+uint8_t w25q_read_lock(uint32_t addr)
+{
+    CS_LOW();
+    send_cmd_addr(0x3Du, addr);
+    uint8_t v = xfer(0xFF);
+    end();
+    return v;
+}
+
+/* One page program (len <= 256, must not cross a page). *us = BUSY time. */
+w25q_status_t w25q_program_page_timed(uint32_t addr, const void *buf, size_t len, uint32_t *us)
+{
+    const uint8_t *p = buf;
+    if (len == 0u || len > W25Q_PAGE_SIZE || (addr % W25Q_PAGE_SIZE) + len > W25Q_PAGE_SIZE ||
+        !write_ok(addr, len)) {
+        return W25Q_ERR_PARAM;
+    }
+    w25q_status_t st = wait_ready(TIMEOUT_PAGE_MS);
+    if (st != W25Q_OK) {
+        return st;
+    }
+    write_enable();
+    CS_LOW();
+    send_cmd_addr(CMD_PAGE_PROGRAM, addr);
+    for (size_t i = 0; i < len; i++) {
+        xfer(p[i]);
+    }
+    end();
+    uint32_t t0 = DWT->CYCCNT;
+    st = wait_ready(50u);
+    if (us) {
+        *us = (DWT->CYCCNT - t0) / (SystemCoreClock / 1000000u);
+    }
+    return st;
+}
+
+w25q_status_t w25q_read_ex(uint32_t addr, void *buf, size_t len, bool fast)
+{
+    uint8_t *p = buf;
+    if (!range_ok(addr, len) || (buf == NULL && len)) {
+        return W25Q_ERR_PARAM;
+    }
+    CS_LOW();
+    send_cmd_addr(fast ? 0x0Bu : CMD_READ_DATA, addr);
+    if (fast) {
+        xfer(0xFF);
+    }
+    for (size_t i = 0; i < len; i++) {
+        p[i] = xfer(0xFF);
+    }
+    end();
+    return W25Q_OK;
+}
+
+/* Power-down helpers without the blocking delay of w25q_release_power_down(). */
+void w25q_release_pd_nodelay(void)
+{
+    CS_LOW();
+    xfer(CMD_RELEASE_PD);
+    end();
+}
+
+uint8_t w25q_release_pd_with_id(void) /* 0xAB + 3 dummy + ID byte (0x17 for Q128) */
+{
+    CS_LOW();
+    xfer(CMD_RELEASE_PD);
+    xfer(0xFF);
+    xfer(0xFF);
+    xfer(0xFF);
+    uint8_t id = xfer(0xFF);
+    end();
+    return id;
+}
+
+/* ---- DMA reads: SPI3 RX = DMA1 S0 Ch0, TX (dummy 0xFF, MINC=0) = DMA1 S5 Ch0 ---- */
+
+static volatile uint8_t s_dummy_ff = 0xFF;
+#define W_RX_ALL (0x3Du << 0)    /* LIFCR/LISR stream 0 */
+#define W_TX_ALL (0x3Du << 6)    /* HIFCR/HISR stream 5 */
+static bool s_dma_active;
+
+static void dma_stream_off(DMA_Stream_TypeDef *s)
+{
+    s->CR &= ~DMA_SxCR_EN;
+    uint32_t n = 0;
+    while ((s->CR & DMA_SxCR_EN) && ++n < 100000u) {
+    }
+}
+
+/* Starts a command + address (+dummy) and a DMA transfer of n (1..65535) bytes; CS stays low. */
+bool w25q_dma_start(uint32_t addr, void *buf, uint32_t n, bool fast)
+{
+    if (!range_ok(addr, n) || n == 0u || n > 65535u || s_dma_active) {
+        return false;
+    }
+    RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
+    (void)RCC->AHB1ENR;
+    CS_LOW();
+    send_cmd_addr(fast ? 0x0Bu : CMD_READ_DATA, addr);
+    if (fast) {
+        xfer(0xFF);
+    }
+    (void)SPI3->DR;
+    (void)SPI3->SR;
+    dma_stream_off(DMA1_Stream0);
+    dma_stream_off(DMA1_Stream5);
+    DMA1->LIFCR = W_RX_ALL;
+    DMA1->HIFCR = W_TX_ALL;
+    DMA1_Stream0->PAR = (uint32_t)&SPI3->DR;
+    DMA1_Stream0->M0AR = (uint32_t)buf;
+    DMA1_Stream0->NDTR = n;
+    DMA1_Stream0->FCR = 0;
+    DMA1_Stream0->CR = DMA_SxCR_MINC | (2u << DMA_SxCR_PL_Pos); /* CHSEL 0, P2M, 8-bit */
+    DMA1_Stream5->PAR = (uint32_t)&SPI3->DR;
+    DMA1_Stream5->M0AR = (uint32_t)&s_dummy_ff;
+    DMA1_Stream5->NDTR = n;
+    DMA1_Stream5->FCR = 0;
+    DMA1_Stream5->CR = (1u << DMA_SxCR_DIR_Pos) | (1u << DMA_SxCR_PL_Pos); /* M2P, MINC off */
+    DMA1_Stream0->CR |= DMA_SxCR_EN;
+    DMA1_Stream5->CR |= DMA_SxCR_EN;
+    SPI3->CR2 |= SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN;
+    s_dma_active = true;
+    return true;
+}
+
+bool w25q_dma_done(void)
+{
+    return !s_dma_active || (DMA1->LISR & DMA_LISR_TCIF0) != 0u;
+}
+
+/* Waits for completion (bounded), releases CS and the DMA streams. */
+bool w25q_dma_finish(void)
+{
+    if (!s_dma_active) {
+        return true;
+    }
+    uint32_t n = 0;
+    while (!(DMA1->LISR & DMA_LISR_TCIF0) && ++n < 20000000u) {
+    }
+    bool ok = (DMA1->LISR & DMA_LISR_TCIF0) != 0u;
+    dma_stream_off(DMA1_Stream5);
+    dma_stream_off(DMA1_Stream0);
+    SPI3->CR2 &= ~(SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN);
+    end();
+    (void)SPI3->DR;
+    (void)SPI3->SR;
+    DMA1->LIFCR = W_RX_ALL;
+    DMA1->HIFCR = W_TX_ALL;
+    s_dma_active = false;
+    return ok;
+}
+
+w25q_status_t w25q_read_dma(uint32_t addr, void *buf, size_t len, bool fast)
+{
+    uint8_t *p = buf;
+    if (!range_ok(addr, len) || (buf == NULL && len)) {
+        return W25Q_ERR_PARAM;
+    }
+    while (len) {
+        uint32_t k = (len > 32768u) ? 32768u : (uint32_t)len;
+        if (!w25q_dma_start(addr, p, k, fast) || !w25q_dma_finish()) {
+            return W25Q_ERR_TIMEOUT;
+        }
+        addr += k;
+        p += k;
+        len -= k;
+    }
+    return W25Q_OK;
 }

@@ -43,4 +43,19 @@ w25q_status_t w25q_power_down(void);
 w25q_status_t w25q_release_power_down(void);
 const char *w25q_status_str(w25q_status_t s);
 
+/* P3/P5 extensions. Writes (program/erase) are refused below W25Q_HWTEST_BASE. */
+uint8_t w25q_read_reg(uint8_t cmd);                 /* 0x05 SR1, 0x35 SR2, 0x15 SR3 */
+uint8_t w25q_read_lock(uint32_t addr);               /* 0x3D individual lock bit */
+w25q_status_t w25q_read_sfdp(uint8_t *buf, size_t n);
+w25q_status_t w25q_erase_cmd(uint8_t cmd, uint32_t addr, uint32_t *us); /* 0x20/0x52/0xD8 */
+w25q_status_t w25q_program_page_timed(uint32_t addr, const void *buf, size_t len, uint32_t *us);
+w25q_status_t w25q_read_ex(uint32_t addr, void *buf, size_t len, bool fast); /* 0x03 / 0x0B polled */
+void w25q_release_pd_nodelay(void);
+uint8_t w25q_release_pd_with_id(void);
+/* DMA reads (SPI3 RX DMA1 S0, TX dummy DMA1 S5). start: n <= 65535, CS stays low until finish. */
+bool w25q_dma_start(uint32_t addr, void *buf, uint32_t n, bool fast);
+bool w25q_dma_done(void);
+bool w25q_dma_finish(void);
+w25q_status_t w25q_read_dma(uint32_t addr, void *buf, size_t len, bool fast); /* any length */
+
 #endif

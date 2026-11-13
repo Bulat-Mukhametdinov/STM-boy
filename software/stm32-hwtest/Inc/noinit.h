@@ -30,7 +30,8 @@ typedef struct {
     uint32_t fault_hfsr;
     uint32_t fault_addr;         /* MMFAR or BFAR if valid, else 0 */
     uint32_t fault_ipsr;
-    uint32_t reserved[52];       /* P7: overclock ATTEMPT copy etc. */
+    uint32_t boot_first_pixel_ms; /* HAL tick (ms since HAL_Init) when the first frame + backlight were up */
+    uint32_t reserved[51];       /* P7: overclock ATTEMPT copy etc. */
 } noinit_t;
 
 _Static_assert(sizeof(noinit_t) <= 256u, "noinit block must fit RAM_NOINIT");

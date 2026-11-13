@@ -71,9 +71,13 @@ int main(void)
     apply_hwcal_to_hw();
 
     backlight_init();         /* TIM3_CH1 PWM on PA6, output off until the screen is drawn */
+    if (hwcal_state() == HWCAL_VALID && g_hwcal.bl_pwm_hz >= 50u) {
+        backlight_set_freq(g_hwcal.bl_pwm_hz);
+    }
     lcd_init();
     gfx_fill(COLOR_BLACK);
     lcd_backlight(true);
+    g_noinit.boot_first_pixel_ms = HAL_GetTick();
     ui_init();
 
     /* Normal boot reached: allow one more bootloader-exit clean reset later. */

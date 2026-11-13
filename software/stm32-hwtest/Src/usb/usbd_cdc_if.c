@@ -130,8 +130,17 @@ static void line_complete(void)
     s_cur_overflow = false;
 }
 
+volatile uint32_t g_usb_rx_bytes;
+volatile bool g_usb_rx_sink;
+
 static int8_t CDC_Receive_FS(uint8_t *buf, uint32_t *len)
 {
+    g_usb_rx_bytes += *len;
+    if (g_usb_rx_sink) { /* usbbench rx: count and discard */
+        USBD_CDC_SetRxBuffer(&hUsbDeviceFS, s_rx_pkt);
+        USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+        return USBD_OK;
+    }
     for (uint32_t i = 0; i < *len; i++) {
         char c = (char)buf[i];
         if (c == '\r') {

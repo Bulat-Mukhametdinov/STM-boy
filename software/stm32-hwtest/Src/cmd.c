@@ -3,6 +3,7 @@
    which ends with "@DONE <suite> pass|fail|abort". */
 
 #include "cmd.h"
+#include "bench.h"
 #include "board.h"
 #include "clock.h"
 #include "crc.h"
@@ -23,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 #define MAX_ARGS 8
 
@@ -143,6 +145,8 @@ static void cmd_help(void)
              "  reset          software reset\r\n"
              "  hwcal get      show the calibration record\r\n"
              "  hwcal init [force]  write defaults (force: overwrite foreign data / existing record)\r\n"
+             "  hwcal save [force]  write the RAM calibration to the W25Q (refuses foreign data w/o force)\r\n"
+             "  usbbench rx|tx <bytes>  CDC throughput (host: hwtest.py usbbench)\r\n"
              "  w25q id        JEDEC + unique id of the external flash\r\n"
              "  w25q read <addr_hex> <len>   binary dump (@B), len <= 65536\r\n"
              "  w25q crc <addr_hex> <len>    zlib CRC-32 of a range (any length)\r\n"
@@ -185,9 +189,62 @@ static void cmd_w25q(int argc, char **argv)
                       "scan <addr_hex> <len> [step]");
 }
 
+/* hwcal set key=value ...  : edit the RAM calibration (not persisted until `hwcal save`) */
+static bool hwcal_set_field(const char *key, uint32_t v)
+{
+    static const struct { const char *k; size_t off; uint8_t sz; } f[] = {
+        {"madctl_land", offsetof(hwcal_t, madctl_land), 1}, {"xoff_land", offsetof(hwcal_t, xoff_land), 1},
+        {"yoff_land", offsetof(hwcal_t, yoff_land), 1},     {"madctl_port", offsetof(hwcal_t, madctl_port), 1},
+        {"xoff_port", offsetof(hwcal_t, xoff_port), 1},     {"yoff_port", offsetof(hwcal_t, yoff_port), 1},
+        {"bgr", offsetof(hwcal_t, bgr), 1},                 {"invert", offsetof(hwcal_t, invert), 1},
+        {"gamma_id", offsetof(hwcal_t, gamma_id), 1},       {"spi1_div_ok", offsetof(hwcal_t, spi1_div_ok), 1},
+        {"spi1_div_max", offsetof(hwcal_t, spi1_div_max), 1}, {"debounce_ms", offsetof(hwcal_t, debounce_ms), 1},
+        {"bl_pwm_hz", offsetof(hwcal_t, bl_pwm_hz), 2},     {"bl_min_level", offsetof(hwcal_t, bl_min_level), 2},
+    };
+    for (unsigned i = 0; i < sizeof(f) / sizeof(f[0]); i++) {
+        if (strcmp(f[i].k, key) == 0) {
+            uint8_t *p = (uint8_t *)&g_hwcal + f[i].off;
+            if (f[i].sz == 1) {
+                *p = (uint8_t)v;
+            } else {
+                *(uint16_t *)(void *)p = (uint16_t)v;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+static void hwcal_report_err(hwcal_err_t e)
+{
+    char d[96], m[200];
+    if (e == HWCAL_ERR_FLASH) {
+        snprintf(m, sizeof(m), "%s: %s", hwcal_err_str(e), hwcal_fail_str(d, sizeof(d)));
+        proto_err("hwcal", m);
+    } else {
+        proto_err("hwcal", hwcal_err_str(e));
+    }
+}
+
 static void cmd_hwcal(int argc, char **argv)
 {
     static jb_t j;
+    if (argc >= 3 && strcmp(argv[1], "set") == 0) {
+        for (int i = 2; i < argc; i++) {
+            char *eq = strchr(argv[i], '=');
+            if (!eq) {
+                proto_err("hwcal", "usage: hwcal set key=value ...");
+                return;
+            }
+            *eq = '\0';
+            if (!hwcal_set_field(argv[i], (uint32_t)strtoul(eq + 1, NULL, 0))) {
+                proto_err("hwcal", "unknown field");
+                return;
+            }
+        }
+        proto_ok("hwcal set");
+        return;
+    }
     if (argc >= 2 && strcmp(argv[1], "get") == 0) {
         jb_begin(&j, "hwcal");
         hwcal_to_json(&j);
@@ -200,7 +257,7 @@ static void cmd_hwcal(int argc, char **argv)
         bool force = (argc >= 3 && strcmp(argv[2], "force") == 0);
         hwcal_err_t e = hwcal_init(force);
         if (e != HWCAL_OK) {
-            proto_err("hwcal", hwcal_err_str(e));
+            hwcal_report_err(e);
             return;
         }
         res_printf("{\"t\":\"hwcal_init\",\"seq\":%" PRIu32 ",\"slot\":\"%c\"}", hwcal_seq(),
@@ -208,14 +265,25 @@ static void cmd_hwcal(int argc, char **argv)
         proto_ok(force ? "hwcal init force" : "hwcal init");
         return;
     }
-    proto_err("hwcal", "usage: hwcal get | hwcal init [force]");
+    if (argc >= 2 && strcmp(argv[1], "save") == 0) { /* write the RAM calibration (g_hwcal) to the W25Q */
+        bool force = (argc >= 3 && strcmp(argv[2], "force") == 0);
+        hwcal_err_t e = hwcal_save(&g_hwcal, force);
+        if (e != HWCAL_OK) {
+            hwcal_report_err(e);
+            return;
+        }
+        res_printf("{\"t\":\"hwcal_save\",\"seq\":%" PRIu32 ",\"slot\":\"%c\"}", hwcal_seq(), hwcal_slot());
+        proto_ok(force ? "hwcal save force" : "hwcal save");
+        return;
+    }
+    proto_err("hwcal", "usage: hwcal get | hwcal init [force] | hwcal save [force]");
 }
 
 /* @R {"t":"suites","list":[...],"user":[...]}  ("user" = [U] suites that need
    a human at the device; their prompts time out). */
 static void cmd_suites(void)
 {
-    static char buf[1024];
+    static char buf[2048];
     size_t n = 0;
     n += (size_t)snprintf(&buf[n], sizeof(buf) - n, "@R {\"t\":\"suites\",\"list\":[");
     for (int i = 0; i < g_suite_count && n < sizeof(buf) - 64u; i++) {
@@ -339,6 +407,8 @@ static void dispatch(char *line, bool restricted)
         cmd_crc();
     } else if (strcmp(c, "w25q") == 0) {
         cmd_w25q(argc, argv);
+    } else if (strcmp(c, "usbbench") == 0) {
+        usbbench_cmd(argc, argv);
     } else if (strcmp(c, "hwcal") == 0) {
         cmd_hwcal(argc, argv);
     } else if (strcmp(c, "run") == 0) {

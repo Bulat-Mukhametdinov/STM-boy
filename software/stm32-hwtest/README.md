@@ -7,7 +7,9 @@ record in external flash, firmware CRC, `selftest` / `spin` / `prompt` suites.
 Phase **P1**: `pins` (pull classification + bridges), W25Q read-only
 `read`/`crc`/`scan`, backlight PWM (TIM3_CH1) + `backlight`/`backlight.user`,
 `display.*` calibration/visual suites, `input.live`/`input.chord`/
-`input.bounce` (EXTI edge log). Suite list and arguments: [PROTOCOL.md](PROTOCOL.md).
+`input.bounce` (EXTI edge log). P3: `w25q.info/readcrc/scratch/sector/pd`, `ram.march`, `flash.check`.
+P5: `bench.cpu/mem/flash/irq/lcd/gfx/w25q/audio/sys/all` (+ `tools/gen_budget.py`, `hwtest.py usbbench`).
+Suite list and arguments: [PROTOCOL.md](PROTOCOL.md).
 
 Results go to the host over USB CDC as `@R {json}` lines; see
 [PROTOCOL.md](PROTOCOL.md). The host side is [tools/hwtest.py](tools/hwtest.py).

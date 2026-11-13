@@ -2176,3 +2176,557 @@ git-ignored; .txt hexdumps next to them).
 - input.live / input.chord: PASS, all 9 buttons, chords OK. POWER excluded (ATtiny behaviour).
 - input.bounce (30 presses each): most buttons <0.5 ms; **B release bounce up to 17.6 ms (p95 5.6 ms, rec 12 ms)**; Y up to 1.5 ms; DOWN max 4.0 ms. Pooled rule gave 5 ms, which is NOT safe for B -> recommend 20 ms (or press-immediate / release 20 ms).
 - Backlight duty question (47.4 % measured vs 50 %): pending scope check by user.
+
+### 2026-11-13 20:49:27 — User decisions (manual note)
+
+- display.invert: user confirms picture was correct with inversion OFF (forgot to press A) -> invert=0.
+- User permits using W25Q sectors freely (incl. overwriting the 0xFFF000 test pattern for HWCAL). Policy kept: RetroPort settings (0x000000) and ROM pack (0x100000..) are still not touched.
+- Backlight duty scope check postponed (scope available in ~2 days).
+
+### 2026-11-13 20:56:28 — SWD probe check (manual note)
+
+- User connected ST-Link V2 (GND/SWDIO/SWCLK/NRST, **no 3V3 wire**). Probe SN 37FF71064E573436CD711443, FW V2J47S7.
+- Command: `STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -r32 0xE0042000 1 -r32 0x2001FF00 8` (read-only, no reset, app kept running on USB)
+- Result: OK. Voltage reported 3.25 V (with no VAPP wire this is most likely a clone reading its own supply). DBGMCU IDCODE 0x10006431 -> DEV_ID 0x431, **REV_ID 0x1000 = Rev A**; BL version 0xD0. `.noinit` at 0x2001FF00 readable live (valid magic A5A5C3C3) -> fault breadcrumbs can be read over SWD without reset.
+- Note: SWD must be disconnected (or at least verified not to back-power) before power/handshake/current tests.
+
+### 2026-11-13 20:57:56 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-13 20:58:05 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 9.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:07.912
+- Output: Time elapsed during verifying operation: 00:00:01.071
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 20:58:06 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (152928 bytes), expected id: {'fw': '7cd4231+dirty', 'build': 1794592561}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7cd4231+dirty build=1794592561, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=9.42s, dfu_to_app=0.78s, total=10.91s
+
+### 2026-11-13 20:58:45 — Run suite w25q.info (start) [auto]
+
+- Command: `run w25q.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592561 busy=idle
+
+### 2026-11-13 20:58:45 — hwtest.py run [auto]
+
+- Command: `hwtest.py run w25q.info --wait-lock 900 --timeout 120`
+- Result: OK (exit code 0)
+- Suite w25q.info: PASS results=3 pass=3 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-205845-w25q.info.json
+
+### 2026-11-13 20:58:46 — Run suite w25q.readcrc (start) [auto]
+
+- Command: `run w25q.readcrc`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592561 busy=idle
+
+### 2026-11-13 20:59:50 — hwtest.py run [auto]
+
+- Command: `hwtest.py run w25q.readcrc --wait-lock 900 --timeout 120`
+- Result: OK (exit code 0)
+- Suite w25q.readcrc: PASS results=4 pass=4 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-205846-w25q.readcrc.json
+
+### 2026-11-13 20:59:50 — Run suite flash.check (start) [auto]
+
+- Command: `run flash.check`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592561 busy=idle
+
+### 2026-11-13 20:59:51 — hwtest.py run [auto]
+
+- Command: `hwtest.py run flash.check --wait-lock 900 --timeout 120`
+- Result: OK (exit code 0)
+- Suite flash.check: PASS results=3 pass=3 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-205950-flash.check.json
+
+### 2026-11-13 20:59:51 — Run suite ram.march (start) [auto]
+
+- Command: `run ram.march`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592561 busy=idle
+
+### 2026-11-13 20:59:51 — hwtest.py run [auto]
+
+- Command: `hwtest.py run ram.march --wait-lock 900 --timeout 120`
+- Result: OK (exit code 0)
+- Suite ram.march: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-205951-ram.march.json
+
+### 2026-11-13 20:59:52 — Run suite w25q.pd (start) [auto]
+
+- Command: `run w25q.pd`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592561 busy=idle
+
+### 2026-11-13 20:59:52 — hwtest.py run [auto]
+
+- Command: `hwtest.py run w25q.pd --wait-lock 900 --timeout 120`
+- Result: OK (exit code 0)
+- Suite w25q.pd: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-205952-w25q.pd.json
+
+### 2026-11-13 21:00:03 — Run suite w25q.sector (start) [auto]
+
+- Command: `run w25q.sector`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592561 busy=idle
+
+### 2026-11-13 21:00:04 — hwtest.py run [auto]
+
+- Command: `hwtest.py run w25q.sector --wait-lock 900 --timeout 120`
+- Result: OK (exit code 0)
+- Suite w25q.sector: PASS results=3 pass=3 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-210003-w25q.sector.json
+
+### 2026-11-13 21:00:05 — Run suite w25q.scratch (start) [auto]
+
+- Command: `run w25q.scratch confirm=yes`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592561 busy=idle
+
+### 2026-11-13 21:00:12 — hwtest.py run [auto]
+
+- Command: `hwtest.py run w25q.scratch confirm=yes --wait-lock 900 --timeout 120`
+- Result: OK (exit code 0)
+- Suite w25q.scratch: PASS results=10 pass=10 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-210005-w25q.scratch.json
+
+### 2026-11-13 21:00:29 — Run suite bench.all (start) [auto]
+
+- Command: `run bench.all`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592561 busy=idle
+
+### 2026-11-13 21:00:46 — hwtest.py run [auto]
+
+- Command: `hwtest.py run bench.all --wait-lock 900 --timeout 900`
+- Result: OK (exit code 0)
+- Suite bench.all: PASS results=281 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-210028-bench.all.json
+
+### 2026-11-13 21:03:20 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.63 s
+- cmd: @OK dfu
+
+### 2026-11-13 21:03:30 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 9.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:07.911
+- Output: Time elapsed during verifying operation: 00:00:01.071
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 21:03:30 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (152992 bytes), expected id: {'fw': '7cd4231+dirty', 'build': 1794592997}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7cd4231+dirty build=1794592997, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.63s, program=9.41s, dfu_to_app=0.78s, total=10.91s
+
+### 2026-11-13 21:03:32 — hwtest.py usbbench [auto]
+
+- Command: `hwtest.py usbbench --wait-lock 900`
+- Result: OK (exit code 0)
+- usbbench tx: {"status": "ok", "received": 262144, "crc_ok": true, "host_s": 0.4158, "host_kBps": 630.4, "device_kBps": 1008}
+- usbbench rx: {"status": "ok", "device_got": 262144, "host_s": 0.277, "host_kBps": 946.2, "device_kBps": 946}
+
+### 2026-11-13 21:03:32 — Run suite bench.all (start) [auto]
+
+- Command: `run bench.all`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794592997 busy=idle
+
+### 2026-11-13 21:03:50 — hwtest.py run [auto]
+
+- Command: `hwtest.py run bench.all --wait-lock 900 --timeout 900`
+- Result: OK (exit code 0)
+- Suite bench.all: PASS results=281 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-210332-bench.all.json
+
+### 2026-11-13 21:04:07 — hwtest.py usbbench [auto]
+
+- Command: `hwtest.py usbbench --wait-lock 900`
+- Result: OK (exit code 0)
+- usbbench tx: {"status": "ok", "received": 262144, "crc_ok": true, "host_s": 0.418, "host_kBps": 627.1, "device_kBps": 999}
+- usbbench rx: {"status": "ok", "device_got": 262144, "host_s": 0.2698, "host_kBps": 971.7, "device_kBps": 972}
+
+### 2026-11-13 21:06:45 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-13 21:06:55 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 9.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:07.974
+- Output: Time elapsed during verifying operation: 00:00:01.071
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 21:06:56 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (152960 bytes), expected id: {'fw': '7cd4231+dirty', 'build': 1794593179}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7cd4231+dirty build=1794593179, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=9.48s, dfu_to_app=0.78s, total=10.94s
+
+### 2026-11-13 21:06:57 — hwtest.py usbbench [auto]
+
+- Command: `hwtest.py usbbench --wait-lock 900`
+- Result: OK (exit code 0)
+- usbbench tx: {"status": "ok", "received": 262144, "crc_ok": true, "host_s": 0.4167, "host_kBps": 629.0, "device_kBps": 1004}
+- usbbench rx: {"status": "ok", "device_got": 262144, "host_s": 0.2734, "host_kBps": 958.9, "device_kBps": 959}
+
+### 2026-11-13 21:06:58 — Run suite bench.mem (start) [auto]
+
+- Command: `run bench.mem`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794593179 busy=idle
+
+### 2026-11-13 21:06:58 — hwtest.py run [auto]
+
+- Command: `hwtest.py run bench.mem --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite bench.mem: PASS results=53 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-210658-bench.mem.json
+
+### 2026-11-13 21:06:59 — Run suite bench.irq (start) [auto]
+
+- Command: `run bench.irq`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794593179 busy=idle
+
+### 2026-11-13 21:06:59 — hwtest.py run [auto]
+
+- Command: `hwtest.py run bench.irq --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite bench.irq: PASS results=5 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-210659-bench.irq.json
+
+### 2026-11-13 21:10 — P3/P5 results (manual note)
+
+- P3 suites w25q.info/readcrc/pd/sector/scratch(confirm=yes), ram.march, flash.check: all PASS on hardware. Scratch area was blank beforehand.
+- bench.all PASS (-O2). Insights: DMA W25Q read 2.99 MB/s @24 MHz (polling 1.13); SPI1 48 MHz 16-bit frame 6.83 ms (146 fps), 8-bit polling only 72 % bus utilisation; running code from RAM is slower than flash with ART (S-bus fetch); DMA2 mem2mem never beats LDM/STM (CPU) copy, only newlib-nano (byte loop).
+- HWCAL write of the P1 calibration was NOT done: the auto-mode permission check denied the `hwcal set ... / hwcal save force` command (instruction reached me only via a relayed message). Firmware support is in place (`hwcal set key=value ...`, `hwcal save [force]`, boot applies display/backlight/debounce); needs an explicit user go-ahead.
+
+### 2026-11-13 21:08:21 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal set madctl_land=0xA0 xoff_land=1 yoff_land=2 madctl_port=0 xoff_port=2 yoff_port=1 bgr=0 invert=0 gamma_id=2 spi1_div_ok=2 spi1_div_max=2 bl_pwm_hz=1000 bl_min_level=0 debounce_ms=20"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR line too long (max 120 chars) lines=1
+
+### 2026-11-13 21:08:31 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal set madctl_land=0xA0 xoff_land=1 yoff_land=2 madctl_port=0 xoff_port=2 yoff_port=1 bgr=0 invert=0"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal set lines=1
+
+### 2026-11-13 21:08:31 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal set gamma_id=2 spi1_div_ok=2 spi1_div_max=2 bl_pwm_hz=1000 bl_min_level=0 debounce_ms=20"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal set lines=1
+
+### 2026-11-13 21:09:00 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal save force"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR hwcal flash write/verify failed lines=1
+
+### 2026-11-13 21:09:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan FFF000 1000 100"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q step must be a power of two 256..1M; addr/len multiples of step lines=1
+
+### 2026-11-13 21:09:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal get"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal get lines=2
+- @R {"t": "hwcal", "status": "foreign", "seq": 0, "slot": "-", "version": 1, "madctl_land": 160, "xoff_land": 1, "yoff_land": 2, "madctl_port": 0, "xoff_port": 2, "yoff_port": 1, "bgr": 0, "invert": 0, "g
+
+### 2026-11-13 21:09:25 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan FFF000 0x1000 0x100"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q scan lines=2
+- @R {"t": "w25q_scan", "addr": "FFF000", "len": 4096, "step": 256, "granules": 16, "blank": 0, "used": 16, "nonff_bytes": 4096, "first_nonff": "FFF000", "last_nonff": "FFFFFF", "ranges": [["FFF000", "1000
+
+### 2026-11-13 21:10:03 — Run suite w25q.info (start) [auto]
+
+- Command: `run w25q.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794593179 busy=idle
+
+### 2026-11-13 21:10:03 — hwtest.py run [auto]
+
+- Command: `hwtest.py run w25q.info`
+- Result: OK (exit code 0)
+- Suite w25q.info: PASS results=3 pass=3 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-211003-w25q.info.json
+
+### 2026-11-13 21:10:13 — Run suite w25q.sector (start) [auto]
+
+- Command: `run w25q.sector addr=0xFFF000`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=7cd4231+dirty build=1794593179 busy=idle
+
+### 2026-11-13 21:10:13 — hwtest.py run [auto]
+
+- Command: `hwtest.py run w25q.sector addr=0xFFF000`
+- Result: OK (exit code 0)
+- Suite w25q.sector: PASS results=3 pass=3 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-211013-w25q.sector.json
+
+### 2026-11-13 21:12:11 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-13 21:12:21 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 9.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:07.962
+- Output: Time elapsed during verifying operation: 00:00:01.095
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 21:12:22 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (154096 bytes), expected id: {'fw': '7cd4231+dirty', 'build': 1794593502}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7cd4231+dirty build=1794593502, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=9.50s, dfu_to_app=0.78s, total=10.96s
+
+### 2026-11-13 21:12:26 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q erase4k FDF000"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q erase4k lines=2
+- @R {"t": "w25q_erase4k", "addr": "FDF000", "st": 0, "st_s": "ok", "sr1_before": "00", "sr1": "00", "us": 61414, "first16_blank": true}
+
+### 2026-11-13 21:12:56 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan FF0000 10000 1000"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q step must be a power of two 256..1M; addr/len multiples of step lines=1
+
+### 2026-11-13 21:13:03 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan FF0000 10000 1000"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q step must be a power of two 256..1M; addr/len multiples of step lines=1
+
+### 2026-11-13 21:13:04 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan FF0000 10000 1000"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q step must be a power of two 256..1M; addr/len multiples of step lines=1
+
+### 2026-11-13 21:13:12 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan FF0000 10000 4096"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q step must be a power of two 256..1M; addr/len multiples of step lines=1
+
+### 2026-11-13 21:13:27 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan FF0000 65536 4096"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q scan lines=2
+- @R {"t": "w25q_scan", "addr": "FF0000", "len": 65536, "step": 4096, "granules": 16, "blank": 15, "used": 1, "nonff_bytes": 4096, "first_nonff": "FFF000", "last_nonff": "FFFFFF", "ranges": [["FFF000", "10
+
+### 2026-11-13 21:14:03 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-13 21:14:12 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 9.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:07.950
+- Output: Time elapsed during verifying operation: 00:00:01.084
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 21:14:13 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (154096 bytes), expected id: {'fw': '7cd4231+dirty', 'build': 1794593640}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7cd4231+dirty build=1794593640, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=9.48s, dfu_to_app=0.78s, total=10.94s
+
+### 2026-11-13 21:14:14 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock FFF000"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q usage: w25q id | read <addr_hex> <len> | crc <addr_hex> <len> | scan <addr_hex> <len> [step] lines=1
+
+### 2026-11-13 21:14:16 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock FDF000"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q usage: w25q id | read <addr_hex> <len> | crc <addr_hex> <len> | scan <addr_hex> <len> [step] lines=1
+
+### 2026-11-13 21:14:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q erase4k FFE000"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q erase4k lines=2
+- @R {"t": "w25q_erase4k", "addr": "FFE000", "st": 0, "st_s": "ok", "sr1_before": "00", "sr1": "00", "us": 56726, "first16_blank": true}
+
+### 2026-11-13 21:14:23 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock FFF000"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q usage: w25q id | read <addr_hex> <len> | crc <addr_hex> <len> | scan <addr_hex> <len> [step] lines=1
+
+### 2026-11-13 21:14:40 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.58 s
+- cmd: @OK dfu
+
+### 2026-11-13 21:14:50 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 9.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:07.965
+- Output: Time elapsed during verifying operation: 00:00:01.085
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 21:14:50 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (154640 bytes), expected id: {'fw': '7cd4231+dirty', 'build': 1794593672}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=7cd4231+dirty build=1794593672, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.58s, program=9.50s, dfu_to_app=0.78s, total=10.94s
+
+### 2026-11-13 21:14:57 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock FFF000"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lock lines=2
+- @R {"t": "w25q_lock", "addr": "FFF000", "lock": "01", "sr1": "00", "sr2": "02", "sr3": "60"}
+
+### 2026-11-13 21:14:58 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock FDF000"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lock lines=2
+- @R {"t": "w25q_lock", "addr": "FDF000", "lock": "01", "sr1": "00", "sr2": "02", "sr3": "60"}
+
+### Manual note 2026-11-13: hwcal save force -> "flash write/verify failed", sector 0xFFF000 unchanged
+- Code review found no logic bug in w25q_erase_sector/hwcal_save (range check at top of array OK: write_ok(0xFFF000,4096) true; wait_ready timeouts 10/1000 ms adequate; WREN/CS handling identical to w25q_erase_cmd which works).
+- Reproduction on non-HWCAL addresses: `w25q erase4k FDF000` and `FFE000` (4K sector right below HWCAL) both OK, ~57-61 ms, SR1=00. SR1=00 SR2=02 SR3=60 (WPS=0, so 0x3D lock bits, which read 01 everywhere, are ignored). Root cause NOT yet proven; HWCAL sector itself not touched by this session.
+- Added: hwcal errors now report `step=erase|erase_verify|program_hdr|program_body|program_magic|verify_read|verify_compare st= sr1= sr2= sr3=`; `w25q erase4k <addr_hex> [force]` (0xFFF000 needs force); `w25q lock <addr_hex>` (read-only 0x3D).
+
+### 2026-11-13 21:15:39 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q erase4k FFF000 force"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q erase4k lines=2
+- @R {"t": "w25q_erase4k", "addr": "FFF000", "st": 0, "st_s": "ok", "sr1_before": "00", "sr1": "00", "us": 86221, "first16_blank": true}
+
+### 2026-11-13 21:15:48 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal set madctl_land=0xA0 xoff_land=1 yoff_land=2 madctl_port=0 xoff_port=2 yoff_port=1 bgr=0 invert=0"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal set lines=1
+
+### 2026-11-13 21:15:49 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal set gamma_id=2 spi1_div_ok=2 spi1_div_max=2 bl_pwm_hz=1000 bl_min_level=0 debounce_ms=20"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal set lines=1
+
+### 2026-11-13 21:15:50 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal save force"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal save force lines=2
+- @R {"t": "hwcal_save", "seq": 1, "slot": "A"}
+
+### 2026-11-13 21:16:01 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd reset`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK reset lines=1
+
+### 2026-11-13 21:16:05 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal get"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal get lines=2
+- @R {"t": "hwcal", "status": "valid", "seq": 1, "slot": "A", "version": 1, "madctl_land": 160, "xoff_land": 1, "yoff_land": 2, "madctl_port": 0, "xoff_port": 2, "yoff_port": 1, "bgr": 0, "invert": 0, "gam
+
+### 2026-11-13 21:16:26 — HWCAL written (manual note)
+
+- First `hwcal save force` (fw of P3/P5 agent) failed: `flash write/verify failed`; sector 0xFFF000 afterwards unchanged (erase never took effect). Diagnostics added (step/st/SR dump, `w25q erase4k`, `w25q lock`). SR1/2/3 = 00/02/60, no protection.
+- With the diagnostic build: `w25q erase4k FFF000 force` -> st=0, 86 ms, blank. Then `hwcal set ...` (two commands, 120-char line limit) + `hwcal save force` -> OK seq=1 slot A. `reset` + `hwcal get` -> status valid, all values persisted.
+- Root cause of the first failure NOT reproduced (suspect state left by a preceding suite in that build; to watch). Saved values: land 0xA0 x1/y2, port 0x00 x2/y1, bgr 0, invert 0, gamma 2 (sitronix), spi1_div 2 (48 MHz), bl_pwm 1000 Hz, bl_min 0, debounce 20 ms.
