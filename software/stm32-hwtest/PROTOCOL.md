@@ -129,3 +129,32 @@ All `bench.*` suites emit `@R {"t":"bench","suite","name","cyc_min","cyc_med","u
 `bench.cpu`, `bench.mem`, `bench.flash`, `bench.irq`, `bench.lcd`, `bench.gfx`, `bench.w25q` (read-only),
 `bench.audio`, `bench.sys` (`stop=1` is accepted but only reports "not implemented"), `bench.all` (all of them, then
 two `@R {"t":"budget",...}` lines). `tools/gen_budget.py results.json` renders the results as markdown.
+
+## P2 power suites, P2b battery logger
+
+| Suite | Kind | Results |
+| --- | --- | --- |
+| `power.info` | auto | `power`: `vdda_mv` (3300*VREFINT_CAL/raw), `vpin_mv`, `vbat_unc_mv`, `vbat_mv` (HWCAL gain/offset), `temp_dC`, `chg`, `vbus`, `presence` (batt/no_batt/unknown: window spread > 200 mV or V outside 2.7-4.35 V), raw codes, `noise_mv`, `spread_mv` |
+| `power.adccal` | [U] | joystick entry of multimeter VBAT (J2) + 3V3 (SWD pad) (UP/DOWN 10 mV, LEFT/RIGHT 100 mV, CENTER field, A accept); `adccal_point`, `adccal_fit` (RAM; persist with `hwcal save`) |
+| `power.handshake [ack=now\|delay\|never]` | [U] | disconnect SWD first. `handshake` `req` (detection latency); breadcrumbs {mode, t} go to .noinit and W25Q 0xFDF000 before/after ACK plus 100 ms heartbeats. After the next power-on `run power.handshake report` gives `handshake_report` (ACK time, last-alive time = power-cut estimate, verdict) |
+| `power.current [s=N] [n=20]` | [U] | per state S1 (Stop, USB drops), S2 (WFI), S3-S7 (backlight 10/25/50/75/100 %), S8 CPU, S9 LCD DMA (BL 50 %), S13 W25Q read, S14 W25Q erase/prog (0xF80000+), S15 game mix, S16 charge (3 readings); S10 (amp) skipped (P4). `current` per reading, stored in `g_hwcal.i_state_ma[state]` (rounded mA, RAM) |
+| `power.rint` / `power.rint report` | [U] | no meter: R_int from the BQ24075 CC step (174.5 mA) on USB plug; per-state currents = dV vs S2 / R_int (estimates, hwcal.reserved0 bit0); stored in W25Q 0xFDE000 |
+| `battlog` | auto | see below |
+
+Commands: `adccal point <vbat_mv> <v3v3_mv> | fit | list | clear`, `cur <state> <mA>` (answers the open `power.current` reading prompt, else stores directly).
+
+### battlog
+
+`battlog start [dry=1] [resume=1] [new=1] [load=540] [rest=60] [samp=5] [cut=3300] [dur=0]` (host), `battlog stop`, `battlog status`,
+`battlog dump [src=ram|flash]`; host: `hwtest.py battlog dump [--src ram|flash] [--out DIR]` writes `battlog-<date>.bin` + `.csv`.
+Profile: 9 min S15 (sample 5 s) / 1 min S2 rest (1 s for 60 s, then 10 s), extra 15 min rests at est. 75/50/25/10 %, "CAL POINT DUE" at
+Vcomp 4.10/3.90/3.75/3.60/3.45 V, cutoff after 3 consecutive loaded samples < 3.30 V, then "BATTERY EMPTY - CONNECT USB" and Stop (wake: VBUS via
+EXTI9 on PA9, or OFF_REQ), then the charge phase (10 s samples) until 30 min after CHG goes high. `dry=1` logs to RAM (512 records) with shortened
+timings (load 20 s, rest 10 s, 120 s total). Flash layout: 0xF00000 header page ('BLOG'), 0xF00100 end marker ('BEND'), records from 0xF01000
+to 0xF7FFFF (32512). An unfinished log offers "continue" (A) / discard (B) on boot.
+
+Record (16 B, little endian): `t_s u32, vbat_mv u16, vcomp_mv u16, vdda_mv u16, temp_dC i16, load_state u8, flags u8, seq u16`.
+Flags: bit0 chg, 1 vbus, 2 rest, 3 cal_due, 4 marker (A press / resume), 5 cutoff, 6 step (load<->rest: loaded V just before the step, then
++1 s, +10 s), 7 chg_step (USB plug/unplug: V before, +1 s, +10 s, +60 s). Vcomp = Vbat + I(state) * R_int.
+Dump: `@R {"t":"battlog_dump","records","frames","src",...}`, one `@B <len> <crc>` per <= 64 KB, then `@OK battlog dump`.
+Scratch map: 0xF00000-0xF7FFFF battlog, 0xF80000-0xF8FFFF power.current S14, 0xFDE000 power.rint, 0xFDF000 power.handshake.

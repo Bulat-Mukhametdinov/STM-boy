@@ -2730,3 +2730,117 @@ git-ignored; .txt hexdumps next to them).
 - First `hwcal save force` (fw of P3/P5 agent) failed: `flash write/verify failed`; sector 0xFFF000 afterwards unchanged (erase never took effect). Diagnostics added (step/st/SR dump, `w25q erase4k`, `w25q lock`). SR1/2/3 = 00/02/60, no protection.
 - With the diagnostic build: `w25q erase4k FFF000 force` -> st=0, 86 ms, blank. Then `hwcal set ...` (two commands, 120-char line limit) + `hwcal save force` -> OK seq=1 slot A. `reset` + `hwcal get` -> status valid, all values persisted.
 - Root cause of the first failure NOT reproduced (suspect state left by a preceding suite in that build; to watch). Saved values: land 0xA0 x1/y2, port 0x00 x2/y1, bgr 0, invert 0, gamma 2 (sitronix), spi1_div 2 (48 MHz), bl_pwm 1000 Hz, bl_min 0, debounce 20 ms.
+
+### 2026-11-13 21:37:16 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-13 21:37:26 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 10.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:08.580
+- Output: Time elapsed during verifying operation: 00:00:01.295
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 21:37:27 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin --wait-lock 900`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (181756 bytes), expected id: {'fw': '9337786+dirty', 'build': 1794594964}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9337786+dirty build=1794594964, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=10.32s, dfu_to_app=0.72s, total=11.72s
+
+### 2026-11-13 21:37:31 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9337786+dirty build=1794594964 busy=idle
+
+### 2026-11-13 21:37:34 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-213731-power.info.json
+
+### 2026-11-13 21:41:00 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd battlog start dry=1 --timeout 200 --wait-lock 900`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=93
+- @R {"t": "battlog", "event": "start", "dry": true, "resume": false, "load_s": 20, "rest_s": 10, "records": 0}
+- @R {"t": "bl", "n": 1, "t_s": 2, "vbat": 4206, "vcomp": 4206, "st": 15, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 2, "t_s": 4, "vbat": 4190, "vcomp": 4190, "st": 15, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 3, "t_s": 6, "vbat": 4183, "vcomp": 4183, "st": 15, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 4, "t_s": 8, "vbat": 4195, "vcomp": 4195, "st": 15, "fl": 2, "ok": true}
+
+### 2026-11-13 21:41:01 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd battlog status --wait-lock 900`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog status lines=2
+- @R {"t": "battlog_status", "running": false, "dry": true, "phase": "REST", "t_s": 120, "records": 90, "hdr": false, "ended": false, "flash_records": 0, "dry_records": 90, "write_errors": 0, "vbat_mv": 41
+
+### 2026-11-13 21:41:59 — hwtest.py battlog [auto]
+
+- Command: `hwtest.py battlog dump --wait-lock 900`
+- Result: OK (exit code 0)
+- battlog dump: 90 records -> C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\battlog-20261113-214159.csv ok=True
+
+### 2026-11-13 21:43:48 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-13 21:43:58 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 10.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:08.493
+- Output: Time elapsed during verifying operation: 00:00:01.269
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 21:43:59 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin --wait-lock 900`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (181780 bytes), expected id: {'fw': '9337786+dirty', 'build': 1794595397}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9337786+dirty build=1794595397, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=10.19s, dfu_to_app=0.71s, total=11.58s
+
+### 2026-11-13 21:44:00 — Run suite power.handshake (start) [auto]
+
+- Command: `run power.handshake t=3`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9337786+dirty build=1794595397 busy=idle
+
+### 2026-11-13 21:44:03 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.handshake t=3 --wait-lock 900`
+- Result: FAIL (exit code 2)
+- Suite power.handshake: ABORT results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-214359-power.handshake.json
+
+### 2026-11-13 21:44:35 — P2/P2b on hardware (manual note)
+
+- power.info (USB in, charge done, SWD attached): VDDA 3308 mV, Vpin 3000 mV, Vbat 4207 mV (uncalibrated gain 1.0), die 30.3 C, CHG high, VBUS present, presence batt, batch noise 69 mV p-p, window spread 29 mV. PASS.
+- battlog dry run (RAM, 120 s, S15 20 s / S2 10 s): 90 records, step flags OK, dump CRC OK, Vbat 4.18-4.21 V +-15 mV.
+- No ammeter available (battery lead cannot be broken): currents will be estimated from voltage steps with the BQ24075 CC current (~174.5 mA) as reference (`power.rint`, battlog step records).

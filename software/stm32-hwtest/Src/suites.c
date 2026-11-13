@@ -9,6 +9,7 @@
 #include "hwcal.h"
 #include "log.h"
 #include "power.h"
+#include "pwrtest.h"
 #include "timebase.h"
 #include "ui.h"
 #include "w25q.h"
@@ -41,6 +42,12 @@ const suite_t g_suites[] = {
     {"input.live", suite_input_live, "[U] press every button once (POWER excluded)", SUITE_F_USER},
     {"input.chord", suite_input_chord, "[U] button combinations", SUITE_F_USER},
     {"input.bounce", suite_input_bounce, "[U] EXTI bounce analyser [btn=A] [n=30] -> debounce", SUITE_F_USER},
+    {"power.info", suite_power_info, "VDDA, Vpin, Vbat, die temp, CHG, VBUS, presence", 0},
+    {"power.adccal", suite_power_adccal, "[U] enter multimeter VBAT + 3V3 -> gain/offset (adccal point|fit)", SUITE_F_USER},
+    {"power.handshake", suite_power_handshake, "[U] OFF_REQ/ACK latency+cut: ack=now|delay|never | report", SUITE_F_USER},
+    {"power.current", suite_power_current, "[U] current per load state with a meter: [s=N] [n=20]", SUITE_F_USER},
+    {"power.rint", suite_power_rint, "[U] R_int + state currents from charger step (no meter) | report", SUITE_F_USER},
+    {"battlog", suite_battlog, "pulsed S15/S2 battery logger [dry=1] [resume=1] [new=1] (P2b)", 0},
     {"w25q.info", suite_w25q_info, "JEDEC, SR1-3 block protect, UID, SFDP", 0},
     {"w25q.readcrc", suite_w25q_readcrc, "whole-chip CRC at 6/12/24 MHz (must match), MB/s", 0},
     {"w25q.scratch", suite_w25q_scratch, "DESTRUCTIVE (scratch only): confirm=yes; timed erase/program + patterns", 0},
@@ -56,23 +63,6 @@ const suite_t g_suites[] = {
     {"bench.gfx", suite_bench_gfx, "8bpp+palette pipeline, sprites, tilemap, glyphs, RAM left", 0},
     {"bench.w25q", suite_bench_w25q, "W25Q read speeds (read-only), concurrent with LCD DMA", 0},
     {"bench.audio", suite_bench_audio, "software mixer cost per sample/CPU %", 0},
-    {"bench.sys", suite_bench_sys, "CDC, WFI, ADC, CRC unit, entropy [stop=1]", 0},
-    {"bench.all", suite_bench_all, "all auto benchmarks + frame budget", 0},
-    {"w25q.info", suite_w25q_info, "JEDEC, SR1-3 block protect, UID, SFDP", 0},
-    {"w25q.readcrc", suite_w25q_readcrc, "whole-chip CRC at 6/12/24 MHz (must match), MB/s", 0},
-    {"w25q.scratch", suite_w25q_scratch, "DESTRUCTIVE (scratch only): confirm=yes; timed erase/program + patterns", 0},
-    {"w25q.sector", suite_w25q_sector, "backup-erase-pattern-restore of 3 scratch sectors", 0},
-    {"w25q.pd", suite_w25q_pd, "power-down 0xB9/0xAB timing", 0},
-    {"ram.march", suite_ram_march, "transparent March C- on SRAM (IRQs off per 1 KB block)", 0},
-    {"flash.check", suite_flash_check, "image CRC, flash size, UID, option bytes (read-only)", 0},
-    {"bench.cpu", suite_bench_cpu, "int/float/double/math/game kernels (cycles)", 0},
-    {"bench.mem", suite_bench_mem, "memcpy/memset: newlib/word/LDM/DMA2 + crossover", 0},
-    {"bench.flash", suite_bench_flash, "ART on/off, wait states, RAM execution", 0},
-    {"bench.irq", suite_bench_irq, "NVIC latency, tail-chain, FPU lazy stacking, EXTI", 0},
-    {"bench.lcd", suite_bench_lcd, "SPI1 12/24/48 MHz frame/fill/rects, polling vs DMA", 0},
-    {"bench.gfx", suite_bench_gfx, "8bpp+palette pipeline, sprites, tilemap, glyphs, RAM left", 0},
-    {"bench.w25q", suite_bench_w25q, "W25Q read speeds (read-only), concurrent with LCD DMA", 0},
-    {"bench.audio", suite_bench_audio, "software mixer cost per sample / CPU %", 0},
     {"bench.sys", suite_bench_sys, "CDC, WFI, ADC, CRC unit, entropy [stop=1]", 0},
     {"bench.all", suite_bench_all, "all auto benchmarks + frame budget", 0},
     {"spin", suite_spin, "spin <ms>: busy loop with IRQs enabled (DFU-touch test)", 0},

@@ -92,6 +92,13 @@ SRC_OWN := \
   Src/drv/font5x7_full.c \
   Src/drv/input.c \
   Src/drv/power.c \
+  Src/drv/adc.c \
+  Src/drv/lowpower.c \
+  Src/ui/loads.c \
+  Src/ui/t_power.c \
+  Src/ui/t_current.c \
+  Src/ui/t_battlog.c \
+  Src/ui/t_rint.c \
   Src/drv/w25q.c \
   Src/ui/menu.c \
   Src/ui/prompt.c \

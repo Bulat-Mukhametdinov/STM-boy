@@ -542,5 +542,23 @@ class TestCliEntry(unittest.TestCase):
         self.assertEqual((a.cycles, a.manual, a.no_log, a.log), (3, True, True, "z.md"))
 
 
+class TestBattlog(unittest.TestCase):
+    def test_parse_records_and_csv(self) -> None:
+        import struct
+        raw = struct.pack("<IHHHhBBH", 100, 3912, 3925, 3301, 251, 15, 0x41, 7)
+        raw += struct.pack("<IHHHhBBH", 101, 4100, 4100, 3300, -12, 2, 0x84, 8) + b""
+        recs = hwtest.parse_battlog(raw)
+        self.assertEqual(len(recs), 2)
+        self.assertEqual(recs[0]["vbat_mv"], 3912)
+        self.assertEqual(recs[0]["temp_c"], 25.1)
+        self.assertEqual((recs[0]["chg"], recs[0]["step"], recs[0]["rest"]), (1, 1, 0))
+        self.assertEqual((recs[1]["rest"], recs[1]["chg_step"]), (1, 1))
+        self.assertEqual(recs[1]["temp_c"], -1.2)
+        csv = hwtest.battlog_csv(recs).splitlines()
+        self.assertEqual(csv[0].split(",")[:3], ["t_s", "vbat_mv", "vcomp_mv"])
+        self.assertTrue(csv[1].startswith("100,3912,3925,3301,25.1,15,65,7"))
+        self.assertEqual(hwtest.BL_REC.size, 16)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

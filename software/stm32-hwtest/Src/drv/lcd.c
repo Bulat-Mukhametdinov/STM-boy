@@ -392,3 +392,22 @@ void lcd_fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
     lcd_push_color(color, (uint32_t)(x1 - x0) * (uint32_t)(y1 - y0));
     lcd_end();
 }
+
+/* Sleep mode (P2 current measurement): DISPOFF + SLPIN, or SLPOUT (120 ms) + DISPON. */
+void lcd_sleep(bool on)
+{
+    if (on) {
+        cmd(0x28);
+        lcd_end();
+        cmd(0x10);
+        lcd_end();
+        HAL_Delay(5);
+    } else {
+        cmd(0x11);
+        lcd_end();
+        HAL_Delay(120);
+        cmd(0x29);
+        lcd_end();
+        HAL_Delay(10);
+    }
+}

@@ -69,6 +69,7 @@ uint32_t lcd_gpio_speed(void);
 
 /* Backlight on/off (full brightness / off), routed through backlight.h. */
 void lcd_backlight(bool on);
+void lcd_sleep(bool on);             /* DISPOFF+SLPIN / SLPOUT+DISPON (blocks ~130 ms on wake) */
 
 /* Low-level streaming: lcd_set_window() leaves the controller in RAMWR with
    CS asserted; push pixels; lcd_end() waits for the bus and releases CS. */

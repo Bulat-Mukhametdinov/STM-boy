@@ -2,7 +2,9 @@
    P0: skeleton, DFU loop, CDC protocol, LCD + menu, input, HWCAL, CRC. */
 
 #include "main.h"
+#include "adc.h"
 #include "backlight.h"
+#include "pwrtest.h"
 #include "board.h"
 #include "clock.h"
 #include "cmd.h"
@@ -61,6 +63,7 @@ int main(void)
     log_init();
     cmd_init();
     power_init();
+    adc_init();
     input_init();
 
     usb_init(); /* start enumeration early; LCD init below takes ~0.6 s */
@@ -79,6 +82,7 @@ int main(void)
     lcd_backlight(true);
     g_noinit.boot_first_pixel_ms = HAL_GetTick();
     ui_init();
+    battlog_boot_check();
 
     /* Normal boot reached: allow one more bootloader-exit clean reset later. */
     g_noinit.clean_reset_count = 0;
@@ -90,6 +94,7 @@ int main(void)
     for (;;) {
         log_poll();
         power_poll();
+        adc_task();
         cmd_poll();
         ui_task();
     }

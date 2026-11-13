@@ -23,6 +23,7 @@ import queue
 import re
 import shutil
 import statistics
+import struct
 import subprocess
 import sys
 import tempfile
@@ -1527,6 +1528,64 @@ def cmd_usbbench(args: argparse.Namespace) -> int:
     return EXIT_OK if ok else EXIT_FAIL
 
 
+# --------------------------------------------------------------------------
+# battery log (battlog) dump parsing
+# --------------------------------------------------------------------------
+BL_REC = struct.Struct("<IHHHhBBH")      # t_s vbat vcomp vdda temp_dC load_state flags seq (16 bytes)
+BL_FLAGS = ("chg", "vbus", "rest", "cal_due", "marker", "cutoff", "step", "chg_step")
+BL_CSV_HEADER = ["t_s", "vbat_mv", "vcomp_mv", "vdda_mv", "temp_c", "load_state", "flags", "seq"] + list(BL_FLAGS)
+
+
+def parse_battlog(data: bytes) -> list[dict]:
+    """Decode concatenated 16-byte battlog records (a trailing partial record is ignored)."""
+    out = []
+    for off in range(0, len(data) - BL_REC.size + 1, BL_REC.size):
+        t, vb, vc, vd, tc, st, fl, seq = BL_REC.unpack_from(data, off)
+        r = {"t_s": t, "vbat_mv": vb, "vcomp_mv": vc, "vdda_mv": vd, "temp_c": tc / 10.0,
+             "load_state": st, "flags": fl, "seq": seq}
+        for i, name in enumerate(BL_FLAGS):
+            r[name] = (fl >> i) & 1
+        out.append(r)
+    return out
+
+
+def battlog_csv(recs: list[dict]) -> str:
+    lines = [",".join(BL_CSV_HEADER)]
+    for r in recs:
+        lines.append(",".join(f"{r[k]:.1f}" if k == "temp_c" else str(r[k]) for k in BL_CSV_HEADER))
+    return "\n".join(lines) + "\n"
+
+
+def cmd_battlog(args: argparse.Namespace) -> int:
+    if args.action != "dump":
+        raise HwtestError("battlog: only 'dump' is implemented on the host (use `cmd battlog start|stop|status`)")
+    cdc = resolve_cdc(target_port(args), target_serial(args))
+    with connect(cdc, timeout=args.open_timeout) as dev:
+        info = dev.info()
+        tx = dev.transact("battlog dump" + (f" src={args.src}" if args.src else ""), timeout=args.timeout)
+    if tx.status != "ok":
+        OUT.error(f"battlog dump failed: {tx.status} {tx.final.text if tx.final else ''}")
+        OUT.emit({"ok": False, "status": tx.status})
+        return EXIT_FAIL
+    frames = [m for m in tx.msgs if m.kind == "B"]
+    meta = next((r for r in tx.results if isinstance(r, dict) and r.get("t") == "battlog_dump"), {})
+    bad = [i for i, m in enumerate(frames) if not m.crc_ok]
+    data = b"".join(m.data or b"" for m in frames)
+    recs = parse_battlog(data)
+    d = results_dir_for(args.out, info)
+    d.mkdir(parents=True, exist_ok=True)
+    stem = d / f"battlog-{timestamp()}"
+    stem.with_suffix(".bin").write_bytes(data)
+    stem.with_suffix(".csv").write_text(battlog_csv(recs), encoding="utf-8")
+    ok = not bad and len(recs) == meta.get("records", len(recs))
+    OUT.say(f"battlog: {len(recs)} records, {len(frames)} frame(s) -> {stem}.bin/.csv"
+            + (f"  BAD CRC in frames {bad}" if bad else ""))
+    note(f"battlog dump: {len(recs)} records -> {stem}.csv ok={ok}")
+    OUT.emit({"ok": ok, "records": len(recs), "frames": len(frames), "bad_crc_frames": bad,
+              "bin": str(stem.with_suffix(".bin")), "csv": str(stem.with_suffix(".csv")), "meta": meta})
+    return EXIT_OK if ok else EXIT_FAIL
+
+
 def cmd_monitor(args: argparse.Namespace) -> int:
     cdc = resolve_cdc(target_port(args), target_serial(args))
     sn = cdc.serial
@@ -2078,7 +2137,7 @@ def cmd_lock_status(args: argparse.Namespace) -> int:
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
-HW_COMMANDS = {"info", "cmd", "monitor", "run", "dfu", "flash", "dfu-test", "usbbench"}
+HW_COMMANDS = {"info", "cmd", "monitor", "run", "dfu", "flash", "dfu-test", "usbbench", "battlog"}
 LOGGED_COMMANDS = HW_COMMANDS | {"ports"}
 
 
@@ -2119,6 +2178,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--direction", choices=("tx", "rx", "both"), default="both")
     s.add_argument("--timeout", type=float, default=30.0)
     s.set_defaults(func=cmd_usbbench)
+
+    s = sub.add_parser("battlog", parents=[common], help="battery logger: dump the log (-> .bin + .csv)")
+    s.add_argument("action", choices=("dump",))
+    s.add_argument("--src", choices=("ram", "flash"), help="default: RAM log of a dry run if present, else W25Q")
+    s.add_argument("--out", help=f"results base dir (default {RESULTS_DIR})")
+    s.add_argument("--timeout", type=float, default=60.0)
+    s.set_defaults(func=cmd_battlog)
 
     s = sub.add_parser("monitor", parents=[common], help="print all device lines (Ctrl+C to quit)")
     s.add_argument("--no-reconnect", action="store_true", help="exit when the port disappears")

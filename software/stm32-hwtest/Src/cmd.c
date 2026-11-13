@@ -10,6 +10,7 @@
 #include "dfu.h"
 #include "fw_id.h"
 #include "hwcal.h"
+#include "pwrtest.h"
 #include "lcd.h"
 #include "log.h"
 #include "noinit.h"
@@ -401,6 +402,10 @@ static void dispatch(char *line, bool restricted)
         NVIC_SystemReset();
     } else if (strcmp(c, "answer") == 0) {
         cmd_answer(argc, argv);
+    } else if (strcmp(c, "adccal") == 0 || strcmp(c, "cur") == 0) {
+        pwr_cmd(argc, argv);
+    } else if (strcmp(c, "battlog") == 0) {
+        battlog_cmd(argc, argv, restricted);
     } else if (restricted) {
         proto_err(c, "busy");
     } else if (strcmp(c, "crc") == 0) {
