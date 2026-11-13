@@ -1408,3 +1408,95 @@ Format: `### YYYY-MM-DD HH:MM:SS — action` followed by command and result.
   UID E463A8F31B121931, 96 MHz from HSE PLL, APB1 48 / APB2 96 MHz, 3 WS.
   HWCAL sector 0xFFF000 reports `foreign` (non-0xFF data present, likely the
   RetroPort ROM pack tail) — nothing was written; investigate before any write.
+
+### 2026-11-13 15:27:12 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=8cff8b6 build=1794572106 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-13 15:28:19 — User visual check of fw 8cff8b6 (manual note)
+
+- Observed by the user on the device: menu and status bar (fw 8cff8b6)
+  render correctly; all buttons work in "Button view"; orientation
+  (MADCTL 0xA0, landscape) is correct.
+- Problem: in "Display info" the 1-px white border is NOT visible on the
+  TOP and RIGHT edges. User's estimate: image must move ~1–2 px left and
+  ~1 px down (by eye).
+- Analysis: with MV=1 the column range is 0..161 (162-wide axis); COLSTART=3
+  puts the 160-px window at 3..162, so the last column falls outside the
+  panel RAM -> right edge lost; expected xoff in 0..2. Top edge lost ->
+  ROWSTART=1 is too small; expected yoff ~2. To be confirmed with the
+  interactive display.cal suite (P1).
+
+### 2026-11-13 15:29:31 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 2.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:02.114
+- Output: Time elapsed during verifying operation: 00:00:00.327
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 15:29:32 — hwtest.py dfu-test [auto]
+
+- Command: `hwtest.py dfu-test --wait-lock 60 --manual --step 1 --boot0-wait 240 --bin build/hwtest.bin`
+- Result: OK (exit code 0)
+- Step boot0: OK
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\unknown\20261113-152928-dfu-test-manual.json
+
+### 2026-11-13 15:29:57 — Manual DFU test (manual note)
+
+- Step 1 (BOOT0+RESET path): PASS at 15:29:28. First attempt at 15:2x failed to start (wrong CLI argument order for --wait-lock, nothing touched the board). DFU detected 0.16 s after start because the user had already pressed BOOT0+RESET; good image flashed and app came back with the expected build.
+- Step 2 (recovery rehearsal) starting now: tool flashes a deliberately broken 1 KB image (sector 0 only), checks that CDC does not come back, then the user does BOOT0+RESET and the good image is reflashed.
+
+### 2026-11-13 15:29:59 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-13 15:30:00 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\unknown\broken-1k.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 0.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:00.444
+- Output: Time elapsed during verifying operation: 00:00:00.035
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 15:31:08 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 2.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:02.114
+- Output: Time elapsed during verifying operation: 00:00:00.329
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 15:31:09 — hwtest.py dfu-test [auto]
+
+- Command: `hwtest.py dfu-test --wait-lock 60 --manual --step 2 --yes --boot0-wait 300 --bin build/hwtest.bin`
+- Result: OK (exit code 0)
+- Step recovery: OK
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-152958-dfu-test-manual.json
+
+### 2026-11-13 15:31:40 — Manual DFU test step 2 result (manual note)
+
+- Recovery rehearsal: **PASS** (15:29:58). Broken 1 KB image flashed via DFU (sector 0 only), CDC did not reappear for 10 s (board "bricked"), user did BOOT0+RESET 55 s later, DFU detected, good image `8cff8b6` reflashed, app came back with the expected build.
+- Conclusion: P0b DFU checks complete — automatic 20/20, BOOT0 path PASS, recovery PASS. Minor tool bug: results of step 1 / broken image landed in `tools/results/unknown/` (info not available at that point).
