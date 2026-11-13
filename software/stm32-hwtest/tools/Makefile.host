@@ -1,0 +1,36 @@
+# Host build of the battery-gauge replay tool (no hardware, no ARM toolchain).
+#
+#   make -f tools/Makefile.host            -> tools/build/gauge_replay[.exe]
+#   make -f tools/Makefile.host clean
+#   make -f tools/Makefile.host CC=clang
+#
+# Compiles the firmware's Src/drv/gauge.c unchanged with -Werror.
+
+TOOLS := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+ROOT  := $(TOOLS)/..
+OUT   := $(TOOLS)/build
+
+CC     ?= gcc
+ifeq ($(CC),cc)
+CC := gcc
+endif
+CFLAGS ?= -O2 -g
+CFLAGS += -std=c11 -Wall -Wextra -Wdouble-promotion -Werror -I$(ROOT)/Inc
+LDLIBS += -lm
+
+ifeq ($(OS),Windows_NT)
+EXE := .exe
+endif
+
+BIN := $(OUT)/gauge_replay$(EXE)
+
+all: $(BIN)
+
+$(BIN): $(TOOLS)/gauge_replay.c $(ROOT)/Src/drv/gauge.c $(ROOT)/Inc/gauge.h
+	@mkdir -p $(OUT)
+	$(CC) $(CFLAGS) -o $@ $(TOOLS)/gauge_replay.c $(ROOT)/Src/drv/gauge.c $(LDLIBS)
+
+clean:
+	rm -f $(BIN)
+
+.PHONY: all clean
