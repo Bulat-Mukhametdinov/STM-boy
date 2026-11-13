@@ -18,8 +18,17 @@ void timebase_init(void)
 
     TIMSK0 |= (1 << OCIE0A);
 
-    /* Start Timer0, prescaler 64. */
+    /* Start Timer0 with the prescaler OCR0A was computed for (config.h).
+       Bug fixed 2026-11-13: this used to hard-code /64 while OCR0A assumed
+       /8, so every ATtiny interval ran 8x long (0.5 s POWER hold -> ~4 s,
+       2.5 s OFF_ACK timeout -> ~20 s, 8 s hard reset -> ~64 s). */
+#if TIMER0_PRESCALER == 8UL
+    TCCR0B = (1 << CS01);
+#elif TIMER0_PRESCALER == 64UL
     TCCR0B = (1 << CS01) | (1 << CS00);
+#else
+#error "unsupported TIMER0_PRESCALER (use 8 or 64)"
+#endif
 }
 
 ISR(TIM0_COMPA_vect)

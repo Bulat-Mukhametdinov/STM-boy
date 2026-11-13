@@ -49,11 +49,11 @@
     ((F_CPU + (TIMER0_PRESCALER * 500UL)) / (TIMER0_PRESCALER * 1000UL))
 
 #if TIMER0_TICKS_PER_MS < 1UL
-#error "F_CPU is too low for Timer0 1 ms tick with prescaler 64"
+#error "F_CPU is too low for Timer0 1 ms tick with this TIMER0_PRESCALER"
 #endif
 
 #if TIMER0_TICKS_PER_MS > 256UL
-#error "F_CPU is too high for Timer0 1 ms tick with prescaler 64"
+#error "F_CPU is too high for Timer0 1 ms tick with this TIMER0_PRESCALER"
 #endif
 
 #define TIMER0_OCR0A_VALUE ((uint8_t)(TIMER0_TICKS_PER_MS - 1UL))

@@ -2844,3 +2844,68 @@ git-ignored; .txt hexdumps next to them).
 - power.info (USB in, charge done, SWD attached): VDDA 3308 mV, Vpin 3000 mV, Vbat 4207 mV (uncalibrated gain 1.0), die 30.3 C, CHG high, VBUS present, presence batt, batch noise 69 mV p-p, window spread 29 mV. PASS.
 - battlog dry run (RAM, 120 s, S15 20 s / S2 10 s): 90 records, step flags OK, dump CRC OK, Vbat 4.18-4.21 V +-15 mV.
 - No ammeter available (battery lead cannot be broken): currents will be estimated from voltage steps with the BQ24075 CC current (~174.5 mA) as reference (`power.rint`, battlog step records).
+
+### 2026-11-13 21:50:15 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9337786+dirty build=1794595397 busy=idle
+
+### 2026-11-13 21:50:17 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-215015-power.info.json
+
+### 2026-11-13 21:50:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "adccal point 4175 3300"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK adccal point lines=2
+- @R {"t": "adccal_point", "n": 1, "meter_vbat_mv": 4175, "meter_v3v3_mv": 3300, "unc_vbat_mv": 4175, "vdda_mv": 3293}
+
+### 2026-11-13 21:50:19 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "adccal fit"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK adccal fit lines=2
+- @R {"t": "adccal_fit", "ok": true, "points": 1, "gain_q16": 65536, "offset_mv": 0, "max_err_mv": 0, "vdda_err_mv": 7, "saved_to": "ram"}
+
+### 2026-11-13 21:51:28 — Run suite power.handshake (start) [auto]
+
+- Command: `run power.handshake ack=now t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9337786+dirty build=1794595397 busy=idle
+
+### 2026-11-13 21:51:35 — ADC calibration point 1 (manual note)
+
+- User multimeter (USB+ST-Link off): VBAT 4.16-4.17 V, 3V3 3.30 V; with USB back: VBAT 4.17-4.18 V, 3V3 3.30 V.
+- `adccal point 4175 3300` (USB in, ST-Link off) -> firmware uncorrected Vbat 4175 mV = meter -> gain 1.000, offset 0 (divider 33k/82k accurate); VDDA via VREFINT 3293 mV vs 3300 meter (-7 mV, 0.2 %). No HWCAL change needed (defaults already gain 1.0 / offset 0).
+- power.rint deferred to the battery cycle: at 4.17 V the BQ24075 is in CV (current < 175 mA), so the charger-step R_int would be overestimated.
+- Starting power.handshake ack=now (ST-Link disconnected).
+
+### 2026-11-13 21:53:34 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.handshake ack=now t=300 --prompt-timeout 600`
+- Result: FAIL (exit code 2)
+- Suite power.handshake: DISCONNECTED results=1 pass=0 fail=0 (serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)))
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-215128-power.handshake.json
+
+### 2026-11-13 21:55:36 — Run suite power.handshake (start) [auto]
+
+- Command: `run power.handshake report`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9337786+dirty build=1794595397 busy=idle
+
+### 2026-11-13 21:55:37 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.handshake report`
+- Result: OK (exit code 0)
+- Suite power.handshake: PASS results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-215536-power.handshake.json
+
+### 2026-11-13 21:56:15 — power.handshake ack=now (manual note)
+
+- ST-Link disconnected, USB connected. OFF_REQ detect latency 1 us, debounce confirm 30-31 ms, ACK at 31 ms. Report after power-on: verdict `power_cut_right_after_ack`, `.noinit` crumb lost -> 3V3 really dropped (full power-off works with USB attached).
+- **User observation: POWER had to be held ~4 s (not 0.5 s) before OFF_REQ was asserted; 2-3 s holds + release did nothing.** Hypothesis: ATtiny Timer0 prescaler mismatch (config.h comment says 64, default 8) -> all ATtiny intervals ~8x longer (0.5 s->4 s, ACK timeout 2.5 s->~20 s, hard reset 8 s->~64 s). Needs an ATtiny-side check (avr toolchain/USBasp not on this PC).
