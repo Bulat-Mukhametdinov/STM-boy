@@ -1882,3 +1882,297 @@ git-ignored; .txt hexdumps next to them).
 
 - Correction (16:08:32): the "16:00:00" stop-note time above is approximate; final -O2 build
   is 7734c40+dirty build 1794575292 (zero warnings at -O2/-Os/-O3), not flashed.
+
+### 2026-11-13 20:17:19 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-13 20:17:38 — Session resumed (manual note)
+
+- Board reconnected on COM10 (running build 1794574188). Flashing final P1 build (8da7e38) and running automatic suites.
+
+### 2026-11-13 20:17:39 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-13 20:17:45 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 5.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:04.266
+- Output: Time elapsed during verifying operation: 00:00:00.553
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 20:17:46 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (77252 bytes), expected id: {'fw': '8da7e38+dirty', 'build': 1794590256}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=8da7e38+dirty build=1794590256, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=5.26s, dfu_to_app=0.78s, total=6.71s
+
+### 2026-11-13 20:17:52 — Run suite selftest (start) [auto]
+
+- Command: `run selftest`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:17:52 — hwtest.py run [auto]
+
+- Command: `hwtest.py run selftest`
+- Result: OK (exit code 0)
+- Suite selftest: PASS results=4 pass=4 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-201751-selftest.json
+
+### 2026-11-13 20:17:52 — Run suite pins (start) [auto]
+
+- Command: `run pins`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:17:54 — hwtest.py run [auto]
+
+- Command: `hwtest.py run pins`
+- Result: FAIL (exit code 1)
+- Suite pins: FAIL results=46 pass=43 fail=1
+- Failed: pins/PB2
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-201752-pins.json
+
+### 2026-11-13 20:17:55 — Run suite backlight (start) [auto]
+
+- Command: `run backlight`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:17:56 — hwtest.py run [auto]
+
+- Command: `hwtest.py run backlight`
+- Result: FAIL (exit code 1)
+- Suite backlight: FAIL results=9 pass=5 fail=4
+- Failed: backlight/pwm_200hz_50pct, backlight/pwm_1000hz_50pct, backlight/pwm_5000hz_50pct, backlight/pwm_25000hz_50pct
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-201755-backlight.json
+
+### 2026-11-13 20:17:56 — Run suite display.info (start) [auto]
+
+- Command: `run display.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:17:56 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.info`
+- Result: OK (exit code 0)
+- Suite display.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-201756-display.info.json
+
+### 2026-11-13 20:18:38 — Automatic suites on fw 8da7e38+dirty (manual note)
+
+- selftest PASS; display.info PASS; pins 43/44 PASS — only PB2 AMP_SD again TIED_LOW (expected WEAK_LOW, R23 100k) -> check net to GND with multimeter / PAM8302A SD input.
+- backlight: registers OK, frequency exact (200/1000/5000/25000 Hz measured = requested) but measured duty 47.1–47.6 % for 50 % requested at ALL frequencies -> constant ratio, not an edge-delay effect; suspected IDR-sampling artefact. To verify with scope on PA6 / Q1 base.
+- Starting batch of [U] suites (display.orient .. input.bounce), t=300 s each.
+
+### 2026-11-13 20:18:39 — Run suite display.orient (start) [auto]
+
+- Command: `run display.orient land t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:19:23 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.orient land t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.orient: PASS results=8 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-201839-display.orient.json
+
+### 2026-11-13 20:19:23 — Run suite display.orient (start) [auto]
+
+- Command: `run display.orient port t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:19:40 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.orient port t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.orient: PASS results=6 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-201923-display.orient.json
+
+### 2026-11-13 20:19:41 — Run suite display.rgb (start) [auto]
+
+- Command: `run display.rgb t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:19:58 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.rgb t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.rgb: PASS results=4 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-201941-display.rgb.json
+
+### 2026-11-13 20:19:59 — Run suite display.invert (start) [auto]
+
+- Command: `run display.invert t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:20:42 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.invert t=300 --wait-lock 900`
+- Result: FAIL (exit code 1)
+- Suite display.invert: FAIL results=3 pass=0 fail=1
+- Failed: display.invert/invert
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-201959-display.invert.json
+
+### 2026-11-13 20:20:43 — Run suite display.gamma (start) [auto]
+
+- Command: `run display.gamma t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:21:25 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.gamma t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.gamma: PASS results=25 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202043-display.gamma.json
+
+### 2026-11-13 20:21:25 — Run suite display.bars (start) [auto]
+
+- Command: `run display.bars t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:22:14 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.bars t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.bars: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202125-display.bars.json
+
+### 2026-11-13 20:22:14 — Run suite display.gradient (start) [auto]
+
+- Command: `run display.gradient t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:22:42 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.gradient t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.gradient: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202214-display.gradient.json
+
+### 2026-11-13 20:22:43 — Run suite display.spi (start) [auto]
+
+- Command: `run display.spi div=8 t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:24:03 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.spi div=8 t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.spi: PASS results=5 pass=4 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202243-display.spi.json
+
+### 2026-11-13 20:24:04 — Run suite display.spi (start) [auto]
+
+- Command: `run display.spi div=4 t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:25:22 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.spi div=4 t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.spi: PASS results=5 pass=4 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202404-display.spi.json
+
+### 2026-11-13 20:25:23 — Run suite display.spi (start) [auto]
+
+- Command: `run display.spi div=2 t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:26:02 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.spi div=2 t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite display.spi: PASS results=5 pass=4 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202523-display.spi.json
+
+### 2026-11-13 20:26:02 — Run suite backlight.user (start) [auto]
+
+- Command: `run backlight.user t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:27:57 — hwtest.py run [auto]
+
+- Command: `hwtest.py run backlight.user t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite backlight.user: PASS results=5 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202602-backlight.user.json
+
+### 2026-11-13 20:27:57 — Run suite input.live (start) [auto]
+
+- Command: `run input.live t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:28:19 — hwtest.py run [auto]
+
+- Command: `hwtest.py run input.live t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite input.live: PASS results=29 pass=9 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202757-input.live.json
+
+### 2026-11-13 20:28:20 — Run suite input.chord (start) [auto]
+
+- Command: `run input.chord t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:33:34 — hwtest.py run [auto]
+
+- Command: `hwtest.py run input.chord t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite input.chord: PASS results=14 pass=11 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-202820-input.chord.json
+
+### 2026-11-13 20:33:34 — Run suite input.bounce (start) [auto]
+
+- Command: `run input.bounce t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=8da7e38+dirty build=1794590256 busy=idle
+
+### 2026-11-13 20:35:31 — hwtest.py run [auto]
+
+- Command: `hwtest.py run input.bounce t=300 --wait-lock 900`
+- Result: OK (exit code 0)
+- Suite input.bounce: PASS results=11 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-203334-input.bounce.json
+
+### 2026-11-13 20:36:10 — [U] suite batch results (manual note)
+
+- display.orient: land 0xA0 x1/y2 and port 0x00 x2/y1 confirmed. display.rgb: RGB (bgr=0). display.gamma: user chose `sitronix` (id 2). display.bars / display.gradient: PASS.
+- display.invert: FAIL with invert=null (no option selected) — to clarify with user / rerun.
+- display.spi: stable (no flicker) at 12, 24 and **48 MHz** (div 8/4/2, 8- and 16-bit frames, both GPIO speeds) at SYSCLK 96 MHz. Datasheet limit ~15 MHz; 48 MHz is the max SPI1 clock at 96 MHz.
+- backlight.user: chosen PWM 1 kHz, min usable level 0 (lowest step).
+- input.live / input.chord: PASS, all 9 buttons, chords OK. POWER excluded (ATtiny behaviour).
+- input.bounce (30 presses each): most buttons <0.5 ms; **B release bounce up to 17.6 ms (p95 5.6 ms, rec 12 ms)**; Y up to 1.5 ms; DOWN max 4.0 ms. Pooled rule gave 5 ms, which is NOT safe for B -> recommend 20 ms (or press-immediate / release 20 ms).
+- Backlight duty question (47.4 % measured vs 50 %): pending scope check by user.

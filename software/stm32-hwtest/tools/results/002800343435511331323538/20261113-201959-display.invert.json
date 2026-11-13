@@ -1,0 +1,117 @@
+{
+  "kind": "run",
+  "suite": "display.invert",
+  "command": "run display.invert t=300",
+  "status": "fail",
+  "exit_code": 1,
+  "done": "@DONE display.invert fail",
+  "error": "",
+  "host_time_start": "2026-11-13T20:19:59+03:00",
+  "host_time_end": "2026-11-13T20:20:42+03:00",
+  "duration_s": 43.203,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "8da7e38+dirty",
+    "build": 1794590256,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": false,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 3,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "foreign",
+    "w25q": true,
+    "uptime_ms": 134366,
+    "vbus": true,
+    "chg": true,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "look",
+      "suite": "display.invert",
+      "name": "invoff",
+      "answer": "ok"
+    },
+    {
+      "t": "look",
+      "suite": "display.invert",
+      "name": "invon",
+      "answer": "ok"
+    },
+    {
+      "t": "cal",
+      "suite": "display.invert",
+      "name": "invert",
+      "pass": false,
+      "invert": null,
+      "saved_to": "ram"
+    }
+  ],
+  "prompts": [
+    {
+      "t": "prompt",
+      "id": "display_invert_start",
+      "text": "Inversion: colour bars W Y C G M R B K + white/black boxes, shown with INVOFF and INVON. Answer A if colours match labels. A=start B=skip",
+      "answers": [
+        "A=start",
+        "B=skip"
+      ],
+      "timeout_ms": 300000
+    },
+    {
+      "t": "prompt",
+      "id": "invert_0",
+      "text": "INVOFF: do colours match the labels?",
+      "answers": [
+        "A=yes",
+        "B=no"
+      ],
+      "timeout_ms": 60000
+    },
+    {
+      "t": "prompt",
+      "id": "invert_1",
+      "text": "INVON: do colours match the labels?",
+      "answers": [
+        "A=yes",
+        "B=no"
+      ],
+      "timeout_ms": 60000
+    }
+  ],
+  "answers": [
+    {
+      "t": "answer",
+      "id": "display_invert_start",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "invert_0",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "invert_1",
+      "answer": "ok"
+    }
+  ],
+  "binaries": [],
+  "log": []
+}

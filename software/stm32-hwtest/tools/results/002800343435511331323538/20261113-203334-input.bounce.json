@@ -1,0 +1,441 @@
+{
+  "kind": "run",
+  "suite": "input.bounce",
+  "command": "run input.bounce t=300",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE input.bounce pass",
+  "error": "",
+  "host_time_start": "2026-11-13T20:33:34+03:00",
+  "host_time_end": "2026-11-13T20:35:31+03:00",
+  "duration_s": 116.683,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "8da7e38+dirty",
+    "build": 1794590256,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": false,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 3,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "foreign",
+    "w25q": true,
+    "uptime_ms": 953235,
+    "vbus": true,
+    "chg": false,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "skip",
+      "suite": "input.bounce",
+      "name": "btn_POWER",
+      "reason": "POWER not testable: ATtiny asserts OFF_REQ only after a >=500 ms hold + release and then cuts power within 2.5 s (attiny13/power_fsm.c)"
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "UP",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "press_p95_us": 0,
+      "release_p95_us": 0,
+      "rec_debounce_ms": 5,
+      "edge_overflows": 0
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "DOWN",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 199,
+        "max": 3988
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 3,
+        "max": 4
+      },
+      "press_p95_us": 0,
+      "release_p95_us": 238,
+      "rec_debounce_ms": 5,
+      "edge_overflows": 0
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "LEFT",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 43,
+        "max": 319
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 2,
+        "max": 3
+      },
+      "press_p95_us": 0,
+      "release_p95_us": 156,
+      "rec_debounce_ms": 5,
+      "edge_overflows": 0
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "RIGHT",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 0,
+        "max": 213
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 1,
+        "max": 3
+      },
+      "press_p95_us": 0,
+      "release_p95_us": 44,
+      "rec_debounce_ms": 5,
+      "edge_overflows": 0
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "CENTER",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "press_p95_us": 0,
+      "release_p95_us": 0,
+      "rec_debounce_ms": 5,
+      "edge_overflows": 0
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "A",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 0,
+        "max": 269
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 1,
+        "max": 3
+      },
+      "press_p95_us": 0,
+      "release_p95_us": 172,
+      "rec_debounce_ms": 5,
+      "edge_overflows": 0
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "B",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 5566,
+        "max": 17566
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 3,
+        "max": 5
+      },
+      "press_p95_us": 438,
+      "release_p95_us": 15493,
+      "rec_debounce_ms": 12,
+      "edge_overflows": 0
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "X",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 0,
+        "max": 158
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 1,
+        "max": 3
+      },
+      "press_p95_us": 0,
+      "release_p95_us": 0,
+      "rec_debounce_ms": 5,
+      "edge_overflows": 0
+    },
+    {
+      "t": "bounce",
+      "suite": "input.bounce",
+      "name": "Y",
+      "end": "done",
+      "presses": 30,
+      "bursts": 60,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 1119,
+        "max": 1459
+      },
+      "edges": {
+        "min": 1,
+        "med": 1,
+        "p95": 4,
+        "max": 5
+      },
+      "press_p95_us": 12,
+      "release_p95_us": 1232,
+      "rec_debounce_ms": 5,
+      "edge_overflows": 0
+    },
+    {
+      "t": "cal",
+      "suite": "input.bounce",
+      "name": "debounce",
+      "pass": true,
+      "bursts": 540,
+      "dur_us": {
+        "min": 0,
+        "med": 0,
+        "p95": 158,
+        "max": 17566
+      },
+      "rec_debounce_ms": 5,
+      "rule": "max(2*p95,5ms)",
+      "buttons_done": 9,
+      "saved_to": "ram"
+    }
+  ],
+  "prompts": [
+    {
+      "t": "prompt",
+      "id": "input_bounce_start",
+      "text": "Bounce analyser: for each button shown, press it ~30 times at a normal pace. Hold another button 1 s to skip one. A=start B=skip",
+      "answers": [
+        "A=start",
+        "B=skip"
+      ],
+      "timeout_ms": 300000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_UP",
+      "text": "Press UP about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_DOWN",
+      "text": "Press DOWN about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_LEFT",
+      "text": "Press LEFT about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_RIGHT",
+      "text": "Press RIGHT about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_CENTER",
+      "text": "Press CENTER about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_A",
+      "text": "Press A about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_B",
+      "text": "Press B about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_X",
+      "text": "Press X about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "bounce_Y",
+      "text": "Press Y about 30 times",
+      "answers": [
+        "press the shown button",
+        "hold another 1s=skip"
+      ],
+      "timeout_ms": 20000
+    }
+  ],
+  "answers": [
+    {
+      "t": "answer",
+      "id": "input_bounce_start",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_UP",
+      "answer": "done"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_DOWN",
+      "answer": "done"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_LEFT",
+      "answer": "done"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_RIGHT",
+      "answer": "done"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_CENTER",
+      "answer": "done"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_A",
+      "answer": "done"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_B",
+      "answer": "done"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_X",
+      "answer": "done"
+    },
+    {
+      "t": "answer",
+      "id": "bounce_Y",
+      "answer": "done"
+    }
+  ],
+  "binaries": [],
+  "log": []
+}

@@ -1,0 +1,398 @@
+{
+  "kind": "run",
+  "suite": "input.chord",
+  "command": "run input.chord t=300",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE input.chord pass",
+  "error": "",
+  "host_time_start": "2026-11-13T20:28:20+03:00",
+  "host_time_end": "2026-11-13T20:33:33+03:00",
+  "duration_s": 313.719,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "8da7e38+dirty",
+    "build": 1794590256,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": false,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 3,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "foreign",
+    "w25q": true,
+    "uptime_ms": 638765,
+    "vbus": true,
+    "chg": false,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "skip",
+      "suite": "input.chord",
+      "name": "btn_POWER",
+      "reason": "POWER not testable: ATtiny asserts OFF_REQ only after a >=500 ms hold + release and then cuts power within 2.5 s (attiny13/power_fsm.c)"
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "A+B",
+      "pass": true,
+      "result": "ok",
+      "ms": 9534,
+      "mask": 96,
+      "extra": "",
+      "seen": 511
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "X+Y",
+      "pass": true,
+      "result": "ok",
+      "ms": 1750,
+      "mask": 384,
+      "extra": "",
+      "seen": 384
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "A+X",
+      "pass": true,
+      "result": "ok",
+      "ms": 1441,
+      "mask": 160,
+      "extra": "",
+      "seen": 160
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "B+Y",
+      "pass": true,
+      "result": "ok",
+      "ms": 2325,
+      "mask": 320,
+      "extra": "",
+      "seen": 320
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "A+B+X+Y",
+      "pass": true,
+      "result": "ok",
+      "ms": 2737,
+      "mask": 480,
+      "extra": "",
+      "seen": 480
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "UP+A",
+      "pass": true,
+      "result": "ok",
+      "ms": 1839,
+      "mask": 33,
+      "extra": "",
+      "seen": 33
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "DOWN+B",
+      "pass": true,
+      "result": "ok",
+      "ms": 1341,
+      "mask": 66,
+      "extra": "",
+      "seen": 66
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "LEFT+X",
+      "pass": true,
+      "result": "ok",
+      "ms": 1638,
+      "mask": 132,
+      "extra": "",
+      "seen": 132
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "RIGHT+Y",
+      "pass": true,
+      "result": "ok",
+      "ms": 1556,
+      "mask": 264,
+      "extra": "",
+      "seen": 264
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "CENTER+A",
+      "pass": true,
+      "result": "ok",
+      "ms": 1310,
+      "mask": 48,
+      "extra": "",
+      "seen": 48
+    },
+    {
+      "t": "test",
+      "suite": "input.chord",
+      "name": "LEFT+A+B",
+      "pass": true,
+      "result": "ok",
+      "ms": 1999,
+      "mask": 100,
+      "extra": "",
+      "seen": 100
+    },
+    {
+      "t": "chord",
+      "suite": "input.chord",
+      "name": "UP+RIGHT",
+      "info": true,
+      "result": "ok",
+      "ms": 5288,
+      "mask": 9,
+      "extra": "",
+      "seen": 9
+    },
+    {
+      "t": "chord",
+      "suite": "input.chord",
+      "name": "DOWN+LEFT",
+      "info": true,
+      "result": "ok",
+      "ms": 1365,
+      "mask": 6,
+      "extra": "",
+      "seen": 6
+    }
+  ],
+  "prompts": [
+    {
+      "t": "prompt",
+      "id": "input_chord_start",
+      "text": "Chord test: hold the shown button combination until it turns green, then release everything. A=start B=skip",
+      "answers": [
+        "A=start",
+        "B=skip"
+      ],
+      "timeout_ms": 300000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_0",
+      "text": "Hold A+B",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_1",
+      "text": "Hold X+Y",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_2",
+      "text": "Hold A+X",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_3",
+      "text": "Hold B+Y",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_4",
+      "text": "Hold A+B+X+Y",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_5",
+      "text": "Hold UP+A",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_6",
+      "text": "Hold DOWN+B",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_7",
+      "text": "Hold LEFT+X",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_8",
+      "text": "Hold RIGHT+Y",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_9",
+      "text": "Hold CENTER+A",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_10",
+      "text": "Hold LEFT+A+B",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_11",
+      "text": "Hold UP+RIGHT (joystick diagonal, may be impossible)",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    },
+    {
+      "t": "prompt",
+      "id": "chord_12",
+      "text": "Hold DOWN+LEFT (joystick diagonal, may be impossible)",
+      "answers": [
+        "hold the combination"
+      ],
+      "timeout_ms": 20000
+    }
+  ],
+  "answers": [
+    {
+      "t": "answer",
+      "id": "input_chord_start",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_0",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_1",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_2",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_3",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_4",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_5",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_6",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_7",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_8",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_9",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_10",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_11",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "chord_12",
+      "answer": "ok"
+    }
+  ],
+  "binaries": [],
+  "log": []
+}
