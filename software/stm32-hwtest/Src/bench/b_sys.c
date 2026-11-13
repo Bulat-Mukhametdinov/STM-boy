@@ -339,7 +339,8 @@ void usbbench_cmd(int argc, char **argv)
 static volatile uint32_t s_wake_cyc;
 static volatile bool s_wake_flag;
 
-void TIM5_IRQHandler(void)
+void bench_tim5_wake_isr(void);
+void bench_tim5_wake_isr(void)
 {
     uint32_t now = TIM5->CNT;
     s_wake_cyc = now - TIM5->CCR1;

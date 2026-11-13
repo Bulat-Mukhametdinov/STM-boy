@@ -99,6 +99,8 @@ SRC_OWN := \
   Src/ui/t_current.c \
   Src/ui/t_battlog.c \
   Src/ui/t_rint.c \
+  Src/ui/t_audio.c \
+  Src/drv/audio.c \
   Src/drv/w25q.c \
   Src/ui/menu.c \
   Src/ui/prompt.c \

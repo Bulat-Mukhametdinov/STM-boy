@@ -2909,3 +2909,272 @@ git-ignored; .txt hexdumps next to them).
 
 - ST-Link disconnected, USB connected. OFF_REQ detect latency 1 us, debounce confirm 30-31 ms, ACK at 31 ms. Report after power-on: verdict `power_cut_right_after_ack`, `.noinit` crumb lost -> 3V3 really dropped (full power-off works with USB attached).
 - **User observation: POWER had to be held ~4 s (not 0.5 s) before OFF_REQ was asserted; 2-3 s holds + release did nothing.** Hypothesis: ATtiny Timer0 prescaler mismatch (config.h comment says 64, default 8) -> all ATtiny intervals ~8x longer (0.5 s->4 s, ACK timeout 2.5 s->~20 s, hard reset 8 s->~64 s). Needs an ATtiny-side check (avr toolchain/USBasp not on this PC).
+
+### 2026-11-13 22:09:46 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-13 22:09:47 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-13 22:09:58 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.1 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.223
+- Output: Time elapsed during verifying operation: 00:00:01.464
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 22:09:59 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (210944 bytes), expected id: {'fw': 'e1aa2f5+dirty', 'build': 1794596971}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=e1aa2f5+dirty build=1794596971, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=11.13s, dfu_to_app=0.72s, total=12.53s
+
+### 2026-11-13 22:10:11 — Run suite audio.cpu (start) [auto]
+
+- Command: `run audio.cpu`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794596971 busy=idle
+
+### 2026-11-13 22:10:17 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.cpu --timeout 60`
+- Result: OK (exit code 0)
+- Suite audio.cpu: PASS results=10 pass=5 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221011-audio.cpu.json
+
+### 2026-11-13 22:10:40 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-13 22:10:52 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.1 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.212
+- Output: Time elapsed during verifying operation: 00:00:01.464
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 22:10:52 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (210944 bytes), expected id: {'fw': 'e1aa2f5+dirty', 'build': 1794597036}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=e1aa2f5+dirty build=1794597036, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.62s, program=11.12s, dfu_to_app=0.71s, total=12.52s
+
+### 2026-11-13 22:10:53 — Run suite audio.cpu (start) [auto]
+
+- Command: `run audio.cpu`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794597036 busy=idle
+
+### 2026-11-13 22:11:00 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.cpu --timeout 60`
+- Result: OK (exit code 0)
+- Suite audio.cpu: PASS results=10 pass=5 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221053-audio.cpu.json
+
+### 2026-11-13 22:11:52 — Run suite audio.tone (start) [auto]
+
+- Command: `run audio.tone f=1000 db=-24 s=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794597036 busy=idle
+
+### 2026-11-13 22:12:52 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.tone f=1000 db=-24 s=2 --answer-from-host --timeout 30`
+- Result: FAIL (exit code 2)
+- Suite audio.tone: ABORT results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221152-audio.tone.json
+
+### 2026-11-13 22:13:20 — Run suite audio.tone (start) [auto]
+
+- Command: `run audio.tone f=1000 db=-24 s=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794597036 busy=idle
+
+### 2026-11-13 22:14:20 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.tone f=1000 db=-24 s=2 --answer-from-host --timeout 30`
+- Result: FAIL (exit code 2)
+- Suite audio.tone: ABORT results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221320-audio.tone.json
+
+### 2026-11-13 22:14:29 — Run suite audio.tone (start) [auto]
+
+- Command: `run audio.tone f=1000 db=-24 s=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794597036 busy=idle
+
+### 2026-11-13 22:14:35 — Board lock busy [auto]
+
+- Command: `hwtest.py cmd "answer audio_tone_start ok"`
+- Result: ERROR locked by pid 15176 ('hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60' since 2026-11-13T22:14:29+03:00)
+
+### 2026-11-13 22:14:35 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "answer audio_tone_start ok"`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid 15176 ('hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60' since 2026-11-13T22:14:29+03:00); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-13 22:14:54 — Board lock busy [auto]
+
+- Command: `hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60 --answer-from-host`
+- Result: ERROR locked by pid 15176 ('hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60' since 2026-11-13T22:14:29+03:00)
+
+### 2026-11-13 22:14:54 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60 --answer-from-host`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid 15176 ('hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60' since 2026-11-13T22:14:29+03:00); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-13 22:15:30 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60`
+- Result: FAIL (exit code 2)
+- Suite audio.tone: ABORT results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221429-audio.tone.json
+
+### 2026-11-13 22:15:41 — Run suite audio.tone (start) [auto]
+
+- Command: `run audio.tone f=1000 db=-24 s=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794597036 busy=idle
+
+### 2026-11-13 22:15:49 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60 --answer-from-host`
+- Result: OK (exit code 0)
+- Suite audio.tone: PASS results=3 pass=2 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221541-audio.tone.json
+
+### 2026-11-13 22:16:08 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-13 22:16:19 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.250
+- Output: Time elapsed during verifying operation: 00:00:01.467
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 22:16:20 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (210936 bytes), expected id: {'fw': 'e1aa2f5+dirty', 'build': 1794597363}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=e1aa2f5+dirty build=1794597363, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=11.15s, dfu_to_app=0.72s, total=12.56s
+
+### 2026-11-13 22:16:30 — Run suite audio.tone (start) [auto]
+
+- Command: `run audio.tone f=1000 db=-24 s=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794597363 busy=idle
+
+### 2026-11-13 22:16:38 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.tone f=1000 db=-24 s=2 --timeout 60 --answer-from-host`
+- Result: OK (exit code 0)
+- Suite audio.tone: PASS results=3 pass=2 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221630-audio.tone.json
+
+### 2026-11-13 22:16:38 — Run suite audio.tone (start) [auto]
+
+- Command: `run audio.tone f=1000 db=-24 s=2 eng=a fs=22050`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794597363 busy=idle
+
+### 2026-11-13 22:16:46 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.tone f=1000 db=-24 s=2 eng=a fs=22050 --timeout 60 --answer-from-host`
+- Result: OK (exit code 0)
+- Suite audio.tone: PASS results=3 pass=2 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221638-audio.tone.json
+
+### 2026-11-13 22:16:47 — Run suite audio.noise (start) [auto]
+
+- Command: `run audio.noise db=-30 s=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e1aa2f5+dirty build=1794597363 busy=idle
+
+### 2026-11-13 22:16:55 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.noise db=-30 s=2 --timeout 60 --answer-from-host`
+- Result: OK (exit code 0)
+- Suite audio.noise: PASS results=3 pass=2 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261113-221647-audio.noise.json
+
+### 2026-11-13 22:22:56 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-13 22:23:07 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.275
+- Output: Time elapsed during verifying operation: 00:00:01.465
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-13 22:23:08 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (210936 bytes), expected id: {'fw': 'e1aa2f5+dirty', 'build': 1794597745}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=e1aa2f5+dirty build=1794597745, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=11.18s, dfu_to_app=0.71s, total=12.57s
+
+### 2026-11-13 22:23:08 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=e1aa2f5+dirty build=1794597745 clk=96000000 busy=idle reset=sft uid=002800343435511331323538

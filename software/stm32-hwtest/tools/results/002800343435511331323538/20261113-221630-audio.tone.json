@@ -1,0 +1,113 @@
+{
+  "kind": "run",
+  "suite": "audio.tone",
+  "command": "run audio.tone f=1000 db=-24 s=2",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE audio.tone pass",
+  "error": "",
+  "host_time_start": "2026-11-13T22:16:30+03:00",
+  "host_time_end": "2026-11-13T22:16:38+03:00",
+  "duration_s": 7.777,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "e1aa2f5+dirty",
+    "build": 1794597363,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": true,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 7,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "valid",
+    "w25q": true,
+    "uptime_ms": 10977,
+    "vbus": true,
+    "chg": false,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "step",
+      "suite": "audio.tone",
+      "id": "T1",
+      "l1": "1000.0 Hz  -24.0 dBFS",
+      "l2": "375k/8b DMA 46875Hz",
+      "f_hz": 1000.0,
+      "db": -24.0,
+      "dur_ms": 2000,
+      "t_ms": 24,
+      "n": 1,
+      "of": 1
+    },
+    {
+      "t": "audio_stat",
+      "suite": "audio.tone",
+      "name": "tone",
+      "engine": "B",
+      "carrier": "375k/8b",
+      "rcr_div": 8,
+      "fs_exp_mhz": 46875000,
+      "fs_meas_mhz": 46875031,
+      "isr": 0,
+      "dma_ht": 92,
+      "dma_tc": 91,
+      "late": 0,
+      "dma_err": 0,
+      "clipped": 0,
+      "cyc_avg": 86444,
+      "cyc_max": 86631,
+      "pass": true
+    },
+    {
+      "t": "test",
+      "suite": "audio.tone",
+      "name": "tone",
+      "pass": true,
+      "clamped": false,
+      "f_hz": 1000.0,
+      "db": -24.0
+    }
+  ],
+  "prompts": [
+    {
+      "t": "prompt",
+      "id": "audio_tone_start",
+      "text": "audio.tone: sine, amp ON, quiet. A=start",
+      "answers": [
+        "A=start",
+        "B=skip"
+      ],
+      "timeout_ms": 60000
+    }
+  ],
+  "answers": [
+    {
+      "id": "audio_tone_start",
+      "answer": "ok",
+      "from": "host"
+    },
+    {
+      "t": "answer",
+      "id": "audio_tone_start",
+      "answer": "ok"
+    }
+  ],
+  "binaries": [],
+  "log": []
+}

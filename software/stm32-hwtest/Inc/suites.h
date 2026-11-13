@@ -57,4 +57,14 @@ suite_verdict_t suite_input_chord(int argc, char **argv);
 suite_verdict_t suite_backlight(int argc, char **argv);
 suite_verdict_t suite_backlight_user(int argc, char **argv);
 
+suite_verdict_t suite_audio_tone(int argc, char **argv);
+suite_verdict_t suite_audio_sweep(int argc, char **argv);
+suite_verdict_t suite_audio_chirp(int argc, char **argv);
+suite_verdict_t suite_audio_noise(int argc, char **argv);
+suite_verdict_t suite_audio_hiss(int argc, char **argv);
+suite_verdict_t suite_audio_matrix(int argc, char **argv);
+suite_verdict_t suite_audio_clip(int argc, char **argv);
+suite_verdict_t suite_audio_pop(int argc, char **argv);
+suite_verdict_t suite_audio_cpu(int argc, char **argv);
+
 #endif

@@ -158,3 +158,38 @@ Flags: bit0 chg, 1 vbus, 2 rest, 3 cal_due, 4 marker (A press / resume), 5 cutof
 +1 s, +10 s), 7 chg_step (USB plug/unplug: V before, +1 s, +10 s, +60 s). Vcomp = Vbat + I(state) * R_int.
 Dump: `@R {"t":"battlog_dump","records","frames","src",...}`, one `@B <len> <crc>` per <= 64 KB, then `@OK battlog dump`.
 Scratch map: 0xF00000-0xF7FFFF battlog, 0xF80000-0xF8FFFF power.current S14, 0xFDE000 power.rint, 0xFDF000 power.handshake.
+
+## P4 audio suites
+
+Hardware: PA8 = TIM1_CH1 PWM (AF1) -> RC LPF -> PAM8302A, SD# = PB2 (active high). Carriers (`cfg=0..3`): 750k/7b, 375k/8b,
+187.5k/9b, 93.75k/10b. Engine A (`eng=a`): TIM5 ISR writes CCR1 per sample (any `fs=`). Engine B (default `eng=b`): TIM1 RCR +
+TIM1_UP -> DMA2 S5 Ch6 circular 2x512 half buffers, HT/TC IRQ renders (rate = carrier/(RCR+1), e.g. 375k/8 = 46.875 kHz).
+Safety: every suite starts with the master gain slewed from silence and the amp turned on with the ramped sequence (`ramp=<ms>`,
+default `hwcal.amp_ramp_ms`); peak clip guard -6 dBFS (only `audio.clip` raises it to 0 dBFS, restored on exit); tone `db`
+above the guard is clamped (`"clamped":true`); noise RMS is capped at guard-9 dB. All [U] suites open with the usual
+`A=start B=skip` prompt (`t=` timeout). **B aborts at any time.** Common args: `cfg=` carrier (default `hwcal.audio_cfg_id-1`
+if 1..4, else 1), `eng=a|b`, `fs=` (default 46875), `ramp=`.
+
+Every step draws its id large on the LCD and emits a marker `@R {"t":"step","suite","id","l1","l2","f_hz","db","dur_ms","t_ms",
+"n","of"}` (`t_ms` = ms since suite start; use it to line up the phone recording). `{"t":"mark",...}` lines carry sub-events
+(sweep `gap`, matrix `tone`, pop `on`/`off`). Verdict prompts are list pickers (UP/DOWN/LEFT/RIGHT + A; B skips; host
+`answer <id> ok` takes the highlighted entry) and emit `@R {"t":"cal","suite","name","value","saved_to":"ram"}`;
+`audio.hiss`/`audio.matrix` also set `hwcal.audio_cfg_id` (= carrier index + 1) and `audio.pop` sets `hwcal.amp_ramp_ms`, in RAM
+only (`hwcal save` persists).
+
+| Suite | Kind | Content / results |
+| --- | --- | --- |
+| `audio.tone [f=1000] [db=-12] [s=5]` | [U] | step `T1`; `audio_stat` (engine, carrier, `rcr_div`, `fs_exp_mhz`, `fs_meas_mhz` from ISR timestamps over >= 1 s, `isr`/`dma_ht`/`dma_tc`, `late`, `dma_err`, `clipped`, `cyc_avg`/`cyc_max` per render body), `test` |
+| `audio.sweep [db=-12] [s=3]` | [U] | 25 ISO 1/3-octave tones 50 Hz-12.5 kHz (ids `S01`..`S25`), 3 s each, then 0.5 s silence + 20 ms 1 kHz tick + 0.1 s (`mark gap`), ~110 s |
+| `audio.chirp [db=-12] [s=10]` | [U] | 20 Hz-15 kHz exponential, ids `CH1`..`CH3`, 1 s gaps |
+| `audio.noise [type=pink\|white] [s=30] [db=-15]` | [U] | step `N-PINK`/`N-WHITE` (`db` = RMS dBFS), `audio_stat`, `test` |
+| `audio.hiss [s=15]` | [U] | 8 idle cases: `H-a` amp off, `H-b1/b2/b3` amp on with PA8 low/high/hi-Z, `H-c1..c4` amp on + PWM 50 % per carrier; pick quietest -> `cal hiss_best` (~2.5 min) |
+| `audio.matrix [from=1] [to=48] [idle=8] [tone=8]` | [U] | 4 carriers x Fs {11.025,16,22.05,32 kHz} x dither {OFF,TPDF,NS = TPDF + 1st-order noise shaping}; ids `M01`..`M48`, 8 s idle then 1 kHz -6 dBFS; `mark tone` carries the real `fs_mhz`/`rcr_div`; pick best -> `cal matrix_best` (~13 min) |
+| `audio.clip [s=2]` | [U] | 1 kHz then 200 Hz, -20..0 dBFS in 1 dB steps (ids `C1-20`..`C1+0`, `C2-20`..`C2+0`); picks -> `cal clean_max_db_1k`, `clean_max_db_200` (~95 s) |
+| `audio.pop` | [U] | 18 amp on/off cycles `P01`..`P18`: NAIVE (PWM 50 % then SD#=1; SD#=0 at 50 %) alternating with RAMP 20/50/100 ms, x3; pick -> `cal amp_ramp_ms` (~70 s) |
+| `audio.cpu` | auto, amp OFF | `audio_cpu` per config (engine A/B, 1/4 voices, dither): `cyc_per_sample`, `body_pct_x100` (render cost at 22.05 kHz), `load_pct_x100` (main-loop throughput loss incl. ISR entry/exit + USB), `late`, `dma_err` |
+
+Matrix ids are carrier-major: `M01-M12` 750k/7b, `M13-M24` 375k/8b, `M25-M36` 187k/9b, `M37-M48` 94k/10b; inside a carrier Fs
+11k,16k,22k,32k x dither OFF,TPDF,NS (`M19` = 375k/8b 22k OFF, `M20` TPDF, `M21` NS). Host analysis: `tools/audio_fr.py`
+(FR table, -6 dB band edges, high-pass/shelf suggestion, matrix table, JSON). TIM5 is shared with `bench.sys` (wake latency): its
+ISR is dispatched from the audio `TIM5_IRQHandler` when no audio engine runs.
