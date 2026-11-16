@@ -22,6 +22,9 @@ ui_answer_t pwr_num_entry(const char *id, const char *title, const char *l0, con
                           int32_t div, int dec, void (*live)(char *buf, size_t n), pwr_host_t *host,
                           uint32_t timeout_ms);
 
+/* Loaded Vbat + die temp recorded at the end of a power.current state (RAM; `cur list`). */
+void pwr_state_vbat_set(unsigned state, uint32_t mv, int tdc);
+
 /* Per-state current in 0.1 mA (RAM; falls back to hwcal i_state_ma * 10). */
 uint32_t pwr_state_x10(unsigned state);
 void pwr_set_state_x10(unsigned state, uint32_t x10);   /* also updates g_hwcal.i_state_ma */

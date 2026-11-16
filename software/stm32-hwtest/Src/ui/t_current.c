@@ -57,6 +57,8 @@ static ui_answer_t read_entry(unsigned id, const char *title, uint32_t step_s, i
     return a;
 }
 
+static bool s_entry = true;                        /* suite arg entry=0 skips the meter entry */
+
 /* 0 = reading stored, 1 = skipped, 2 = abort */
 static int do_state(unsigned id, uint32_t n_s, uint32_t step_s)
 {
@@ -194,6 +196,15 @@ static int do_state(unsigned id, uint32_t n_s, uint32_t step_s)
         load_end();
         draw_state(id, d->name, d->range, false, "load stopped");
     }
+    pwr_state_vbat_set(id, vloaded, temp);         /* always kept, even if the entry is skipped */
+    res_printf("{\"t\":\"current_v\",\"suite\":\"power.current\",\"name\":\"S%u\",\"vbat_loaded_mv\":%" PRIu32
+               ",\"temp_dC\":%d}", id, vloaded, temp);
+    gfx_textf(4, 112, COLOR_CYAN, COLOR_BLACK, 1, "Vbat under load %u mV", (unsigned)vloaded);
+    if (!s_entry) {                                /* entry=0: values are typed on the host later */
+        uint32_t t0 = HAL_GetTick();
+        while ((uint32_t)(HAL_GetTick() - t0) < 1500u) sys_service();
+        return 0;
+    }
     int32_t x10;
     snprintf(txt, sizeof(txt), "%s current (mA)", d->name);
     ui_answer_t r = read_entry(id, txt, step_s, &x10);
@@ -210,13 +221,9 @@ suite_verdict_t suite_power_current(int argc, char **argv)
     uint32_t n_s = suite_arg_u32(argc, argv, "n", 20u);
     uint32_t step_s = suite_arg_u32(argc, argv, "step", 300u);
     uint32_t sel = suite_arg_u32(argc, argv, "s", 0u);
+    s_entry = suite_arg_u32(argc, argv, "entry", 1u) != 0u;
     if (n_s < 3u) n_s = 3u;
     if (n_s > 600u) n_s = 600u;
-    if (sel == 10u) {
-        res_printf("{\"t\":\"skip\",\"suite\":\"power.current\",\"name\":\"S10\",\"reason\":\"amp: AMP_SD stays low in P2 (P4)\"}");
-        ui_con_line(COLOR_YELLOW, "S10 (amp) is P4: skipped");
-        return SUITE_ABORT;
-    }
     if (!suite_user_start("power.current",
                           "Current measurement: meter in series with the battery lead. States run in order; USB out except S16.",
                           argc, argv)) {

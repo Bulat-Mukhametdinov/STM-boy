@@ -127,6 +127,18 @@ uint32_t pwr_state_x10(unsigned state)
     return s_x10[state] ? s_x10[state] : (uint32_t)g_hwcal.i_state_ma[state] * 10u;
 }
 
+/* Loaded battery voltage / die temp captured automatically at the end of each
+   power.current state (no meter entry needed); read back with `cur list`. */
+static uint16_t s_vmv[18];
+static int16_t s_tdc[18];
+
+void pwr_state_vbat_set(unsigned state, uint32_t mv, int tdc)
+{
+    if (state >= 18u) return;
+    s_vmv[state] = (uint16_t)mv;
+    s_tdc[state] = (int16_t)tdc;
+}
+
 void pwr_set_state_x10(unsigned state, uint32_t x10)
 {
     if (state >= 18u) return;
@@ -309,6 +321,16 @@ static bool arg_u32(const char *s, uint32_t *o)
 
 bool pwr_cmd(int argc, char **argv)
 {
+    if (strcmp(argv[0], "cur") == 0 && argc >= 2 && strcmp(argv[1], "list") == 0) {
+        for (unsigned i = 0; i < 18u; i++) {
+            if (s_vmv[i] || s_x10[i]) {
+                res_printf("{\"t\":\"cur\",\"state\":%u,\"ma_x10\":%u,\"vbat_loaded_mv\":%u,\"temp_dC\":%d}",
+                           i, (unsigned)s_x10[i], (unsigned)s_vmv[i], (int)s_tdc[i]);
+            }
+        }
+        proto_ok("cur list");
+        return true;
+    }
     if (strcmp(argv[0], "cur") == 0) {
         uint32_t st, x10;
         if (argc < 3 || !arg_u32(argv[1], &st) || st >= 18u || !parse_x10(argv[2], &x10)) {

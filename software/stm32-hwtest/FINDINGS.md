@@ -12,6 +12,8 @@ evidence are in `HW_LOG.md` and `tools/results/`.
 | F2 | PB2 `AMP_SD` reads TIED_LOW, expected weak 100k pull-down (R23). Pull-down is much stronger than 100k (PAM8302A SD input or wrong R23). | `pins` suite, twice | Measure PB2 net to GND (board off) |
 | F3 | Backlight PWM duty measured 47.4 % for 50 % requested at every frequency (frequency exact). Likely IDR-sampling artefact. | `backlight` suite | Scope on PA6 / Q1 base |
 | F4 | First `hwcal save force` failed: erase of 0xFFF000 did not take effect; not reproducible afterwards with the diagnostic build. | HW_LOG 2026-11-13 21:2x | Watch for recurrence |
+| F6 | Enabling the PAM8302A (AMP_SD high) browned out the ATtiny (powered from +V) when the battery path had extra series resistance (multimeter 200 mA range, ~7 ohm) -> ATtiny reset -> power cut. Risk with a weak/cold battery or high-impedance cell. | power.current S10, 2026-11-16 | Re-test amp enable on battery without meter at low SoC; consider amp soft-start / bulk cap on +V / ATtiny BOD |
+| F7 | `lowpower.c` RTC wakeup flag clear wrote INIT=1 (stopped the RTC) -> Stop never woke by timer. FIXED in firmware. | power.current S1 | — |
 | F5 | Button B release bounce up to 17.6 ms (others < 4 ms). | `input.bounce` | Use >= 20 ms release debounce; check switch |
 
 ## Confirmed Facts

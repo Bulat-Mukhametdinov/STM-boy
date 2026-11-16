@@ -35,7 +35,7 @@ void EXTI2_IRQHandler(void)
 void RTC_WKUP_IRQHandler(void)
 {
     EXTI->PR = (1u << 22);
-    RTC->ISR = (uint32_t)((~RTC_ISR_WUTF) | (RTC->ISR & RTC_ISR_INIT));
+    RTC->ISR = (uint32_t)(~(RTC_ISR_WUTF | RTC_ISR_INIT) | (RTC->ISR & RTC_ISR_INIT)); /* never set INIT: it stops the RTC */
     s_wake_flags |= LP_WAKE_TIMER;
 }
 
@@ -78,10 +78,12 @@ void lp_rtc_start(void)
     RCC->APB1ENR |= RCC_APB1ENR_PWREN;
     (void)RCC->APB1ENR;
     PWR->CR |= PWR_CR_DBP;
+    /* LSION lives in RCC_CSR and is cleared by every system reset, while the
+       RTC config in BDCR survives it: always (re)start the LSI. */
+    RCC->CSR |= RCC_CSR_LSION;
+    for (uint32_t n = 0; !(RCC->CSR & RCC_CSR_LSIRDY) && n < 1000000u; n++) {
+    }
     if ((RCC->BDCR & RCC_BDCR_RTCEN) == 0u || (RCC->BDCR & RCC_BDCR_RTCSEL) != RCC_BDCR_RTCSEL_1) {
-        RCC->CSR |= RCC_CSR_LSION;
-        for (uint32_t n = 0; !(RCC->CSR & RCC_CSR_LSIRDY) && n < 1000000u; n++) {
-        }
         RCC->BDCR |= RCC_BDCR_BDRST;             /* RTCSEL can only change after a backup-domain reset */
         RCC->BDCR &= ~RCC_BDCR_BDRST;
         RCC->BDCR |= RCC_BDCR_RTCSEL_1 | RCC_BDCR_RTCEN;   /* LSI */
@@ -111,7 +113,7 @@ static void wut_arm(uint32_t secs)
     }
     RTC->WUTR = (secs ? secs - 1u : 0u) & 0xFFFFu;
     RTC->CR = (RTC->CR & ~RTC_CR_WUCKSEL) | RTC_CR_WUCKSEL_2 | RTC_CR_WUTIE;   /* ck_spre */
-    RTC->ISR = (uint32_t)((~RTC_ISR_WUTF) | (RTC->ISR & RTC_ISR_INIT));
+    RTC->ISR = (uint32_t)(~(RTC_ISR_WUTF | RTC_ISR_INIT) | (RTC->ISR & RTC_ISR_INIT)); /* never set INIT: it stops the RTC */
     RTC->CR |= RTC_CR_WUTE;
     EXTI->PR = (1u << 22);
     EXTI->RTSR |= (1u << 22);

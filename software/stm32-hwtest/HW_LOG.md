@@ -3178,3 +3178,392 @@ git-ignored; .txt hexdumps next to them).
 - Command: `hwtest.py info`
 - Result: OK (exit code 0)
 - COM10: fw=e1aa2f5+dirty build=1794597745 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-16 14:59:31 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 1.10 s
+- cmd: @OK dfu
+
+### 2026-11-16 14:59:42 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.234
+- Output: Time elapsed during verifying operation: 00:00:01.465
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-16 14:59:43 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (210928 bytes), expected id: {'fw': '9530a5e', 'build': 1794830362}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9530a5e build=1794830362, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=1.10s, program=11.25s, dfu_to_app=0.69s, total=13.15s
+
+### 2026-11-16 15:01:19 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-16 15:01:30 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.248
+- Output: Time elapsed during verifying operation: 00:00:01.479
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-16 15:01:30 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (210952 bytes), expected id: {'fw': '9530a5e+dirty', 'build': 1794830474}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9530a5e+dirty build=1794830474, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=11.17s, dfu_to_app=0.71s, total=12.56s
+
+### 2026-11-16 15:18:10 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=9530a5e+dirty build=1794830474 clk=96000000 busy=idle reset=por uid=002800343435511331323538
+
+### 2026-11-16 15:18:10 — power.current attempt 1 (manual note)
+
+- User: S1 (Stop) showed 0.00 on the meter 2 mA range, screen stayed dark >1 min; POWER press lit the screen and the board switched off immediately.
+- Interpretation: switching the meter range (no jumper) opened the battery circuit -> full power loss -> ATtiny reset into OFF (deep-off current < 1 uA on the 2 mA range). POWER press booted the board, but the 2 mA-range shunt (~100 ohm burden) collapsed the supply -> off again. Not a firmware fault.
+- Plan: keep the meter on the 200 mA range for the whole suite (no range switching). Added S10 (amp on, silent) and S11 (1 kHz -6 dBFS) states to power.current (loads.c).
+
+### 2026-11-16 15:31:42 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-16 15:40:52 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.64 s
+- cmd: @OK dfu
+
+### 2026-11-16 15:41:04 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.242
+- Output: Time elapsed during verifying operation: 00:00:01.476
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-16 15:41:04 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (210952 bytes), expected id: {'fw': '9530a5e+dirty', 'build': 1794832797}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9530a5e+dirty build=1794832797, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.64s, program=11.18s, dfu_to_app=0.70s, total=12.60s
+
+### 2026-11-16 15:41:10 — Run suite power.current (start) [auto]
+
+- Command: `run power.current s=1 n=5`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9530a5e+dirty build=1794832797 busy=idle
+
+### 2026-11-16 15:41:28 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.current s=1 n=5 --prompt-timeout 300`
+- Result: FAIL (exit code 2)
+- Suite power.current: DISCONNECTED results=0 pass=0 fail=0 (serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)))
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261116-154110-power.current.json
+
+### 2026-11-16 15:41:56 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-16 15:42:17 — Stop-mode RTC wake bug fixed (manual note)
+
+- Symptom: power.current S1 (Stop, 20 s RTC wake) never woke (>1-2 min dark); SWD hot-plug could not connect -> CPU really in Stop (not hung after wake).
+- Root cause: `lowpower.c` cleared WUTF with `RTC->ISR = ~RTC_ISR_WUTF | (ISR & INIT)`; `~WUTF` also sets INIT=1 -> RTC enters init mode, prescalers/wakeup timer stop. Fixed to `~(WUTF|INIT) | (ISR & INIT)` (as HAL), in wut_arm() and RTC_WKUP_IRQHandler. LSI now always (re)started in lp_rtc_start (LSION is cleared by system reset, BDCR is not).
+- Verify: power.current s=1 n=5 with USB in: USB detached in Stop and re-enumerated after the timer wake -> PASS. (Also affects battlog cutoff Stop and its RTC timestamps.)
+- Measurement so far: S1 Stop current = 1.3-1.4 mA (battery, 200 mA range). Meter red lead had been in the 10 A jack before (mA ranges open) - user error, fixed.
+
+### 2026-11-16 16:00:19 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9530a5e+dirty build=1794832797 busy=idle
+
+### 2026-11-16 16:00:22 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261116-160019-power.info.json
+
+### 2026-11-16 16:00:22 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 1 1.4"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 1, "ma_x10": 14, "i_state_ma": 2, "saved_to": "ram"}
+
+### 2026-11-16 16:00:23 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 2 10.1"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 2, "ma_x10": 101, "i_state_ma": 11, "saved_to": "ram"}
+
+### 2026-11-16 16:00:23 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 3 13.0"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 3, "ma_x10": 130, "i_state_ma": 13, "saved_to": "ram"}
+
+### 2026-11-16 16:00:24 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 4 17.4"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 4, "ma_x10": 174, "i_state_ma": 18, "saved_to": "ram"}
+
+### 2026-11-16 16:00:24 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 5 24.8"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 5, "ma_x10": 248, "i_state_ma": 25, "saved_to": "ram"}
+
+### 2026-11-16 16:00:25 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 6 32.4"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 6, "ma_x10": 324, "i_state_ma": 33, "saved_to": "ram"}
+
+### 2026-11-16 16:00:25 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 7 40.1"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 7, "ma_x10": 401, "i_state_ma": 41, "saved_to": "ram"}
+
+### 2026-11-16 16:00:25 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 8 18.8"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 8, "ma_x10": 188, "i_state_ma": 19, "saved_to": "ram"}
+
+### 2026-11-16 16:00:26 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 9 29.7"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 9, "ma_x10": 297, "i_state_ma": 30, "saved_to": "ram"}
+
+### 2026-11-16 16:00:26 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal get"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal get lines=2
+- @R {"t": "hwcal", "status": "valid", "seq": 1, "slot": "A", "version": 1, "madctl_land": 160, "xoff_land": 1, "yoff_land": 2, "madctl_port": 0, "xoff_port": 2, "yoff_port": 1, "bgr": 0, "invert": 0, "gam
+
+### 2026-11-16 16:04:23 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-16 16:04:34 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.246
+- Output: Time elapsed during verifying operation: 00:00:01.476
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-16 16:04:35 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (211452 bytes), expected id: {'fw': '9530a5e+dirty', 'build': 1794834256}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9530a5e+dirty build=1794834256, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.62s, program=11.17s, dfu_to_app=0.70s, total=12.57s
+
+### 2026-11-16 16:04:49 — Run suite power.current (start) [auto]
+
+- Command: `run power.current entry=0`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9530a5e+dirty build=1794834256 busy=idle
+
+### 2026-11-16 16:05:42 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.current entry=0 --prompt-timeout 900`
+- Result: FAIL (exit code 2)
+- Suite power.current: DISCONNECTED results=0 pass=0 fail=0 (serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)))
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261116-160449-power.current.json
+
+### 2026-11-16 16:15:01 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9530a5e+dirty build=1794834256 busy=idle
+
+### 2026-11-16 16:15:04 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261116-161501-power.info.json
+
+### 2026-11-16 16:15:04 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 1 1.3"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 1, "ma_x10": 13, "i_state_ma": 2, "saved_to": "ram"}
+
+### 2026-11-16 16:15:05 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 2 10.1"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 2, "ma_x10": 101, "i_state_ma": 11, "saved_to": "ram"}
+
+### 2026-11-16 16:15:05 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 3 13.05"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 3, "ma_x10": 131, "i_state_ma": 14, "saved_to": "ram"}
+
+### 2026-11-16 16:15:06 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 4 17.45"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 4, "ma_x10": 175, "i_state_ma": 18, "saved_to": "ram"}
+
+### 2026-11-16 16:15:06 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 5 24.95"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 5, "ma_x10": 250, "i_state_ma": 25, "saved_to": "ram"}
+
+### 2026-11-16 16:15:07 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 6 32.5"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 6, "ma_x10": 325, "i_state_ma": 33, "saved_to": "ram"}
+
+### 2026-11-16 16:15:07 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 7 40.25"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 7, "ma_x10": 403, "i_state_ma": 41, "saved_to": "ram"}
+
+### 2026-11-16 16:15:08 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 8 18.8"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 8, "ma_x10": 188, "i_state_ma": 19, "saved_to": "ram"}
+
+### 2026-11-16 16:15:08 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 9 29.7"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 9, "ma_x10": 297, "i_state_ma": 30, "saved_to": "ram"}
+
+### 2026-11-16 16:15:08 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 13 22.1"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 13, "ma_x10": 221, "i_state_ma": 23, "saved_to": "ram"}
+
+### 2026-11-16 16:15:09 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 14 23.55"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 14, "ma_x10": 236, "i_state_ma": 24, "saved_to": "ram"}
+
+### 2026-11-16 16:15:09 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur 15 31.6"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur lines=2
+- @R {"t": "cur", "state": 15, "ma_x10": 316, "i_state_ma": 32, "saved_to": "ram"}
+
+### 2026-11-16 16:15:10 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal get"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal get lines=2
+- @R {"t": "hwcal", "status": "valid", "seq": 1, "slot": "A", "version": 1, "madctl_land": 160, "xoff_land": 1, "yoff_land": 2, "madctl_port": 0, "xoff_port": 2, "yoff_port": 1, "bgr": 0, "invert": 0, "gam
+
+### 2026-11-16 16:15:10 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "cur list"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK cur list lines=13
+- @R {"t": "cur", "state": 1, "ma_x10": 13, "vbat_loaded_mv": 3840, "temp_dC": 277}
+- @R {"t": "cur", "state": 2, "ma_x10": 101, "vbat_loaded_mv": 4087, "temp_dC": 279}
+- @R {"t": "cur", "state": 3, "ma_x10": 131, "vbat_loaded_mv": 4011, "temp_dC": 283}
+- @R {"t": "cur", "state": 4, "ma_x10": 175, "vbat_loaded_mv": 3896, "temp_dC": 253}
+- @R {"t": "cur", "state": 5, "ma_x10": 250, "vbat_loaded_mv": 3969, "temp_dC": 261}
+
+### 2026-11-16 16:15:31 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal save"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal save lines=2
+- @R {"t": "hwcal_save", "seq": 2, "slot": "B"}
+
+### 2026-11-16 16:16:07 — power.current results (manual note)
+
+- Meter (200 mA range, red lead in mA jack) in series with the battery, USB out, ST-Link out. Suite run with `entry=0` (values typed on host via `cur`), loaded Vbat auto-logged per state (`cur list`). Vbat at the board includes the meter burden (~7-8 ohm equivalent incl. fuse/leads: 4.087 V @10 mA -> 3.854 V @40 mA); P = I x V_board is the system input power.
+- mA / V_board / mW: S1 Stop 1.3/3.84/5.0; S2 idle BL off 10.1/4.09/41.3; S3-S7 BL 10/25/50/75/100%: 13.05/17.45/24.95/32.5/40.25 mA = 52/68/99/126/155 mW; S8 CPU max 18.8 mA 76.5 mW; S9 LCD DMA max (BL50) 29.7 mA 116 mW; S13 W25Q read 22.1 mA 89 mW; S14 W25Q erase/prog 23.55 mA 94 mW; S15 game mix 31.6 mA 124 mW. S10/S11 (amp) skipped: with the meter in series, enabling the amp browned out the ATtiny (+V) -> board powered off (F6). S16 meaningless now (battery full, no charge current).
+- Estimate: 1.15 Wh / 124 mW = ~9 h game-mix runtime (to be confirmed by battlog). i_state_ma stored, `hwcal save` seq 2 slot B.
+- Firmware: power.current gained S10/S11 amp states, auto Vbat logging + `cur list`, `entry=0`.

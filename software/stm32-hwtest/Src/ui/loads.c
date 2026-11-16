@@ -1,6 +1,7 @@
 /* Load generators for power.current / battlog. */
 
 #include "loads.h"
+#include "audio.h"
 #include "backlight.h"
 #include "bench.h"
 #include "board.h"
@@ -21,12 +22,14 @@ static const load_def_t s_defs[] = {
     {7, "S7 BL 100%", "mA", false, false},
     {8, "S8 CPU max loop", "mA", true, false},
     {9, "S9 LCD DMA max fps", "mA", false, true},
+    {10, "S10 amp on, silent", "mA", false, false},
+    {11, "S11 amp 1kHz -6dBFS", "mA", false, false},
     {13, "S13 W25Q cont read", "mA", true, false},
     {14, "S14 W25Q erase/prog", "mA", true, false},
     {15, "S15 game mix", "mA", false, true},
 };
 
-const uint8_t g_load_order[] = {2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15, 0};
+const uint8_t g_load_order[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 0};
 
 const load_def_t *load_def(int id)
 {
@@ -162,6 +165,16 @@ void load_begin(int id)
             RDBUF[i] = (uint8_t)(i * 7u + 3u);
         }
     }
+    if (id == 10 || id == 11) {                     /* amp states: backlight off (above) */
+        audio_init();
+        if (id == 10) {
+            audio_pwm_start(1, true);               /* 375 kHz / 8-bit carrier, 50 % = silence */
+        } else {
+            audio_engine_start(AUD_ENG_B, 22050u, AUD_DITHER_OFF);
+            audio_voice_tone(0, AUD_GEN_SINE, 1000.0f, -6.0f);
+        }
+        audio_amp_on(20);
+    }
 }
 
 void load_step(void)
@@ -217,6 +230,10 @@ void load_step(void)
 
 void load_end(void)
 {
+    if (s_id == 10 || s_id == 11) {
+        audio_amp_off(20);
+        audio_shutdown();                           /* engine off, PA8 input, AMP_SD low */
+    }
     frame_finish();
     s_id = 0;
     backlight_full();
