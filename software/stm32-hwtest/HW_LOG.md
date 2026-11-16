@@ -3567,3 +3567,124 @@ git-ignored; .txt hexdumps next to them).
 - mA / V_board / mW: S1 Stop 1.3/3.84/5.0; S2 idle BL off 10.1/4.09/41.3; S3-S7 BL 10/25/50/75/100%: 13.05/17.45/24.95/32.5/40.25 mA = 52/68/99/126/155 mW; S8 CPU max 18.8 mA 76.5 mW; S9 LCD DMA max (BL50) 29.7 mA 116 mW; S13 W25Q read 22.1 mA 89 mW; S14 W25Q erase/prog 23.55 mA 94 mW; S15 game mix 31.6 mA 124 mW. S10/S11 (amp) skipped: with the meter in series, enabling the amp browned out the ATtiny (+V) -> board powered off (F6). S16 meaningless now (battery full, no charge current).
 - Estimate: 1.15 Wh / 124 mW = ~9 h game-mix runtime (to be confirmed by battlog). i_state_ma stored, `hwcal save` seq 2 slot B.
 - Firmware: power.current gained S10/S11 amp states, auto Vbat logging + `cur list`, `entry=0`.
+
+### 2026-11-16 16:18:03 — Run suite power.current (start) [auto]
+
+- Command: `run power.current s=5 n=600 entry=0`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9530a5e+dirty build=1794834256 busy=idle
+
+### 2026-11-16 16:19:03 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.current s=5 n=600 entry=0 --prompt-timeout 600`
+- Result: FAIL (exit code 2)
+- Suite power.current: ABORT results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261116-161803-power.current.json
+
+### 2026-11-16 16:19:31 — Run suite power.current (start) [auto]
+
+- Command: `run power.current s=5 n=600 entry=0 t=600 step=600`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9530a5e+dirty build=1794834256 busy=idle
+
+### 2026-11-16 16:26:17 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.current s=5 n=600 entry=0 t=600 step=600 --prompt-timeout 900`
+- Result: FAIL (exit code 2)
+- Suite power.current: DISCONNECTED results=0 pass=0 fail=0 (serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)))
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261116-161931-power.current.json
+
+### 2026-11-16 16:26:36 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.current s=5 n=600 entry=0 t=600 step=600`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-16 16:35:54 — Run suite power.current (start) [auto]
+
+- Command: `run power.current s=5 n=600 entry=0 t=600 step=600`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9530a5e+dirty build=1794834256 busy=idle
+
+### 2026-11-16 16:41:52 — Scope: backlight PWM (manual note)
+
+- Tektronix TDS3032B, CH1 x10 at R27 (MCU side, PA6), board on USB, power.current S5 (BL 50%, HWCAL 1 kHz).
+- Result: **Freq 1.000 kHz, +Duty 49.99 %** -> PWM correct; firmware value 47.4 % was an IDR-sampling artefact. F3 closed. (Trace looked AC-coupled / probe uncompensated - set DC coupling + probe comp for next measurements.)
+
+### 2026-11-16 16:42:10 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=1
+
+### 2026-11-16 16:42:16 — Run suite power.current (start) [auto]
+
+- Command: `run power.current s=9 n=600 entry=0 t=600 step=600`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9530a5e+dirty build=1794834256 busy=idle
+
+### 2026-11-16 16:50:04 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort`
+- Result: FAIL (exit code 2)
+- COM10: status=done final=@DONE power.current abort lines=3
+- @R {"t": "skip", "suite": "power.current", "reason": "abort"}
+- SPI1 SCK at 48 MHz: not measured (FPC contacts hidden under the panel, MCU pins too small to probe). Integrity already covered by display.spi visual stress test (stable at 48 MHz).
+
+### 2026-11-16 16:56:47 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-16 16:56:58 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.263
+- Output: Time elapsed during verifying operation: 00:00:01.478
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-16 16:56:59 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (211556 bytes), expected id: {'fw': 'e38a1ed+dirty', 'build': 1794837402}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=e38a1ed+dirty build=1794837402, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=11.19s, dfu_to_app=0.69s, total=12.58s
+
+### 2026-11-16 16:57:15 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog start dry=1 ls=12 load=20 rest=10" --timeout 15`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=8
+- @R {"t": "battlog", "event": "start", "dry": true, "resume": false, "load_s": 20, "rest_s": 10, "records": 0}
+- @R {"t": "bl", "n": 1, "t_s": 2, "vbat": 4176, "vcomp": 4176, "st": 12, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 2, "t_s": 4, "vbat": 4189, "vcomp": 4189, "st": 12, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 3, "t_s": 6, "vbat": 4192, "vcomp": 4192, "st": 12, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 4, "t_s": 8, "vbat": 4202, "vcomp": 4202, "st": 12, "fl": 2, "ok": true}
+
+### 2026-11-16 16:57:22 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog stop" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog stop lines=1
+
+### 2026-11-16 16:59:03 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog start new=1 ls=12" --timeout 8`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=2
+- @R {"t": "battlog", "event": "start", "dry": false, "resume": false, "load_s": 540, "rest_s": 60, "records": 0}
+- @R {"t": "bl", "n": 1, "t_s": 5, "vbat": 4189, "vcomp": 4189, "st": 12, "fl": 2, "ok": true}
+
+### 2026-11-16 16:59:09 — Battery cycle started (manual note)
+
+- `battlog start new=1 ls=12` (load phase = new S12 max load: BL100 + LCD DMA + CPU, ~230 mW est.; 9 min load / 1 min rest + 15-min rests at ~75/50/25/10 %). Meter removed, ST-Link removed, battery full (first record 4.189 V with USB). User unplugs USB now; board runs autonomously, cutoff 3.30 V loaded -> Stop -> charge phase logged on VBUS. Expected discharge ~5-5.5 h.

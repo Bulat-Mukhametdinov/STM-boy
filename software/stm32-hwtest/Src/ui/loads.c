@@ -23,6 +23,7 @@ static const load_def_t s_defs[] = {
     {8, "S8 CPU max loop", "mA", true, false},
     {9, "S9 LCD DMA max fps", "mA", false, true},
     {10, "S10 amp on, silent", "mA", false, false},
+    {12, "S12 max: BL100+LCD+CPU", "mA", false, true},  /* battlog ls=12 (fast discharge); not in g_load_order */
     {11, "S11 amp 1kHz -6dBFS", "mA", false, false},
     {13, "S13 W25Q cont read", "mA", true, false},
     {14, "S14 W25Q erase/prog", "mA", true, false},
@@ -147,6 +148,8 @@ void load_begin(int id)
     static const uint32_t pct[] = {10, 25, 50, 75, 100};
     if (id >= 3 && id <= 7) {
         backlight_set_ppm(pct[id - 3] * 10000u);
+    } else if (id == 12) {
+        backlight_full();
     } else if (id == 9 || id == 15) {
         backlight_set_ppm(500000u);
     } else {
@@ -190,6 +193,15 @@ void load_step(void)
             frame_finish();
         } else {
             __WFI();
+        }
+        break;
+    case 12:                                        /* like S9, but burn CPU instead of WFI */
+        if (!s_dma_busy) {
+            frame_start();
+        } else if (DMA2->LISR & S3_TC) {
+            frame_finish();
+        } else {
+            burn_us(200);
         }
         break;
     case 13:

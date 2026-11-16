@@ -199,7 +199,7 @@ static const char *const k_ph[] = {"LOAD", "REST", "XREST", "EMPTY", "CHARGE"};
 
 typedef struct {
     bool dry, resume;
-    uint32_t load_s, rest_s, xrest_s, dur_s, load_samp_s, cut_mv, chg_end_s;
+    uint32_t ls, load_s, rest_s, xrest_s, dur_s, load_samp_s, cut_mv, chg_end_s;
 } cfg_t;
 
 static const uint16_t k_cal_thr[5] = {4100, 3900, 3750, 3600, 3450};
@@ -272,8 +272,8 @@ static void enter_phase(phase_t p)
     s_phase_name = k_ph[p];
     s_ph_t0 = HAL_GetTick();
     if (p == PH_LOAD) {
-        s_state = 15;
-        load_begin(15);
+        s_state = (uint8_t)C.ls;
+        load_begin((int)C.ls);
     } else {
         gfx_fill(COLOR_BLACK);
         s_state = 2;
@@ -328,6 +328,7 @@ suite_verdict_t suite_battlog(int argc, char **argv)
     memset(&C, 0, sizeof(C));
     C.dry = arg_or(argc, argv, "dry", 0) != 0;
     C.resume = arg_or(argc, argv, "resume", 0) != 0;
+    C.ls = arg_or(argc, argv, "ls", 15u);      /* load-phase state: 15 game mix, 12 max (fast discharge) */
     C.load_s = arg_or(argc, argv, "load", C.dry ? 20u : 540u);
     C.rest_s = arg_or(argc, argv, "rest", C.dry ? 10u : 60u);
     C.xrest_s = arg_or(argc, argv, "xrest", C.dry ? 10u : 900u);
