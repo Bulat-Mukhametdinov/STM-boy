@@ -3,6 +3,7 @@
 
 #include "main.h"
 #include "adc.h"
+#include "gauge_fw.h"
 #include "backlight.h"
 #include "pwrtest.h"
 #include "board.h"
@@ -95,6 +96,7 @@ int main(void)
         log_poll();
         power_poll();
         adc_task();
+        gauge_fw_poll();
         cmd_poll();
         ui_task();
     }

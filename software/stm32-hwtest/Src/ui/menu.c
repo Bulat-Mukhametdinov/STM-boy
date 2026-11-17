@@ -2,6 +2,7 @@
    main loop, so host commands keep working while a screen is shown. */
 
 #include "ui.h"
+#include "gauge_fw.h"
 #include "board.h"
 #include "clock.h"
 #include "cmd.h"
@@ -64,6 +65,8 @@ static uint8_t usb_state(void)
     return (uint8_t)((usb_configured() ? 1u : 0u) | (usb_dtr() ? 2u : 0u));
 }
 
+static uint32_t s_gauge_sig;
+
 void ui_status_bar(void)
 {
     uint8_t st = usb_state();
@@ -73,6 +76,8 @@ void ui_status_bar(void)
     lcd_fill_rect(0, 0, (int16_t)lcd_width(), BAR_H, COLOR_NAVY);
     gfx_text(1, 1, b, COLOR_WHITE, COLOR_NAVY, 1);
     gfx_text((int16_t)(lcd_width() - 19), 1, "USB", usb_col, COLOR_NAVY, 1);
+    gauge_fw_draw_icon((int16_t)(lcd_width() - 19 - 36), 1, COLOR_NAVY);
+    s_gauge_sig = gauge_fw_sig();
     s_usb_state = st;
 }
 
@@ -407,7 +412,7 @@ void ui_task(void)
         s_last_refresh = now;
         if (s_scr == SCR_USBINFO) {
             draw_usb_info(false);
-        } else if (s_scr == SCR_MENU && usb_state() != s_usb_state) {
+        } else if (s_scr == SCR_MENU && (usb_state() != s_usb_state || gauge_fw_sig() != s_gauge_sig)) {
             ui_status_bar();
         }
     }

@@ -38,6 +38,7 @@ const suite_t g_suites[] = {
     {"display.bars", suite_display_bars, "[U] colour bars", SUITE_F_USER},
     {"display.gradient", suite_display_gradient, "[U] RGB565 gradients", SUITE_F_USER},
     {"display.spi", suite_display_spi, "[U] SPI1 A/B flicker 12/24/48 MHz x 8/16 bit x GPIO speed", SUITE_F_USER},
+    {"display.tear", suite_display_tear, "[U] tearing finder: write order x fps x panel Hz [auto=1]", SUITE_F_USER},
     {"backlight.user", suite_backlight_user, "[U] lowest usable level + flicker/whine per PWM freq", SUITE_F_USER},
     {"input.live", suite_input_live, "[U] press every button once (POWER excluded)", SUITE_F_USER},
     {"input.chord", suite_input_chord, "[U] button combinations", SUITE_F_USER},

@@ -12,8 +12,8 @@
    0 % is set at 3.30 V = the loaded cut-off, i.e. "usable" SoC. Replaced by
    the curve measured on this cell (P2b log -> tools/battlog_to_ocv.py). */
 static const uint16_t k_ocv_default[GAUGE_OCV_POINTS] = {
-    3300, 3500, 3600, 3650, 3690, 3710, 3730, 3750, 3770, 3790, 3810,
-    3840, 3870, 3910, 3950, 3980, 4020, 4060, 4100, 4150, 4200,
+    3320, 3475, 3505, 3541, 3568, 3589, 3614, 3647, 3667, 3688, 3741,
+    3781, 3826, 3865, 3899, 3954, 3994, 4009, 4060, 4110, 4161,
 };
 
 #define RINT_DEFAULT_MOHM 150u

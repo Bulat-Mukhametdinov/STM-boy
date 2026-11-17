@@ -230,6 +230,7 @@ static void emit_core(uint8_t state, uint8_t flags, uint16_t vb, uint16_t vdda, 
     r.vdda_mv = vdda;
     r.temp_dC = temp;
     r.load_state = state;
+    power_sense_init();   /* fresh pin config + sample at every record */
     if (power_charging()) flags |= F_CHG;
     if (power_vbus()) flags |= F_VBUS;
     if (s_ph == PH_REST || s_ph == PH_XREST || s_ph == PH_CHARGE) flags |= F_REST;

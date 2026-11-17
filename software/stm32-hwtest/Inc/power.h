@@ -16,6 +16,7 @@ void power_poll(void);
 
 bool power_vbus(void);      /* USB VBUS present (PA9 high) */
 bool power_charging(void);  /* charger CHG asserted (PA0 low) */
+void power_sense_init(void);  /* re-apply CHG/VBUS input config */
 bool power_off_req(void);   /* raw OFF_REQ asserted */
 
 /* While inhibited, power_poll() ignores OFF_REQ (used by the pins suite,

@@ -73,9 +73,9 @@ static uint32_t half_addr(int slot)
 void hwcal_defaults(hwcal_t *c)
 {
     static const uint16_t ocv_default[21] = {
-        /* generic 1S Li-ion curve, replaced by the measured one in P2b/P6 */
-        3300, 3500, 3600, 3650, 3690, 3710, 3730, 3750, 3770, 3790, 3810,
-        3840, 3870, 3910, 3950, 3980, 4020, 4060, 4100, 4150, 4200,
+        /* measured discharge OCV (battlog 2026-11-17) */
+        3320, 3475, 3505, 3541, 3568, 3589, 3614, 3647, 3667, 3688, 3741,
+        3781, 3826, 3865, 3899, 3954, 3994, 4009, 4060, 4110, 4161,
     };
     memset(c, 0, sizeof(*c));
     c->madctl_land = 0xA0;   /* MY|MV, RGB (stm32-bringup) */
@@ -94,10 +94,10 @@ void hwcal_defaults(hwcal_t *c)
     c->bl_pwm_hz = 1000;
     c->bl_min_level = 0;
     c->amp_ramp_ms = 20;
-    c->rint_mohm = 150;
+    c->rint_mohm = 330;
     c->vbat_gain_q16 = 65536u;
     c->vbat_offset_mv = 0;
-    c->i_chg_ma = 0;
+    c->i_chg_ma = 175;
     memcpy(c->ocv_mv, ocv_default, sizeof(c->ocv_mv));
     c->gauge_level = 0;
     c->gauge_mode = 0;

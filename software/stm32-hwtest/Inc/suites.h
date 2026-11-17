@@ -50,6 +50,7 @@ suite_verdict_t suite_display_invert(int argc, char **argv);
 suite_verdict_t suite_display_bars(int argc, char **argv);
 suite_verdict_t suite_display_gradient(int argc, char **argv);
 suite_verdict_t suite_display_spi(int argc, char **argv);
+suite_verdict_t suite_display_tear(int argc, char **argv);
 suite_verdict_t suite_pins(int argc, char **argv);
 suite_verdict_t suite_input_live(int argc, char **argv);
 suite_verdict_t suite_input_bounce(int argc, char **argv);

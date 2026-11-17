@@ -144,6 +144,7 @@ void lp_peripherals_sleep(void)
 
 void lp_peripherals_wake(void)
 {
+    power_sense_init();
     w25q_release_power_down();
     lcd_sleep(false);
     HAL_PCD_DevConnect(&hpcd);

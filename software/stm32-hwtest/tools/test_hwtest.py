@@ -100,6 +100,8 @@ class FakeBoard:
                 self.running = "silent"
                 return b""
             return self.line(f"@ERR run unknown suite {suite}")
+        if c == "battlog":
+            return self.line("@ERR battlog busy")
         return self.line(f"@ERR {c} unknown command")
 
 
@@ -543,6 +545,15 @@ class TestCliEntry(unittest.TestCase):
 
 
 class TestBattlog(unittest.TestCase):
+    def test_busy_never_aborts(self) -> None:
+        dev, fs = make_dev()
+        out = hwtest.run_suite(dev, "battlog dump", idle_timeout=0.2, total_timeout=0.3)
+        self.assertNotIn("abort", fs.sent)
+        tx = dev.transact("battlog dump", timeout=1)
+        self.assertEqual(tx.status, "err")
+        self.assertIn("busy", tx.final.text)
+        self.assertNotIn("abort", fs.sent)
+
     def test_parse_records_and_csv(self) -> None:
         import struct
         raw = struct.pack("<IHHHhBBH", 100, 3912, 3925, 3301, 251, 15, 0x41, 7)

@@ -6,6 +6,8 @@
 
 #include "suites.h"
 #include "backlight.h"
+#include "bench.h"
+#include "font.h"
 #include "board.h"
 #include "cmd.h"
 #include "gfx.h"
@@ -894,5 +896,227 @@ suite_verdict_t suite_display_spi(int argc, char **argv)
                  (unsigned)best_any, HAL_RCC_GetPCLK2Freq());
         cal_res("display.spi", "spi1_limit", ex, -1);
     }
+    return v;
+}
+
+/* ================================================================ display.tear */
+
+#define TW 160
+#define TH 128
+#define TFB ((uint16_t *)(void *)g_arena)
+
+typedef struct { uint8_t b[3]; } frm_t;   /* FRMCTR1: RTNA, FPA, BPA */
+/* ST7735S: Hz = 850 kHz / ((2*RTNA + 40) * (160 + FPA + BPA + 2)); 3rd entry = lcd_init default */
+static const frm_t k_frm[] = {
+    {{0x05, 0x3C, 0x3C}}, {{0x01, 0x36, 0x36}}, {{0x01, 0x2C, 0x2D}}, {{0x01, 0x1F, 0x20}}, {{0x00, 0x0F, 0x10}},
+};
+#define N_FRM ((int)(sizeof(k_frm) / sizeof(k_frm[0])))
+static const uint16_t k_fps[3] = {30, 60, 0};   /* 0 = unlimited */
+
+static bool s_tnative;
+
+static uint32_t frm_hz_x10(const frm_t *f)
+{
+    return 8500000u / ((2u * (f->b[0] & 0xFu) + 40u) * (160u + (f->b[1] & 0x3Fu) + (f->b[2] & 0x3Fu) + 2u));
+}
+
+static inline void tpx(int lx, int ly, uint16_t c)
+{
+    if ((unsigned)lx < TW && (unsigned)ly < TH) TFB[s_tnative ? lx * TH + ly : ly * TW + lx] = c;
+}
+
+static void ttext(int x, int y, const char *s, uint16_t fg, uint16_t bg)
+{
+    for (; *s; s++, x += 6) {
+        const uint8_t *g = font5x7_glyph(*s);
+        for (int cx = 0; cx < 6; cx++) {
+            for (int cy = 0; cy < 8; cy++) {
+                bool on = cx < 5 && cy < 7 && ((g[cx] >> cy) & 1u);
+                tpx(x + cx, y + cy, on ? fg : bg);
+            }
+        }
+    }
+}
+
+static void tear_render(uint32_t bar_x)
+{
+    uint32_t *p = (uint32_t *)(void *)g_arena;
+    const uint32_t bg = 0x20E420E4u;   /* dark, two pixels per word */
+    for (uint32_t i = 0; i < TW * TH / 2u; i++) p[i] = bg;
+    if (s_tnative) {
+        uint32_t *q = (uint32_t *)(void *)&TFB[bar_x * TH];
+        for (uint32_t i = 0; i < 8u * TH / 2u; i++) q[i] = 0xFFFFFFFFu;
+    } else {
+        for (int y = 0; y < TH; y++) {
+            uint32_t *q = (uint32_t *)(void *)&TFB[y * TW + bar_x];   /* bar_x is even */
+            q[0] = q[1] = q[2] = q[3] = 0xFFFFFFFFu;
+        }
+    }
+}
+
+static void tear_push(void)
+{
+    if (s_tnative) lcd_set_window(0, 0, TH - 1u, TW - 1u);
+    else lcd_set_window(0, 0, TW - 1u, TH - 1u);
+    spi1_dff(true);
+    dma3_start(TFB, TW * TH, true, true, false);
+    dma3_finish();
+    lcd_end();
+    lcd_set_frame16(false);
+}
+
+static void tear_order(bool native, const lcd_cfg_t *land)
+{
+    s_tnative = native;
+    lcd_cfg.madctl = land->madctl;
+    lcd_cfg.xoff = land->xoff;
+    lcd_cfg.yoff = land->yoff;
+    if (native) {
+        /* MV=0 portrait addressing: stream rows run along the panel scan lines. MX=1 so that the
+           landscape y axis (stored contiguously per column) maps to the native line, top = y 0. */
+        lcd_cfg.madctl = LCD_MADCTL_MX;
+        lcd_offsets_for(lcd_cfg.madctl, &lcd_cfg.xoff, &lcd_cfg.yoff);
+    }
+    lcd_apply_cfg();
+}
+
+static void tear_emit(const char *name, bool native, int fm, int fi, uint32_t fps_x10)
+{
+    const frm_t *f = &k_frm[fi];
+    uint32_t hz = frm_hz_x10(f);
+    res_printf("{\"t\":\"%s\",\"suite\":\"display.tear\",\"name\":\"tear\",\"order\":\"%s\",\"madctl\":%u,"
+               "\"fps_target\":%u,\"fps\":%" PRIu32 ".%" PRIu32 ",\"frmctr1\":\"%02X %02X %02X\","
+               "\"panel_hz\":%" PRIu32 ".%" PRIu32 "}",
+               name, native ? "native" : "land_mv", (unsigned)lcd_cfg.madctl, (unsigned)k_fps[fm], fps_x10 / 10u,
+               fps_x10 % 10u, f->b[0], f->b[1], f->b[2], hz / 10u, hz % 10u);
+}
+
+static void tear_bench(void)
+{
+    uint16_t *src = TFB, *dst = TFB + TW * TH;
+    for (uint32_t i = 0; i < TW * TH; i++) src[i] = (uint16_t)i;
+    uint32_t c0 = time_cycles();
+    for (int ly = 0; ly < TH; ly++)
+        for (int lx = 0; lx < 80; lx++) dst[lx * TH + ly] = src[ly * TW + lx];
+    uint32_t rot_half = time_cycles() - c0;
+    uint8_t *s8 = g_arena;
+    uint16_t *pal = (uint16_t *)(void *)(g_arena + TW * TH);
+    uint16_t *d16 = (uint16_t *)(void *)(g_arena + TW * TH + 512);
+    for (uint32_t i = 0; i < TW * TH; i++) s8[i] = (uint8_t)i;
+    for (uint32_t i = 0; i < 256; i++) pal[i] = (uint16_t)(i * 257u);
+    c0 = time_cycles();
+    for (int ly = 0; ly < TH; ly++) {
+        const uint8_t *l = &s8[ly * TW];
+        uint16_t *d = &d16[ly];
+        for (int lx = 0; lx < TW; lx++) d[lx * TH] = pal[l[lx]];
+    }
+    uint32_t conv = time_cycles() - c0;
+    uint32_t cpu = SystemCoreClock / 1000000u;
+    res_printf("{\"t\":\"bench\",\"suite\":\"display.tear\",\"name\":\"rotate\",\"rot565_full_cyc\":%" PRIu32
+               ",\"rot565_full_us\":%" PRIu32 ",\"conv8_rot_cyc\":%" PRIu32 ",\"conv8_rot_us\":%" PRIu32 "}",
+               rot_half * 2u, rot_half * 2u / cpu, conv, conv / cpu);
+}
+
+/* display.tear [auto=1] [t=<s per mode in auto>]
+   Full-frame 160x128 RGB565, 8 px white bar moving at 240 px/s, pushed with SPI1 DMA at 48 MHz.
+   LEFT/RIGHT fps 30/60/max, UP/DOWN panel refresh (FRMCTR1 presets), CENTER transfer order
+   (land MV = MADCTL 0xA0 writes vs native = panel scan direction), A = record as least tearing, B exit.
+   auto=1 only measures the achieved fps per order x fps mode (and the rotation cost). */
+suite_verdict_t suite_display_tear(int argc, char **argv)
+{
+    bool aut = suite_arg_u32(argc, argv, "auto", 0u) != 0u;
+    if (!aut && !suite_user_start("display.tear",
+                                  "Tearing finder: watch the moving bar. LEFT/RIGHT fps, UP/DOWN panel Hz, "
+                                  "CENTER write order, A = least tearing, B = exit. A=start B=skip",
+                                  argc, argv)) {
+        return SUITE_ABORT;
+    }
+    uint32_t auto_ms = suite_arg_u32(argc, argv, "t", 3u) * 1000u;
+    lcd_saved_t saved;
+    lcd_save(&saved);
+    lcd_cfg_t land = lcd_cfg;
+    lcd_set_gpio_speed(3);
+    lcd_set_spi_div(2);   /* 48 MHz */
+    input_flush();
+    int fm = 1, fi = 2, ord = 0;
+    bool done = false;
+    int auto_i = 0;
+    suite_verdict_t v = SUITE_PASS;
+    uint32_t fl_frames = 0, fl_t0 = HAL_GetTick(), cfg_frames = 0, cfg_t0 = fl_t0, fps_x10 = 0, rec_until = 0;
+    char l1[24], l2[24];
+    bool changed = true;
+
+    while (!done) {
+        if (changed) {
+            changed = false;
+            if (aut) { fm = auto_i % 3; ord = auto_i / 3; }
+            tear_order(ord != 0, &land);
+            lcd_set_frmctr1(k_frm[fi].b);
+            cfg_frames = 0;
+            cfg_t0 = HAL_GetTick();
+            fl_frames = 0; fl_t0 = cfg_t0;
+        }
+        uint32_t t0 = time_us();
+        uint32_t bar = (((t0 / 1000u) * 240u / 1000u) % ((TW - 8u) / 2u)) * 2u;
+        tear_render(bar);
+        uint32_t hz = frm_hz_x10(&k_frm[fi]);
+        snprintf(l1, sizeof(l1), "%s %u.%uHz", ord ? "NATIVE" : "LAND MV", (unsigned)(hz / 10u), (unsigned)(hz % 10u));
+        snprintf(l2, sizeof(l2), "T%s %u.%ufps", k_fps[fm] ? (k_fps[fm] == 30 ? "30" : "60") : "MAX",
+                 (unsigned)(fps_x10 / 10u), (unsigned)(fps_x10 % 10u));
+        ttext(1, 1, l1, COLOR_WHITE, COLOR_BLACK);
+        ttext(1, 10, l2, COLOR_YELLOW, COLOR_BLACK);
+        if ((int32_t)(rec_until - HAL_GetTick()) > 0) ttext(1, 119, "RECORDED", COLOR_GREEN, COLOR_BLACK);
+        tear_push();
+        fl_frames++;
+        cfg_frames++;
+        uint32_t now = HAL_GetTick();
+        if (now - fl_t0 >= 1000u) {
+            fps_x10 = fl_frames * 10000u / (now - fl_t0);
+            fl_frames = 0;
+            fl_t0 = now;
+        }
+        if (k_fps[fm]) {
+            uint32_t period = 1000000u / k_fps[fm];
+            while ((uint32_t)(time_us() - t0) < period) sys_service();
+        }
+        sys_service();
+        if (abort_requested()) { v = SUITE_ABORT; break; }
+        if (aut) {
+            if (now - cfg_t0 >= auto_ms) {
+                tear_emit("tear", ord != 0, fm, fi, cfg_frames * 10000u / (now - cfg_t0));
+                if (++auto_i >= 6) done = true;
+                changed = true;
+            }
+            continue;
+        }
+        input_event_t ev;
+        while (input_pop(&ev)) {
+            if (!ev.pressed) continue;
+            int nfm = fm, nfi = fi, nord = ord;
+            switch (ev.button) {
+            case BTN_LEFT:   nfm = (fm + 2) % 3; break;
+            case BTN_RIGHT:  nfm = (fm + 1) % 3; break;
+            case BTN_UP:     nfi = (fi + 1) % N_FRM; break;
+            case BTN_DOWN:   nfi = (fi + N_FRM - 1) % N_FRM; break;
+            case BTN_CENTER: nord = !ord; break;
+            case BTN_A:
+                tear_emit("cal", ord != 0, fm, fi, fps_x10);
+                rec_until = HAL_GetTick() + 1500u;
+                break;
+            case BTN_B: done = true; break;
+            default: break;
+            }
+            if (nfm != fm || nfi != fi || nord != ord) {
+                if (HAL_GetTick() - cfg_t0 >= 500u)
+                    tear_emit("tear", ord != 0, fm, fi, cfg_frames * 10000u / (HAL_GetTick() - cfg_t0));
+                fm = nfm; fi = nfi; ord = nord;
+                changed = true;
+            }
+        }
+    }
+    if (aut) tear_bench();
+    s_tnative = false;
+    lcd_restore(&saved);
+    lcd_init();
     return v;
 }

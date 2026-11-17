@@ -29,6 +29,13 @@ void power_init(void)
 }
 
 bool power_off_req(void) { return !gpio_read(OFF_REQ_PORT, OFF_REQ_PIN); }
+/* Re-apply the CHG/VBUS input configuration (cheap; guards against pin state lost over Stop/wake). */
+void power_sense_init(void)
+{
+    gpio_config(CHG_PORT, CHG_PIN, GPIO_MODE_IN_, GPIO_PULL_UP_, GPIO_SPEED_LOW_, 0);
+    gpio_config(VBUS_PORT, VBUS_PIN, GPIO_MODE_IN_, GPIO_PULL_DOWN_, GPIO_SPEED_LOW_, 0);
+}
+
 bool power_vbus(void) { return gpio_read(VBUS_PORT, VBUS_PIN); }
 bool power_charging(void) { return !gpio_read(CHG_PORT, CHG_PIN); }
 

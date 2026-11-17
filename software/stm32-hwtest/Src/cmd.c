@@ -9,6 +9,7 @@
 #include "crc.h"
 #include "dfu.h"
 #include "fw_id.h"
+#include "gauge_fw.h"
 #include "hwcal.h"
 #include "pwrtest.h"
 #include "lcd.h"
@@ -201,6 +202,7 @@ static bool hwcal_set_field(const char *key, uint32_t v)
         {"gamma_id", offsetof(hwcal_t, gamma_id), 1},       {"spi1_div_ok", offsetof(hwcal_t, spi1_div_ok), 1},
         {"spi1_div_max", offsetof(hwcal_t, spi1_div_max), 1}, {"debounce_ms", offsetof(hwcal_t, debounce_ms), 1},
         {"bl_pwm_hz", offsetof(hwcal_t, bl_pwm_hz), 2},     {"bl_min_level", offsetof(hwcal_t, bl_min_level), 2},
+        {"rint_mohm", offsetof(hwcal_t, rint_mohm), 2},     {"i_chg_ma", offsetof(hwcal_t, i_chg_ma), 2},
     };
     for (unsigned i = 0; i < sizeof(f) / sizeof(f[0]); i++) {
         if (strcmp(f[i].k, key) == 0) {
@@ -246,6 +248,22 @@ static void cmd_hwcal(int argc, char **argv)
         proto_ok("hwcal set");
         return;
     }
+    if (argc >= 4 && strcmp(argv[1], "ocv") == 0) { /* hwcal ocv <start> mv,mv,... */
+        unsigned idx = (unsigned)strtoul(argv[2], NULL, 0);
+        const char *p = argv[3];
+        while (*p) {
+            char *end;
+            unsigned long v = strtoul(p, &end, 10);
+            if (end == p || idx >= 21u || v > 5000ul) {
+                proto_err("hwcal", "ocv: bad value or index");
+                return;
+            }
+            g_hwcal.ocv_mv[idx++] = (uint16_t)v;
+            p = (*end == ',') ? end + 1 : end;
+        }
+        proto_ok("hwcal ocv");
+        return;
+    }
     if (argc >= 2 && strcmp(argv[1], "get") == 0) {
         jb_begin(&j, "hwcal");
         hwcal_to_json(&j);
@@ -277,7 +295,7 @@ static void cmd_hwcal(int argc, char **argv)
         proto_ok(force ? "hwcal save force" : "hwcal save");
         return;
     }
-    proto_err("hwcal", "usage: hwcal get | hwcal init [force] | hwcal save [force]");
+    proto_err("hwcal", "usage: hwcal get | set k=v | ocv <i> mv,.. | init [force] | hwcal save [force]");
 }
 
 /* @R {"t":"suites","list":[...],"user":[...]}  ("user" = [U] suites that need
@@ -383,6 +401,11 @@ static void dispatch(char *line, bool restricted)
     } else if (strcmp(c, "info") == 0) {
         cmd_emit_info("@R ");
         proto_ok("info");
+    } else if (strcmp(c, "gauge") == 0) {
+        static char gb[400];
+        gauge_fw_json(gb, sizeof(gb));
+        res_printf("%s", gb);
+        proto_ok("gauge");
     } else if (strcmp(c, "help") == 0) {
         cmd_help();
     } else if (strcmp(c, "suites") == 0) {

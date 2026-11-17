@@ -265,6 +265,12 @@ void lcd_clear_gddram(uint16_t color)
     lcd_end();
 }
 
+void lcd_set_frmctr1(const uint8_t b[3])
+{
+    cmd_data(0xB1, b, 3);
+    lcd_end();
+}
+
 void lcd_apply_cfg(void)
 {
     if (lcd_cfg.gamma_id == 0u && s_gamma_loaded != 0u) {

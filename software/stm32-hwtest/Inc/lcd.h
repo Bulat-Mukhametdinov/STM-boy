@@ -62,6 +62,7 @@ const char *lcd_gamma_name(uint8_t id);
 void lcd_offsets_for(uint8_t madctl, uint8_t *xoff, uint8_t *yoff);
 
 /* SPI1 bus variants for the flicker stress test. */
+void lcd_set_frmctr1(const uint8_t b[3]);  /* FRMCTR1 RTNA/FPA/BPA (lcd_init restores the default) */
 void lcd_set_frame16(bool on);       /* pixel data in 16-bit SPI frames */
 bool lcd_frame16(void);
 void lcd_set_gpio_speed(uint32_t speed); /* OSPEEDR value for SCK/MOSI (2 high, 3 very high) */

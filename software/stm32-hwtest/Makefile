@@ -74,6 +74,8 @@ SRC_OWN := \
   Src/fw_id.c \
   Src/syscalls.c \
   Src/drv/lcd.c \
+  Src/drv/gauge.c \
+  Src/drv/gauge_fw.c \
   Src/drv/backlight.c \
   Src/ui/t_display.c \
   Src/ui/t_flash.c \

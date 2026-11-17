@@ -1175,6 +1175,8 @@ def run_suite(dev: Device, command: str, *, idle_timeout: float = 120.0,
 
     def finish_abort(reason: str) -> None:
         out.error = reason
+        if command.split()[:1] != ["run"]:
+            return  # never abort something this tool did not start
         try:
             dev.send("abort")
             end = time.monotonic() + 5.0
@@ -1563,6 +1565,10 @@ def cmd_battlog(args: argparse.Namespace) -> int:
     with connect(cdc, timeout=args.open_timeout) as dev:
         info = dev.info()
         tx = dev.transact("battlog dump" + (f" src={args.src}" if args.src else ""), timeout=args.timeout)
+    if tx.status == "err" and tx.final is not None and "busy" in tx.final.text.lower():
+        OUT.error("battlog logger running; use `battlog stop` first or wait")
+        OUT.emit({"ok": False, "status": "busy"})
+        return EXIT_ABORT
     if tx.status != "ok":
         OUT.error(f"battlog dump failed: {tx.status} {tx.final.text if tx.final else ''}")
         OUT.emit({"ok": False, "status": tx.status})
