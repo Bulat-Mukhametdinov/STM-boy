@@ -14,6 +14,8 @@ evidence are in `HW_LOG.md` and `tools/results/`.
 | F4 | First `hwcal save force` failed: erase of 0xFFF000 did not take effect; not reproducible afterwards with the diagnostic build. | HW_LOG 2026-11-13 21:2x | Watch for recurrence |
 | F6 | Enabling the PAM8302A (AMP_SD high) browned out the ATtiny (powered from +V) when the battery path had extra series resistance (multimeter 200 mA range, ~7 ohm) -> ATtiny reset -> power cut. Risk with a weak/cold battery or high-impedance cell. | power.current S10, 2026-11-16 | Re-test amp enable on battery without meter at low SoC; consider amp soft-start / bulk cap on +V / ATtiny BOD |
 | F7 | `lowpower.c` RTC wakeup flag clear wrote INIT=1 (stopped the RTC) -> Stop never woke by timer. FIXED in firmware. | power.current S1 | — |
+| F8 | Board back-feeds ~1.9-2.5 V onto the +5V/VBUS rail (known float). With a USB-C to C cable the laptop (USB-C source) sees VBUS not at vSafe0V (<0.8 V) and never turns on 5 V -> no charging, VBUS sense false, while USB data still works. Wall charger (no vSafe0V check) charged fine. | +5V TP = 1.87-2.0 V with laptop C-C cable, 2026-11-17 | Confirm: +5V with cable removed; A-C cable test. v0.2: find the leak path / add VBUS bleed so +5V < 0.8 V without USB |
+| F9 | #CHG (PA0) never indicated charging in the battlog during the overnight wall-charger charge (V rose 3.29->3.73 V). | battlog-20261117-080333 | Check CHG with an A-C cable / charger: scope or `power.info` while charging |
 | F5 | Button B release bounce up to 17.6 ms (others < 4 ms). | `input.bounce` | Use >= 20 ms release debounce; check switch |
 
 ## Confirmed Facts

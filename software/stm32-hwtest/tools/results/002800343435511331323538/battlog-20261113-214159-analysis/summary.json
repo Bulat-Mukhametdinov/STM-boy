@@ -1,0 +1,21 @@
+{
+  "notes": [
+    "all records have VBUS=1 (dry run or USB-powered): the cell is not discharging, discharge / OCV / R_int analysis skipped"
+  ],
+  "n_records": 90,
+  "t_total_s": 117,
+  "v_range_mv": [
+    4157,
+    4221
+  ],
+  "temp_range_c": [
+    26.5,
+    30.0
+  ],
+  "usb_only": true,
+  "i0": 0,
+  "i_cut": null,
+  "i_chg0": null,
+  "discharge_end_t": null,
+  "c_array": null
+}

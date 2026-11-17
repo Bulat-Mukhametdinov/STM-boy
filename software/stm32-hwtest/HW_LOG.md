@@ -3688,3 +3688,96 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-16 16:59:09 — Battery cycle started (manual note)
 
 - `battlog start new=1 ls=12` (load phase = new S12 max load: BL100 + LCD DMA + CPU, ~230 mW est.; 9 min load / 1 min rest + 15-min rests at ~75/50/25/10 %). Meter removed, ST-Link removed, battery full (first record 4.189 V with USB). User unplugs USB now; board runs autonomously, cutoff 3.30 V loaded -> Stop -> charge phase logged on VBUS. Expected discharge ~5-5.5 h.
+
+### 2026-11-17 07:49:20 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-17 07:50:44 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog status" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog status lines=2
+- @R {"t": "battlog_status", "running": true, "dry": false, "phase": "CHARGE", "t_s": 53522, "records": 9696, "hdr": false, "ended": false, "flash_records": 0, "dry_records": 14, "write_errors": 0, "vbat_m
+
+### 2026-11-17 07:51:20 — hwtest.py battlog [auto]
+
+- Command: `hwtest.py battlog dump --src flash`
+- Result: FAIL (exit code 1)
+
+### 2026-11-17 07:51:57 — Battery cycle status (manual note)
+
+- Discharge (ls=12) lasted ~9 h per user (longer than the 5.5 h estimate -> S12 power lower than assumed). User check at ~01:00: multimeter 3.47 V at J2 vs console Vbat 3460-3480 mV (around record #8272) -> ADC 2nd point agrees within ~10 mV, no correction needed.
+- Charger plugged ~40 min before; screen flashed white then went dark = expected (`enter_phase(PH_CHARGE)` -> `load_end()` sets full backlight, then S2 rest turns it off).
+- Moved USB from wall charger to the laptop. `battlog status`: running, phase CHARGE, t=53522 s, 9696 records, write_errors 0, Vbat 3666 mV (CC charge). `battlog dump` refused while running (busy) -> waiting for the logger to finish (CHG high + 30 min).
+
+### 2026-11-17 08:02:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog status" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog status lines=2
+- @R {"t": "battlog_status", "running": false, "dry": false, "phase": "CHARGE", "t_s": 53567, "records": 9702, "hdr": true, "ended": true, "flash_records": 9702, "dry_records": 14, "write_errors": 0, "vbat
+
+### 2026-11-17 08:02:42 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e38a1ed+dirty build=1794837402 busy=idle
+
+### 2026-11-17 08:02:44 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-080241-power.info.json
+
+### 2026-11-17 08:03:09 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=e38a1ed+dirty build=1794837402 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-17 08:03:33 — hwtest.py battlog [auto]
+
+- Command: `hwtest.py battlog dump --src flash`
+- Result: OK (exit code 0)
+- battlog dump: 9702 records -> C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\battlog-20261117-080333.csv ok=True
+
+### 2026-11-17 08:04:16 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd reset`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK reset lines=1
+
+### 2026-11-17 08:04:23 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=e38a1ed+dirty build=1794837402 busy=idle
+
+### 2026-11-17 08:04:26 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-080423-power.info.json
+
+### 2026-11-17 08:04:52 — Battery cycle dump + VBUS problem (manual note)
+
+- The logger stopped at t=53567 s (~45 s after the 05:xx status): my `hwtest.py battlog dump` attempt got `@ERR battlog busy` and the host error path apparently sent `abort` -> charge-phase logging stopped after ~50 min of charge. HOST BUG to fix (dump must not abort a running log). The 5-min watcher also died immediately (wrong `--no-log` placement in my script).
+- `battlog dump --src flash`: 9702 records OK -> tools/results/.../battlog-20261117-080333.bin/.csv; `battlog_analyze.py` -> discharge (ls=12) 9:18:32 to the 3.30 V loaded cutoff; Stop gap 4:42; OCV table 3320..4161 mV (21 pts); R_int steps +1 s median 291 mOhm, +10 s 376 mOhm; charger plug step 3290->3428 mV.
+- **Problem:** on the laptop the board reports vbus=false, chg=false, Vbat falling (3666->3610 mV) although USB CDC works; same after soft reset -> no +5V on the board rail from this laptop port (wall charger last night did deliver VBUS). Also CHG (#CHG, PA0) never showed "charging" in the log during the night charge (analyzer: CC n/a). To check with multimeter at +5V TP, another port/cable.
+
+### 2026-11-17 08:12:32 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-17 08:13:04 — F8 confirmed (manual note)
+
+- +5V TP with no cable: 2.41 V (board back-feeds VBUS). With a USB-A to C cable (charge-only, no data) +5V = 5 V and charging works. => USB-C sources that check vSafe0V (laptop C-C) refuse to power the board. Workaround: A-C cable / wall charger. Charge curve: only the first ~50 min captured (host abort bug); full charge curve to be re-captured later.
