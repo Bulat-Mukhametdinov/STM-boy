@@ -78,6 +78,7 @@ SRC_OWN := \
   Src/drv/gauge_fw.c \
   Src/drv/backlight.c \
   Src/ui/t_display.c \
+  Src/ui/t_demo.c \
   Src/ui/t_flash.c \
   Src/ui/t_w25q.c \
   Src/ui/t_mem.c \

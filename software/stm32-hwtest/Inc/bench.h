@@ -73,6 +73,7 @@ void spi1_wait_idle(void);
 void spi1_dff(bool w16);
 void dma3_start(const void *src, uint32_t items, bool w16, bool minc, bool irq);
 void dma3_finish(void);
+extern void (*g_dma3_hook)(void);   /* when set, DMA2_Stream3_IRQHandler just calls it (Src/ui/t_demo.c) */
 
 extern uint8_t g_arena[];
 #define ARENA_BYTES (72u * 1024u)

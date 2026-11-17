@@ -20,6 +20,7 @@
 #include "stm32f4xx_hal.h"
 
 #include <inttypes.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -29,6 +30,7 @@ typedef struct {
     lcd_cfg_t cfg;
     uint32_t speed;
     bool f16;
+    bool native;
 } lcd_saved_t;
 
 static void lcd_save(lcd_saved_t *s)
@@ -36,6 +38,14 @@ static void lcd_save(lcd_saved_t *s)
     s->cfg = lcd_cfg;
     s->speed = lcd_gpio_speed();
     s->f16 = lcd_frame16();
+    s->native = lcd_native_enabled();
+}
+
+/* Same, and switches to raw landscape (MV) addressing for suites that probe MADCTL/offsets/bus. */
+static void lcd_save_raw(lcd_saved_t *s)
+{
+    lcd_save(s);
+    lcd_set_native(false);
 }
 
 /* Restores the configuration that was active when the suite started and
@@ -45,6 +55,7 @@ static void lcd_restore(const lcd_saved_t *s)
     lcd_set_frame16(s->f16);
     lcd_set_gpio_speed(s->speed);
     lcd_cfg = s->cfg;
+    lcd_set_native(s->native);
     lcd_apply_cfg();
     lcd_clear_gddram(COLOR_BLACK);
     backlight_full();
@@ -116,6 +127,7 @@ suite_verdict_t suite_display_info(int argc, char **argv)
     char b[8];
     snprintf(b, sizeof(b), "%02X", (unsigned)lcd_cfg.madctl);
     jb_str(&j, "madctl", b);
+    jb_bool(&j, "native", lcd_native());
     jb_str(&j, "orient", orient_name(lcd_cfg.madctl));
     jb_u32(&j, "w", lcd_width());
     jb_u32(&j, "h", lcd_height());
@@ -223,7 +235,7 @@ suite_verdict_t suite_display_cal(int argc, char **argv)
     bool port = suite_has_word(argc, argv, "port");
     uint32_t idle_ms = suite_arg_u32(argc, argv, "t", 300u) * 1000u;
     lcd_saved_t saved;
-    lcd_save(&saved);
+    lcd_save_raw(&saved);
 
     if (port) {
         lcd_cfg.madctl = g_hwcal.madctl_port;
@@ -423,7 +435,7 @@ suite_verdict_t suite_display_orient(int argc, char **argv)
     uint32_t to = step_to(argc, argv, 120u);
     bool only_land = suite_has_word(argc, argv, "land"), only_port = suite_has_word(argc, argv, "port");
     lcd_saved_t saved;
-    lcd_save(&saved);
+    lcd_save_raw(&saved);
     suite_verdict_t v = SUITE_PASS;
     bool picked_land = false;
 
@@ -813,7 +825,7 @@ suite_verdict_t suite_display_spi(int argc, char **argv)
     uint32_t only_bits = suite_arg_u32(argc, argv, "bits", 0u);
     uint32_t only_speed = suite_arg_u32(argc, argv, "speed", 0u);
     lcd_saved_t saved;
-    lcd_save(&saved);
+    lcd_save_raw(&saved);
     const bus_t ref = {16, false, 3};
     static const uint16_t divs[3] = {8, 4, 2};
     uint16_t best_all = 0, best_any = 0; /* smallest div with all / any variant stable */
@@ -1033,7 +1045,7 @@ suite_verdict_t suite_display_tear(int argc, char **argv)
     }
     uint32_t auto_ms = suite_arg_u32(argc, argv, "t", 3u) * 1000u;
     lcd_saved_t saved;
-    lcd_save(&saved);
+    lcd_save_raw(&saved);
     lcd_cfg_t land = lcd_cfg;
     lcd_set_gpio_speed(3);
     lcd_set_spi_div(2);   /* 48 MHz */
@@ -1118,5 +1130,345 @@ suite_verdict_t suite_display_tear(int argc, char **argv)
     s_tnative = false;
     lcd_restore(&saved);
     lcd_init();
+    return v;
+}
+
+/* ================================================================ display.native */
+
+static const char *const k_fglyph[10] = {
+    "#######.", "#.......", "#.......", "######..", "#.......", "#.......", "#.......", "#.......", "#.......", "#.......",
+};
+
+/* display.native [t=<s shown>]
+   Self-check of the native scan-order translation (lcd.c): draws corner markers (TL red, TR green,
+   BL blue, BR yellow), a 1 px border, an asymmetric "F" pushed row-major with lcd_push_pixels (must
+   read correctly: a transposition error mirrors/rotates it), a left-to-right red ramp strip and text.
+   Reports the physical MADCTL, the native CASET/RASET of the four landscape corners and the cost of
+   the common draw calls. pass = translation active and all corners inside the 132x162 RAM. */
+suite_verdict_t suite_display_native(int argc, char **argv)
+{
+    uint32_t hold_ms = suite_arg_u32(argc, argv, "t", 3u) * 1000u;
+    lcd_saved_t saved;
+    lcd_save(&saved);
+    lcd_set_native(true);
+    bool active = lcd_native();
+    int16_t w = (int16_t)lcd_width(), h = (int16_t)lcd_height();
+
+    uint32_t cpu_us = SystemCoreClock / 1000000u;
+    uint32_t c0 = time_cycles();
+    gfx_fill(COLOR_BLACK);
+    uint32_t fill_c = time_cycles() - c0;
+    gfx_rect(0, 0, w, h, COLOR_WHITE);
+    lcd_fill_rect(1, 1, 6, 6, COLOR_RED);
+    lcd_fill_rect((int16_t)(w - 7), 1, 6, 6, COLOR_GREEN);
+    lcd_fill_rect(1, (int16_t)(h - 7), 6, 6, COLOR_BLUE);
+    lcd_fill_rect((int16_t)(w - 7), (int16_t)(h - 7), 6, 6, COLOR_YELLOW);
+
+    /* "F" at (20,40), 2x, row-major through lcd_push_pixels */
+    uint16_t row[16];
+    c0 = time_cycles();
+    lcd_set_window(20, 40, 35, 59);
+    for (int r = 0; r < 10; r++) {
+        for (int cx = 0; cx < 8; cx++) row[2 * cx] = row[2 * cx + 1] = (k_fglyph[r][cx] == '#') ? COLOR_WHITE : COLOR_NAVY;
+        lcd_push_pixels(row, 16);
+        lcd_push_pixels(row, 16);
+    }
+    lcd_end();
+    uint32_t blit_c = time_cycles() - c0;
+
+    /* ramp strip: x 0..159 dark -> bright red, 6 rows, row-major */
+    uint16_t ramp[160];
+    for (int x = 0; x < 160; x++) ramp[x] = (uint16_t)(((x * 31 / 159) << 11));
+    c0 = time_cycles();
+    lcd_set_window(0, 100, 159, 105);
+    for (int r = 0; r < 6; r++) lcd_push_pixels(ramp, 160);
+    lcd_end();
+    uint32_t ramp_c = time_cycles() - c0;
+
+    c0 = time_cycles();
+    gfx_text(44, 40, "NATIVE", COLOR_CYAN, COLOR_BLACK, 2);
+    uint32_t text_c = time_cycles() - c0;   /* 6 chars at 2x */
+    uint16_t mc[4][2];
+    static const uint16_t cxy[4][2] = {{0, 0}, {159, 0}, {0, 127}, {159, 127}};
+    bool inside = true;
+    for (int i = 0; i < 4; i++) {
+        lcd_native_map(cxy[i][0], cxy[i][1], &mc[i][0], &mc[i][1]);
+        if (mc[i][0] >= LCD_GDDRAM_W || mc[i][1] >= LCD_GDDRAM_H) inside = false;
+    }
+    uint8_t phys = lcd_phys_madctl();
+    uint8_t expect = (uint8_t)((lcd_cfg.madctl & ~LCD_MADCTL_MV & ~LCD_MADCTL_BGR) | (lcd_cfg.bgr ? LCD_MADCTL_BGR : 0u));
+    bool map_ok = (mc[0][0] == lcd_cfg.yoff) && (mc[0][1] == lcd_cfg.xoff) && (mc[3][0] == 127u + lcd_cfg.yoff) &&
+                  (mc[3][1] == 159u + lcd_cfg.xoff);
+    bool pass = active && inside && map_ok && phys == expect && w == 160 && h == 128;
+    gfx_textf(12, 14, COLOR_WHITE, COLOR_BLACK, 1, "land %02X -> phys %02X", (unsigned)lcd_cfg.madctl, (unsigned)phys);
+    gfx_textf(12, 24, COLOR_WHITE, COLOR_BLACK, 1, "TL col%u row%u", (unsigned)mc[0][0], (unsigned)mc[0][1]);
+    gfx_textf(12, 64, COLOR_WHITE, COLOR_BLACK, 1, "BR col%u row%u", (unsigned)mc[3][0], (unsigned)mc[3][1]);
+    gfx_textf(12, 74, COLOR_WHITE, COLOR_BLACK, 1, "fill %uus F %uus", (unsigned)(fill_c / cpu_us), (unsigned)(blit_c / cpu_us));
+    gfx_text(12, 84, pass ? "native OK" : "native FAIL", pass ? COLOR_GREEN : COLOR_RED, COLOR_BLACK, 1);
+    res_printf("{\"t\":\"test\",\"suite\":\"display.native\",\"name\":\"mapping\",\"pass\":%s,\"native_enabled\":%s,"
+               "\"native_active\":%s,\"madctl_land\":\"%02X\",\"madctl_phys\":\"%02X\",\"xoff\":%u,\"yoff\":%u,"
+               "\"rule\":\"landscape x -> RASET row (+xoff), landscape y -> CASET col (+yoff)\","
+               "\"TL\":[%u,%u],\"TR\":[%u,%u],\"BL\":[%u,%u],\"BR\":[%u,%u],\"caset_max\":%u,\"raset_max\":%u,"
+               "\"fill_us\":%" PRIu32 ",\"blit_F_16x20_us\":%" PRIu32 ",\"ramp_160x6_us\":%" PRIu32
+               ",\"text_6ch_2x_us\":%" PRIu32 ",\"spi_hz\":%" PRIu32 ",\"gpio_speed\":%" PRIu32 "}",
+               pass ? "true" : "false", saved.native ? "true" : "false", active ? "true" : "false",
+               (unsigned)lcd_cfg.madctl, (unsigned)phys, (unsigned)lcd_cfg.xoff, (unsigned)lcd_cfg.yoff,
+               (unsigned)mc[0][0], (unsigned)mc[0][1], (unsigned)mc[1][0], (unsigned)mc[1][1], (unsigned)mc[2][0],
+               (unsigned)mc[2][1], (unsigned)mc[3][0], (unsigned)mc[3][1], (unsigned)LCD_GDDRAM_W - 1u,
+               (unsigned)LCD_GDDRAM_H - 1u, fill_c / cpu_us, blit_c / cpu_us, ramp_c / cpu_us, text_c / cpu_us,
+               lcd_spi_hz(), lcd_gpio_speed());
+    uint32_t t0 = HAL_GetTick();
+    while ((uint32_t)(HAL_GetTick() - t0) < hold_ms) {
+        sys_service();
+        if (abort_requested()) break;
+    }
+    lcd_restore(&saved);
+    return pass ? SUITE_PASS : SUITE_FAIL;
+}
+
+/* ================================================================ display.vscroll */
+
+#define VS_W 160
+#define VS_H 128
+#define VS_HUD 36                 /* fixed (non-scrolling) landscape columns on the left */
+
+static uint16_t s_vcol[VS_H];
+
+/* World column W (unbounded): 16 px tiles, a sine track and grid lines. */
+static void vs_gen(uint32_t W)
+{
+    static const uint16_t c8[8] = {0xF800, 0x07E0, 0x001F, 0xFFE0, 0xF81F, 0x07FF, 0xFD20, 0xAD55};
+    uint32_t tc = W >> 4;
+    int ys = 64 + (int)(40.0f * sinf((float)W * 0.12f));
+    for (int y = 0; y < VS_H; y++) {
+        uint16_t c = c8[(tc * 3u + (uint32_t)(y >> 4) * 5u) & 7u];
+        if ((tc ^ (uint32_t)(y >> 4)) & 1u) c = (uint16_t)((c >> 1) & 0x7BEFu);
+        if ((W & 15u) == 0u || (y & 15) == 0) c = COLOR_BLACK;
+        if (y >= ys - 1 && y <= ys + 1) c = COLOR_WHITE;
+        s_vcol[y] = c;
+    }
+}
+
+typedef struct {
+    bool my;
+    uint16_t S0, N;       /* first RAM line of the scroll area, its length */
+    uint32_t c;           /* world column shown at scan line S0 */
+} vs_t;
+
+static inline uint16_t vs_row(const vs_t *v, uint32_t W)   /* RAM write address of world column W */
+{
+    uint16_t L = (uint16_t)(v->S0 + W % v->N);
+    return v->my ? (uint16_t)(LCD_GDDRAM_H - 1u - L) : L;
+}
+
+static void vs_write(const vs_t *v, uint32_t W)
+{
+    vs_gen(W);
+    lcd_stream_row(vs_row(v, W), 0, VS_H - 1u);
+    lcd_set_frame16(true);
+    lcd_push_pixels(s_vcol, VS_H);
+    lcd_end();
+}
+
+static void vs_hw_init(vs_t *v)
+{
+    v->my = (lcd_cfg.madctl & LCD_MADCTL_MY) != 0u;
+    v->c = 0;
+    lcd_vscroll_define(0, LCD_GDDRAM_H, 0);
+    lcd_vscroll_start(0);
+    lcd_fill_rect(0, 0, VS_W, VS_H, COLOR_BLACK);
+    if (v->my) {
+        v->S0 = 0;
+        v->N = (uint16_t)(LCD_GDDRAM_H - 1u - VS_HUD);
+        lcd_vscroll_define(0, v->N, (uint16_t)(LCD_GDDRAM_H - v->N));
+    } else {
+        v->S0 = (uint16_t)(VS_HUD + 1u);
+        v->N = (uint16_t)(LCD_GDDRAM_H - v->S0);
+        lcd_vscroll_define(v->S0, v->N, 0);
+    }
+    for (uint32_t W = 0; W < v->N; W++) vs_write(v, W);
+    lcd_set_frame16(false);
+    lcd_vscroll_start(v->S0);
+    lcd_fill_rect(0, 0, VS_HUD, VS_H, COLOR_NAVY);
+    lcd_fill_rect(VS_HUD, 0, 1, VS_H, COLOR_WHITE);
+    gfx_text(2, 4, "HW", COLOR_WHITE, COLOR_NAVY, 2);
+    gfx_text(2, 22, "VSCRL", COLOR_CYAN, COLOR_NAVY, 1);
+    gfx_text(2, 32, v->my ? "MY->R" : "->L", COLOR_YELLOW, COLOR_NAVY, 1);
+}
+
+/* One pixel step; cyc = {generate column, write column, VSCRSADD command}. The RAM line that held
+   world column c is the one that leaves the visible area (hidden line 0 with MY, hidden line 161
+   without) and becomes world column c + N: with MY it must be rewritten before VSCRSADD moves,
+   otherwise after. */
+static void vs_hw_step(vs_t *v, uint32_t cyc[3])
+{
+    uint32_t t0 = time_cycles();
+    uint32_t Wn = v->c + v->N;
+    vs_gen(Wn);
+    uint32_t t1 = time_cycles();
+    uint16_t sadd_next = (uint16_t)(v->S0 + (v->c + 1u) % v->N);
+    uint32_t tw = 0, tc = 0, t;
+    for (int ph = 0; ph < 2; ph++) {
+        bool do_write = (ph == 0) == v->my;
+        t = time_cycles();
+        if (do_write) {
+            lcd_stream_row(vs_row(v, Wn), 0, VS_H - 1u);
+            lcd_set_frame16(true);
+            lcd_push_pixels(s_vcol, VS_H);
+            lcd_end();
+            tw = time_cycles() - t;
+        } else {
+            lcd_vscroll_start(sadd_next);
+            tc = time_cycles() - t;
+        }
+    }
+    v->c++;
+    cyc[0] = t1 - t0;
+    cyc[1] = tw;
+    cyc[2] = tc;
+}
+
+#define SW_BUF ((uint16_t *)(void *)g_arena)
+
+static uint32_t vs_sw_frame(bool my, uint32_t c, uint32_t *present_cyc)
+{
+    uint32_t t0 = time_cycles();
+    const uint32_t F = VS_HUD + 1u;
+    for (uint32_t x = 0; x < VS_W; x++) {
+        uint16_t *col = &SW_BUF[x * VS_H];
+        if (x < VS_HUD) {
+            for (int y = 0; y < VS_H; y++) col[y] = COLOR_NAVY;
+        } else {
+            vs_gen(my ? c + 160u - x : c + x + 1u - F);
+            memcpy(col, s_vcol, sizeof(s_vcol));
+        }
+    }
+    for (int y = 0; y < VS_H; y++) SW_BUF[VS_HUD * VS_H + (uint32_t)y] = COLOR_WHITE;
+    uint32_t render = time_cycles() - t0;
+    uint32_t t1 = time_cycles();
+    lcd_stream_window(0, 0, VS_W - 1u, VS_H - 1u);
+    spi1_dff(true);
+    dma3_start(SW_BUF, VS_W * VS_H, true, true, false);
+    dma3_finish();
+    lcd_end();
+    *present_cyc = time_cycles() - t1;
+    return render;
+}
+
+enum { VP_HW60, VP_HWMAX, VP_SW60, VP_SWMAX, VP_N };
+static const char *const k_vp_name[VP_N] = {"hw_60sps", "hw_max", "sw_60fps", "sw_max"};
+
+/* display.vscroll [auto=1] [t=<s per phase>] [sps=<steps/s of the paced phases, default 60>]
+   Landscape horizontal scrolling with the ST7735S hardware scroll in native addressing. RAM has
+   162 lines (the 160 visible ones sit at lines 1..160, offset xoff = 1): VSCRDEF = {TFA, VSA, BFA}
+   with TFA + VSA + BFA = 162. The left 36 landscape columns (+ the hidden RAM line) are a fixed
+   area (HUD), the scroll area is the other 125 lines; per pixel step only ONE new 128-pixel column
+   is written (into the RAM line that just left the visible area) and VSCRSADD advances.
+   Phases: hw_60sps (smoothness, 1 px/step), hw_max, sw_60fps (full-frame redraw + DMA, 1 px/frame),
+   sw_max. LEFT/RIGHT switch phase in manual mode, B exits; auto=1 runs every phase for t seconds. */
+suite_verdict_t suite_display_vscroll(int argc, char **argv)
+{
+    bool aut = suite_arg_u32(argc, argv, "auto", 0u) != 0u;
+    if (!aut && !suite_user_start("display.vscroll",
+                                  "HW scroll test (scrolls sideways). LEFT/RIGHT phase: hw60 / hw max / sw60 / sw max, "
+                                  "B exit. Judge smoothness + tearing. A=start B=skip",
+                                  argc, argv)) {
+        return SUITE_ABORT;
+    }
+    uint32_t phase_ms = suite_arg_u32(argc, argv, "t", 4u) * 1000u;
+    uint32_t sps = suite_arg_u32(argc, argv, "sps", 60u);
+    if (sps == 0u) sps = 60u;
+    lcd_saved_t saved;
+    lcd_save(&saved);
+    lcd_set_native(true);
+    lcd_set_gpio_speed(2);
+    lcd_set_spi_div(2);   /* 48 MHz */
+    input_flush();
+    suite_verdict_t v = SUITE_PASS;
+    vs_t vs;
+    memset(&vs, 0, sizeof(vs));
+    bool my = (lcd_cfg.madctl & LCD_MADCTL_MY) != 0u;
+    int ph = 0;
+    bool done = false;
+    while (!done && v == SUITE_PASS) {
+        bool hw = (ph == VP_HW60 || ph == VP_HWMAX);
+        bool paced = (ph == VP_HW60 || ph == VP_SW60);
+        lcd_vscroll_define(0, LCD_GDDRAM_H, 0);
+        lcd_vscroll_start(0);
+        lcd_fill_rect(0, 0, VS_W, VS_H, COLOR_BLACK);
+        if (hw) vs_hw_init(&vs);
+        uint32_t steps = 0, t_start = HAL_GetTick(), t_us0 = time_us();
+        uint64_t s_gen = 0, s_wr = 0, s_cmd = 0, s_pres = 0, s_busy = 0;
+        uint32_t sw_c = 0;
+        bool change = false;
+        int next_ph = ph;
+        while (!change) {
+            if (paced) {
+                uint32_t due = t_us0 + steps * (1000000u / sps);
+                while ((int32_t)(due - time_us()) > 0) {
+                    sys_service();
+                }
+            }
+            uint32_t cb = time_cycles();
+            if (hw) {
+                uint32_t cy[3];
+                vs_hw_step(&vs, cy);
+                s_gen += cy[0]; s_wr += cy[1]; s_cmd += cy[2];
+            } else {
+                uint32_t pc;
+                s_gen += vs_sw_frame(my, sw_c++, &pc);
+                s_pres += pc;
+            }
+            s_busy += time_cycles() - cb;
+            steps++;
+            if (hw && (steps & 31u) == 0u) {   /* HUD counter: fixed area, not part of the timing */
+                lcd_set_frame16(false);
+                gfx_textf(2, 48, COLOR_WHITE, COLOR_NAVY, 1, "%5" PRIu32, vs.c);
+            }
+            if ((steps & 7u) == 0u || !paced) {
+                sys_service();
+                if (abort_requested()) { v = SUITE_ABORT; break; }
+            }
+            if (aut) {
+                if (HAL_GetTick() - t_start >= phase_ms) { change = true; next_ph = ph + 1; }
+            } else {
+                input_event_t ev;
+                while (input_pop(&ev)) {
+                    if (!ev.pressed) continue;
+                    if (ev.button == BTN_B) { done = true; change = true; }
+                    if (ev.button == BTN_RIGHT) { change = true; next_ph = (ph + 1) % VP_N; }
+                    if (ev.button == BTN_LEFT) { change = true; next_ph = (ph + VP_N - 1) % VP_N; }
+                }
+            }
+        }
+        uint32_t ms = HAL_GetTick() - t_start;
+        if (steps > 8u && ms > 500u) {
+            uint32_t cpu = SystemCoreClock / 1000000u;
+            uint32_t sps10 = (uint32_t)((uint64_t)steps * 10000u / ms);
+            if (hw) {
+                res_printf("{\"t\":\"bench\",\"suite\":\"display.vscroll\",\"name\":\"%s\",\"steps\":%" PRIu32
+                           ",\"steps_per_s\":%" PRIu32 ".%" PRIu32 ",\"gen_cyc\":%" PRIu32 ",\"write_cyc\":%" PRIu32
+                           ",\"vscrsadd_cyc\":%" PRIu32 ",\"step_cyc\":%" PRIu32 ",\"step_us\":%" PRIu32
+                           ",\"scroll_area\":[%u,%u,%u],\"my\":%s,\"spi_hz\":%" PRIu32 "}",
+                           k_vp_name[ph], steps, sps10 / 10u, sps10 % 10u, (uint32_t)(s_gen / steps),
+                           (uint32_t)(s_wr / steps), (uint32_t)(s_cmd / steps), (uint32_t)(s_busy / steps),
+                           (uint32_t)(s_busy / steps / cpu), (unsigned)vs.S0, (unsigned)vs.N,
+                           (unsigned)(LCD_GDDRAM_H - vs.S0 - vs.N), my ? "true" : "false", lcd_spi_hz());
+            } else {
+                res_printf("{\"t\":\"bench\",\"suite\":\"display.vscroll\",\"name\":\"%s\",\"steps\":%" PRIu32
+                           ",\"steps_per_s\":%" PRIu32 ".%" PRIu32 ",\"render_cyc\":%" PRIu32 ",\"present_cyc\":%" PRIu32
+                           ",\"frame_cyc\":%" PRIu32 ",\"frame_us\":%" PRIu32 ",\"spi_hz\":%" PRIu32 "}",
+                           k_vp_name[ph], steps, sps10 / 10u, sps10 % 10u, (uint32_t)(s_gen / steps),
+                           (uint32_t)(s_pres / steps), (uint32_t)(s_busy / steps), (uint32_t)(s_busy / steps / cpu),
+                           lcd_spi_hz());
+            }
+        }
+        if (aut && next_ph >= VP_N) done = true;
+        ph = next_ph % VP_N;
+    }
+    lcd_set_frame16(false);
+    lcd_vscroll_define(0, LCD_GDDRAM_H, 0);
+    lcd_vscroll_start(0);
+    lcd_restore(&saved);
     return v;
 }

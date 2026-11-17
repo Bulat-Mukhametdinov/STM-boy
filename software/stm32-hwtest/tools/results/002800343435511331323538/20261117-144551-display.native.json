@@ -1,0 +1,87 @@
+{
+  "kind": "run",
+  "suite": "display.native",
+  "command": "run display.native",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE display.native pass",
+  "error": "",
+  "host_time_start": "2026-11-17T14:45:51+03:00",
+  "host_time_end": "2026-11-17T14:45:54+03:00",
+  "duration_s": 3.105,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "3dffea5+dirty",
+    "build": 1794915914,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": true,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 15,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "valid",
+    "w25q": true,
+    "uptime_ms": 1579,
+    "vbus": true,
+    "chg": false,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "test",
+      "suite": "display.native",
+      "name": "mapping",
+      "pass": true,
+      "native_enabled": true,
+      "native_active": true,
+      "madctl_land": "A0",
+      "madctl_phys": "80",
+      "xoff": 1,
+      "yoff": 2,
+      "rule": "landscape x -> RASET row (+xoff), landscape y -> CASET col (+yoff)",
+      "TL": [
+        2,
+        1
+      ],
+      "TR": [
+        2,
+        160
+      ],
+      "BL": [
+        129,
+        1
+      ],
+      "BR": [
+        129,
+        160
+      ],
+      "caset_max": 131,
+      "raset_max": 161,
+      "fill_us": 10299,
+      "blit_F_16x20_us": 284,
+      "ramp_160x6_us": 476,
+      "text_6ch_2x_us": 681,
+      "spi_hz": 48000000,
+      "gpio_speed": 2
+    }
+  ],
+  "prompts": [],
+  "answers": [],
+  "binaries": [],
+  "log": []
+}

@@ -85,6 +85,10 @@ as `@R {"t":"cal",...,"saved_to":"ram"}`; nothing is written to the W25Q in P1.
 | `display.gamma` | [U] | `gamma_show`, `cal` `gamma` |
 | `display.bars`, `display.gradient` | [U] | one `test` |
 | `display.spi [div=2\|4\|8] [bits=8\|16] [speed=2\|3]` | [U] | `test` per setting (`spi_hz`,`bits`,`gpio_speed`,`frame_us`), `cal` `spi1_limit`; the suite FAILs only if the default 12 MHz (div 8) flickers |
+| `display.tear [auto=1] [t=<s>]` | [U] | `tear`/`cal` per write order x fps x panel Hz (`order` land_mv/native, `fps`, `frmctr1`), auto adds a `bench` `rotate` |
+| `display.native [t=<s shown>]` | auto | `test` `mapping`: native-scan self-check (`madctl_phys`, native CASET/RASET of the 4 landscape corners, draw costs in us); draws corner markers + an asymmetric "F" + ramp |
+| `display.vscroll [auto=1] [t=<s/phase>] [sps=60]` | [U] | HW scroll (VSCRDEF/VSCRSADD) vs full redraw: `bench` per phase `hw_60sps`/`hw_max` (`gen_cyc`,`write_cyc`,`vscrsadd_cyc`,`step_us`,`scroll_area`) and `sw_60fps`/`sw_max` (`render_cyc`,`present_cyc`,`frame_us`); LEFT/RIGHT phase, B exit |
+| `demo [auto=1] [t=<s>] [scene=0..2] [fps=<cap>]` | [U] | real-time cubes / raycaster / raytracer on 8bpp+palette DMA present; `bench` per scene: `fps`,`render_ms`,`present_ms` (wait for DMA),`frame_ms`,`cpu_pct`,`sysclk_mhz`; keys: LEFT/RIGHT or X/Y scene, A overlay, CENTER fps cap, B exit |
 | `backlight.user` | [U] | `backlight` per frequency (`min_level`, `clean`), `cal` `backlight` |
 | `input.live` | [U] | `edge` per debounced edge, `test` `btn_<NAME>` |
 | `input.chord` | [U] | `test` per chord (`extra` = unexpected bits), `chord` (info) for joystick diagonals |

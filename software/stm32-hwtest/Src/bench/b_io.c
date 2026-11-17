@@ -54,7 +54,7 @@ static void k_concurrent(uint32_t n)
 {
     (void)n;
     /* LCD frame (DMA2 S3, from the upper arena) + 32 KB W25Q read (DMA1 S0/S5, into the lower arena) */
-    lcd_set_window(0, 0, 159, 127);
+    lcd_stream_window(0, 0, 159, 127);
     spi1_dff(true);
     uint32_t t0 = DWT->CYCCNT;
     w25q_dma_start(0x100000u, g_arena, 32768u, true);
@@ -139,7 +139,7 @@ suite_verdict_t suite_bench_w25q(int argc, char **argv)
     s_wfast = true;
     s_wdma = true;
     bench_stat_t w_alone = bench_measure_irq(k_w25q_read, 1);
-    lcd_set_window(0, 0, 159, 127);
+    lcd_stream_window(0, 0, 159, 127);
     spi1_dff(true);
     uint32_t t0 = DWT->CYCCNT;
     dma3_start(g_arena + 40960, 20480, true, true, false);

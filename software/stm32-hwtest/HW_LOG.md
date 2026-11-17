@@ -4237,3 +4237,160 @@ git-ignored; .txt hexdumps next to them).
 - LAND MV: strong diagonal tearing; best at panel 60.2 Hz (FRMCTR1 preset, computed 60.25 Hz) with 30/60 fps, still a diagonal seam drifting right->left and repeating (~4 s beat 60.0 vs 60.25 Hz).
 - NATIVE: no visible change between fps/panel-rate combinations; tear practically invisible; some ghosting/double image of the moving bar = TN LC response.
 - Recommendation: native-order transfer (MADCTL 0x80 + rotated frame) at 30/60 fps.
+
+### 2026-11-17 14:45:38 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-17 14:45:50 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.879
+- Output: Time elapsed during verifying operation: 00:00:01.646
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-17 14:45:50 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (237124 bytes), expected id: {'fw': '3dffea5+dirty', 'build': 1794915914}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3dffea5+dirty build=1794915914, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.62s, program=11.97s, dfu_to_app=0.71s, total=13.39s
+
+### 2026-11-17 14:45:51 — Run suite display.native (start) [auto]
+
+- Command: `run display.native`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=3dffea5+dirty build=1794915914 busy=idle
+
+### 2026-11-17 14:45:54 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.native`
+- Result: OK (exit code 0)
+- Suite display.native: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-144551-display.native.json
+
+### 2026-11-17 14:46:03 — Run suite demo (start) [auto]
+
+- Command: `run demo auto=1`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=3dffea5+dirty build=1794915914 busy=idle
+
+### 2026-11-17 14:46:19 — hwtest.py run [auto]
+
+- Command: `hwtest.py run demo auto=1`
+- Result: OK (exit code 0)
+- Suite demo: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-144603-demo.json
+
+### 2026-11-17 14:46:48 — Run suite display.vscroll (start) [auto]
+
+- Command: `run display.vscroll auto=1`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=3dffea5+dirty build=1794915914 busy=idle
+
+### 2026-11-17 14:47:04 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.vscroll auto=1`
+- Result: OK (exit code 0)
+- Suite display.vscroll: PASS results=4 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-144648-display.vscroll.json
+
+### 2026-11-17 14:49:07 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.info`
+- Result: FAIL (exit code 2)
+
+### 2026-11-17 14:49:08 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.tear auto=1 t=1`
+- Result: FAIL (exit code 2)
+
+### 2026-11-17 14:49:09 — hwtest.py run [auto]
+
+- Command: `hwtest.py run bench.lcd`
+- Result: FAIL (exit code 2)
+
+### 2026-11-17 14:49:15 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3dffea5+dirty build=1794915914 clk=96000000 busy=demo reset=sft uid=002800343435511331323538
+
+### 2026-11-17 14:49:21 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3dffea5+dirty build=1794915914 clk=96000000 busy=demo reset=sft uid=002800343435511331323538
+
+### 2026-11-17 14:49:22 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.info`
+- Result: FAIL (exit code 2)
+
+### 2026-11-17 14:49:40 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=1
+
+### 2026-11-17 14:49:43 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3dffea5+dirty build=1794915914 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-17 14:49:49 — Run suite display.info (start) [auto]
+
+- Command: `run display.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=3dffea5+dirty build=1794915914 busy=idle
+
+### 2026-11-17 14:49:49 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.info`
+- Result: OK (exit code 0)
+- Suite display.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-144949-display.info.json
+
+### 2026-11-17 14:49:50 — Run suite display.tear (start) [auto]
+
+- Command: `run display.tear auto=1 t=1`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=3dffea5+dirty build=1794915914 busy=idle
+
+### 2026-11-17 14:49:57 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.tear auto=1 t=1`
+- Result: OK (exit code 0)
+- Suite display.tear: PASS results=7 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-144950-display.tear.json
+
+### 2026-11-17 14:49:58 — Run suite bench.lcd (start) [auto]
+
+- Command: `run bench.lcd`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=3dffea5+dirty build=1794915914 busy=idle
+
+### 2026-11-17 14:50:05 — hwtest.py run [auto]
+
+- Command: `hwtest.py run bench.lcd`
+- Result: OK (exit code 0)
+- Suite bench.lcd: PASS results=45 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-144958-bench.lcd.json
+
+### 2026-11-17 — Native scan order for the whole UI + demo + display.vscroll (firmware note)
+
+- lcd.c: native mode default (LCD_NATIVE_DEFAULT=1): API stays landscape, controller addressed MV=0 (phys MADCTL = logical & ~MV = 0x80), landscape x -> RASET row (+xoff 1), y -> CASET col (+yoff 2). `display.native` PASS: TL(col2,row1) BR(col129,row160). display.cal/orient/spi/tear and bench.lcd/gfx run in raw mode (lcd_set_native(false)). GPIO speed default 2.
+- demo auto=1 (5 s/scene, 96 MHz, SPI 48 MHz): cubes 143.9 fps (R 3.1 ms, P-wait 3.7), raycaster 143.8 fps (R 5.1, P 1.7), raytracer 80x64x2 41.2 fps (R 24.1, P 0). Present-limited at ~6.9 ms/frame.
+- display.vscroll auto=1: hw step 8.5k cyc (~89 us: gen 3.4k, column write 4.9k, VSCRSADD 0.2k) vs full redraw 1.24M cyc (12.9 ms: render 0.58M + DMA 0.66M). To be judged by eye: smoothness / direction / HUD stays fixed.

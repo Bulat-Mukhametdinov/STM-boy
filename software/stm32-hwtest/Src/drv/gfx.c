@@ -59,6 +59,25 @@ int16_t gfx_char(int16_t x, int16_t y, char c, uint16_t fg, uint16_t bg, uint8_t
     }
 
     const uint8_t *g = font5x7_glyph(c);
+    if (lcd_native()) {
+        /* native scan order: stream column by column (one glyph column = one native line) */
+        uint16_t col[GFX_CHAR_H * GFX_MAX_SCALE];
+        lcd_stream_window((uint16_t)x, (uint16_t)y, (uint16_t)(x + cw - 1), (uint16_t)(y + ch - 1));
+        for (int16_t cx = 0; cx < GFX_CHAR_W; cx++) {
+            for (int16_t row = 0; row < GFX_CHAR_H; row++) {
+                bool on = (cx < FONT_W) && (row < FONT_H) && ((g[cx] >> row) & 1u);
+                uint16_t px = on ? fg : bg;
+                for (uint8_t s = 0; s < scale; s++) {
+                    col[row * scale + s] = px;
+                }
+            }
+            for (uint8_t s = 0; s < scale; s++) {
+                lcd_push_pixels(col, (uint32_t)ch);
+            }
+        }
+        lcd_end();
+        return cw;
+    }
     lcd_set_window((uint16_t)x, (uint16_t)y, (uint16_t)(x + cw - 1), (uint16_t)(y + ch - 1));
     for (int16_t row = 0; row < GFX_CHAR_H; row++) {
         for (int16_t col = 0; col < GFX_CHAR_W; col++) {

@@ -61,6 +61,36 @@ const char *lcd_gamma_name(uint8_t id);
 #define LCD_PHYS_OFF_162 1u
 void lcd_offsets_for(uint8_t madctl, uint8_t *xoff, uint8_t *yoff);
 
+/* Native scan order (default on, LCD_NATIVE_DEFAULT). The API keeps landscape coordinates
+   (x 0..159 right, y 0..127 down; lcd_cfg.madctl is the *logical* landscape MADCTL, 0xA0), but the
+   panel is addressed in its portrait scan order (physical MADCTL = logical & ~MV, 0x80): landscape
+   x -> native row (RASET, + xoff), landscape y -> native column (CASET, + yoff). That removes the
+   diagonal tearing of MV writes.  lcd_set_window() then only records the rect; lcd_push_pixels()
+   sends every row segment as a native column strip (slow-ish but exact); lcd_push_color() / fill_rect
+   send one window.  For bulk data use lcd_stream_window() + a column-major stream.
+   Suites that set MADCTL / windows themselves call lcd_set_native(false) and restore the old value. */
+#ifndef LCD_NATIVE_DEFAULT
+#define LCD_NATIVE_DEFAULT 1
+#endif
+bool lcd_set_native(bool on);        /* returns the previous setting; re-sends MADCTL */
+bool lcd_native_enabled(void);       /* the setting itself (ignores the logical MV) */
+bool lcd_native(void);               /* true when translation is active (enabled and logical MV = 1) */
+/* Landscape rect -> controller window + RAMWR, CS low. Native: the stream that follows must be
+   column-major (for x in x0..x1, for y in y0..y1) and is NOT translated; raw: normal row-major. */
+void lcd_stream_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
+
+uint8_t lcd_phys_madctl(void);       /* MADCTL value actually sent (BGR bit included) */
+/* Native controller address (CASET column, RASET row, offsets included) of landscape pixel (x, y). */
+void lcd_native_map(uint16_t x, uint16_t y, uint16_t *caset_col, uint16_t *raset_row);
+
+/* Hardware scroll (ST7735S VSCRDEF 0x33 / VSCRSADD 0x37). Units are controller RAM lines of the
+   162-line axis, which in native addressing is the landscape horizontal axis. */
+void lcd_vscroll_define(uint16_t tfa, uint16_t vsa, uint16_t bfa);   /* tfa + vsa + bfa = 162 */
+void lcd_vscroll_start(uint16_t sadd);
+/* RAMWR window of one controller RAM row address `row` (RASET incl. offset already applied by the
+   caller: row = landscape x + xoff in native/MY-less terms), landscape y range y0..y1 (CASET). */
+void lcd_stream_row(uint16_t row, uint16_t y0, uint16_t y1);
+
 /* SPI1 bus variants for the flicker stress test. */
 void lcd_set_frmctr1(const uint8_t b[3]);  /* FRMCTR1 RTNA/FPA/BPA (lcd_init restores the default) */
 void lcd_set_frame16(bool on);       /* pixel data in 16-bit SPI frames */

@@ -176,7 +176,7 @@ static void fill_test_pattern(void)
     }
 }
 
-suite_verdict_t suite_bench_lcd(int argc, char **argv)
+static suite_verdict_t bench_lcd_body(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
@@ -305,8 +305,14 @@ static uint32_t s_prefill_cyc, s_isr_min = 0xFFFFFFFFu, s_prefill_min = 0xFFFFFF
 
 static void conv_chunk(uint32_t k, uint16_t *dst) { conv4(FB + k * CHUNK_PX, dst, CHUNK_PX); }
 
+void (*g_dma3_hook)(void);
+
 void DMA2_Stream3_IRQHandler(void)
 {
+    if (g_dma3_hook) {   /* demo present engine */
+        g_dma3_hook();
+        return;
+    }
     uint32_t t0 = DWT->CYCCNT;
     if (DMA2->LISR & S3_TC) {
         DMA2->LIFCR = S3_ALL;
@@ -546,7 +552,7 @@ static void gfx_prepare(void)
 
 extern uint32_t _ebss, _sdata, _estack, _sarena, _earena, end;
 
-suite_verdict_t suite_bench_gfx(int argc, char **argv)
+static suite_verdict_t bench_gfx_body(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
@@ -671,4 +677,21 @@ suite_verdict_t suite_bench_gfx(int argc, char **argv)
     (void)&_sdata;
     (void)&end;
     return SUITE_PASS;
+}
+
+/* Both benchmarks time raw landscape (MV) windows; keep the translation out of the way. */
+suite_verdict_t suite_bench_lcd(int argc, char **argv)
+{
+    bool nat = lcd_set_native(false);
+    suite_verdict_t v = bench_lcd_body(argc, argv);
+    lcd_set_native(nat);
+    return v;
+}
+
+suite_verdict_t suite_bench_gfx(int argc, char **argv)
+{
+    bool nat = lcd_set_native(false);
+    suite_verdict_t v = bench_gfx_body(argc, argv);
+    lcd_set_native(nat);
+    return v;
 }

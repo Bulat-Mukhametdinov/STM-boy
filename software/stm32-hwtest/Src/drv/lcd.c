@@ -12,8 +12,22 @@ lcd_cfg_t lcd_cfg;
 
 static uint16_t s_w = 160, s_h = 128;
 static bool s_f16;                  /* pixel data in 16-bit frames */
-static uint32_t s_speed = GPIO_SPEED_VHIGH_;
+static uint32_t s_speed = 2u;      /* GPIO speed high: enough for 48 MHz SCK (low fails) */
 static uint8_t s_gamma_loaded;      /* table currently in the controller */
+
+/* Native scan order: landscape stays the API coordinate system, but the panel is addressed in
+   its portrait (MV = 0) order, landscape x -> native row, landscape y -> native column. */
+static bool s_native = LCD_NATIVE_DEFAULT;
+static bool s_win_native;           /* current window is a deferred (transposed) landscape window */
+static uint16_t s_wx0, s_wy0, s_ww, s_wh;
+static uint32_t s_wpos;             /* pixels already pushed into the window (landscape row-major) */
+
+static void raw_push_color(uint16_t color, uint32_t n);
+
+static inline bool native_active(void)
+{
+    return s_native && (lcd_cfg.madctl & LCD_MADCTL_MV);
+}
 
 void lcd_cfg_defaults(lcd_cfg_t *c)
 {
@@ -207,7 +221,26 @@ void lcd_offsets_for(uint8_t madctl, uint8_t *xoff, uint8_t *yoff)
 
 static uint8_t madctl_value(void)
 {
-    return (uint8_t)((lcd_cfg.madctl & ~LCD_MADCTL_BGR) | (lcd_cfg.bgr ? LCD_MADCTL_BGR : 0u));
+    uint8_t m = lcd_cfg.madctl;
+    if (native_active()) {
+        m &= (uint8_t)~LCD_MADCTL_MV;   /* MY/MX keep their meaning, now on the native row/column axes */
+    }
+    return (uint8_t)((m & ~LCD_MADCTL_BGR) | (lcd_cfg.bgr ? LCD_MADCTL_BGR : 0u));
+}
+
+bool lcd_native(void) { return native_active(); }
+bool lcd_native_enabled(void) { return s_native; }
+
+bool lcd_set_native(bool on)
+{
+    bool prev = s_native;
+    if (on != prev) {
+        s_native = on;
+        uint8_t m = madctl_value();
+        cmd_data(0x36, &m, 1);
+        lcd_end();
+    }
+    return prev;
 }
 
 /* Positive (E0) / negative (E1) gamma correction tables.
@@ -258,11 +291,39 @@ void lcd_clear_gddram(uint16_t color)
     uint8_t m = 0x00;
     cmd_data(0x36, &m, 1);
     send_window_raw(0, 0, LCD_GDDRAM_W - 1u, LCD_GDDRAM_H - 1u);
-    lcd_push_color(color, (uint32_t)LCD_GDDRAM_W * LCD_GDDRAM_H);
+    raw_push_color(color, (uint32_t)LCD_GDDRAM_W * LCD_GDDRAM_H);
     lcd_end();
     m = madctl_value();
     cmd_data(0x36, &m, 1);
     lcd_end();
+}
+
+uint8_t lcd_phys_madctl(void) { return madctl_value(); }
+
+void lcd_native_map(uint16_t x, uint16_t y, uint16_t *caset_col, uint16_t *raset_row)
+{
+    *caset_col = (uint16_t)(y + lcd_cfg.yoff);
+    *raset_row = (uint16_t)(x + lcd_cfg.xoff);
+}
+
+void lcd_vscroll_define(uint16_t tfa, uint16_t vsa, uint16_t bfa)
+{
+    uint8_t b[6] = {(uint8_t)(tfa >> 8), (uint8_t)tfa, (uint8_t)(vsa >> 8), (uint8_t)vsa, (uint8_t)(bfa >> 8), (uint8_t)bfa};
+    cmd_data(0x33, b, 6);
+    lcd_end();
+}
+
+void lcd_vscroll_start(uint16_t sadd)
+{
+    uint8_t b[2] = {(uint8_t)(sadd >> 8), (uint8_t)sadd};
+    cmd_data(0x37, b, 2);
+    lcd_end();
+}
+
+void lcd_stream_row(uint16_t row, uint16_t y0, uint16_t y1)
+{
+    s_win_native = false;
+    send_window_raw((uint16_t)(y0 + lcd_cfg.yoff), row, (uint16_t)(y1 + lcd_cfg.yoff), row);
 }
 
 void lcd_set_frmctr1(const uint8_t b[3])
@@ -308,6 +369,7 @@ void lcd_init(void)
     gpio_set(LCD_RST_PORT, LCD_RST_PIN);
     HAL_Delay(150);
     s_gamma_loaded = 0;
+    s_win_native = false;
 
     cmd(0x01); /* SWRESET */
     lcd_end();
@@ -346,13 +408,7 @@ void lcd_init(void)
     update_geometry();
 }
 
-void lcd_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
-{
-    send_window_raw((uint16_t)(x0 + lcd_cfg.xoff), (uint16_t)(y0 + lcd_cfg.yoff),
-                    (uint16_t)(x1 + lcd_cfg.xoff), (uint16_t)(y1 + lcd_cfg.yoff));
-}
-
-void lcd_push_pixels(const uint16_t *px, uint32_t n)
+static void raw_push_pixels(const uint16_t *px, uint32_t n)
 {
     if (s_f16) {
         spi_set_dff(true);
@@ -368,7 +424,7 @@ void lcd_push_pixels(const uint16_t *px, uint32_t n)
     }
 }
 
-void lcd_push_color(uint16_t color, uint32_t n)
+static void raw_push_color(uint16_t color, uint32_t n)
 {
     if (s_f16) {
         spi_set_dff(true);
@@ -381,6 +437,89 @@ void lcd_push_color(uint16_t color, uint32_t n)
     for (uint32_t i = 0; i < n; i++) {
         spi_tx8(hi);
         spi_tx8(lo);
+    }
+}
+
+/* Native window for a landscape rect: CASET = landscape y (+yoff), RASET = landscape x (+xoff). */
+static void send_native_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
+{
+    send_window_raw((uint16_t)(y0 + lcd_cfg.yoff), (uint16_t)(x0 + lcd_cfg.xoff), (uint16_t)(y1 + lcd_cfg.yoff),
+                    (uint16_t)(x1 + lcd_cfg.xoff));
+}
+
+void lcd_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
+{
+    if (native_active()) {
+        /* Deferred: the pixel stream arrives row-major and must be sent column-major. */
+        s_win_native = true;
+        s_wx0 = x0;
+        s_wy0 = y0;
+        s_ww = (uint16_t)(x1 - x0 + 1u);
+        s_wh = (uint16_t)(y1 - y0 + 1u);
+        s_wpos = 0;
+        return;
+    }
+    s_win_native = false;
+    send_window_raw((uint16_t)(x0 + lcd_cfg.xoff), (uint16_t)(y0 + lcd_cfg.yoff),
+                    (uint16_t)(x1 + lcd_cfg.xoff), (uint16_t)(y1 + lcd_cfg.yoff));
+}
+
+void lcd_stream_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
+{
+    s_win_native = false;
+    if (native_active()) {
+        send_native_window(x0, y0, x1, y1);
+    } else {
+        send_window_raw((uint16_t)(x0 + lcd_cfg.xoff), (uint16_t)(y0 + lcd_cfg.yoff),
+                        (uint16_t)(x1 + lcd_cfg.xoff), (uint16_t)(y1 + lcd_cfg.yoff));
+    }
+}
+
+/* Deferred native window: every landscape row segment becomes a native column strip. */
+static void native_push(const uint16_t *px, uint16_t color, uint32_t n)
+{
+    uint32_t total = (uint32_t)s_ww * s_wh;
+    if (px == NULL && s_wpos == 0u && n == total) {
+        /* uniform fill of the whole window: order is irrelevant, one window command */
+        send_native_window(s_wx0, s_wy0, (uint16_t)(s_wx0 + s_ww - 1u), (uint16_t)(s_wy0 + s_wh - 1u));
+        raw_push_color(color, n);
+        s_wpos = n;
+        return;
+    }
+    while (n > 0u && s_wpos < total) {
+        uint32_t lx = s_wpos % s_ww, ly = s_wpos / s_ww;
+        uint32_t run = s_ww - lx;
+        if (run > n) {
+            run = n;
+        }
+        uint16_t col = (uint16_t)(s_wy0 + ly), r0 = (uint16_t)(s_wx0 + lx);
+        send_native_window(r0, col, (uint16_t)(r0 + run - 1u), col);
+        if (px) {
+            raw_push_pixels(px, run);
+            px += run;
+        } else {
+            raw_push_color(color, run);
+        }
+        s_wpos += run;
+        n -= run;
+    }
+}
+
+void lcd_push_pixels(const uint16_t *px, uint32_t n)
+{
+    if (s_win_native) {
+        native_push(px, 0, n);
+    } else {
+        raw_push_pixels(px, n);
+    }
+}
+
+void lcd_push_color(uint16_t color, uint32_t n)
+{
+    if (s_win_native) {
+        native_push(NULL, color, n);
+    } else {
+        raw_push_color(color, n);
     }
 }
 

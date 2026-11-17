@@ -83,7 +83,7 @@ static uint32_t frame_px(void) { return (uint32_t)lcd_width() * lcd_height(); }
 
 static void frame_start(void)
 {
-    lcd_set_window(0, 0, (uint16_t)(lcd_width() - 1u), (uint16_t)(lcd_height() - 1u));
+    lcd_stream_window(0, 0, (uint16_t)(lcd_width() - 1u), (uint16_t)(lcd_height() - 1u));
     spi1_dff(true);
     dma3_start(FB, frame_px(), true, true, false);
     s_dma_busy = true;
