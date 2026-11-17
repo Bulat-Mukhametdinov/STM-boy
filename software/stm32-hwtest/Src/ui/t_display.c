@@ -972,9 +972,9 @@ static void tear_order(bool native, const lcd_cfg_t *land)
     lcd_cfg.xoff = land->xoff;
     lcd_cfg.yoff = land->yoff;
     if (native) {
-        /* MV=0 portrait addressing: stream rows run along the panel scan lines. MX=1 so that the
-           landscape y axis (stored contiguously per column) maps to the native line, top = y 0. */
-        lcd_cfg.madctl = LCD_MADCTL_MX;
+        /* MV=0 portrait addressing: stream rows run along the panel scan lines. MY=1 (not MX):
+           MX alone showed the picture rotated 180 deg on the real panel (user, 2026-11-17). */
+        lcd_cfg.madctl = LCD_MADCTL_MY;
         lcd_offsets_for(lcd_cfg.madctl, &lcd_cfg.xoff, &lcd_cfg.yoff);
     }
     lcd_apply_cfg();

@@ -4201,3 +4201,39 @@ git-ignored; .txt hexdumps next to them).
 - display.tear auto (48 MHz DMA): land MV 30.2/60.1/129 fps, native (MADCTL 0x40, column-major frame) 30.2/60.1/128 fps. Rotation 160x128 RGB565 ~1.31 ms; 8bpp->565 rotated ~2.15 ms. Native orientation/mirroring not yet checked by eye.
 - Gauge in firmware (status-bar 5-segment icon); replay of the real discharge log: 0 reversals, drops at SoC 81/61/42/22/2.7 %%.
 - F9 closed (CHG was logged; analyzer bug). Board on laptop: power.info chg=true vbus=true Vbat 4.207 V.
+
+### 2026-11-17 14:11:59 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-17 14:12:11 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.489
+- Output: Time elapsed during verifying operation: 00:00:01.534
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-17 14:12:12 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (220476 bytes), expected id: {'fw': '815965a+dirty', 'build': 1794913914}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=815965a+dirty build=1794913914, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=11.47s, dfu_to_app=0.71s, total=12.86s
+
+### 2026-11-17 14:25:21 — display.tear by eye (manual note)
+
+- Fixed: native mode MADCTL 0x40 showed the picture rotated 180 deg -> 0x80 (MY) is correct (user confirmed). Status bar text overlapped the battery icon -> shortened (user confirmed OK). Yellow icon = charging plug.
+- LAND MV: strong diagonal tearing; best at panel 60.2 Hz (FRMCTR1 preset, computed 60.25 Hz) with 30/60 fps, still a diagonal seam drifting right->left and repeating (~4 s beat 60.0 vs 60.25 Hz).
+- NATIVE: no visible change between fps/panel-rate combinations; tear practically invisible; some ghosting/double image of the moving bar = TN LC response.
+- Recommendation: native-order transfer (MADCTL 0x80 + rotated frame) at 30/60 fps.

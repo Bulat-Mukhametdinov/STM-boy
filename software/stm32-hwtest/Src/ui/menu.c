@@ -72,7 +72,7 @@ void ui_status_bar(void)
     uint8_t st = usb_state();
     uint16_t usb_col = (st & 2u) ? COLOR_GREEN : (st & 1u) ? COLOR_YELLOW : COLOR_GRAY;
     char b[32];
-    snprintf(b, sizeof(b), "hwtest %s", g_fw_hash);
+    snprintf(b, sizeof(b), "%.13s", g_fw_hash);   /* short: leaves room for battery icon + USB */
     lcd_fill_rect(0, 0, (int16_t)lcd_width(), BAR_H, COLOR_NAVY);
     gfx_text(1, 1, b, COLOR_WHITE, COLOR_NAVY, 1);
     gfx_text((int16_t)(lcd_width() - 19), 1, "USB", usb_col, COLOR_NAVY, 1);
