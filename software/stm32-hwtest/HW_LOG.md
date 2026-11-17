@@ -3781,3 +3781,4 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-17 08:13:04 — F8 confirmed (manual note)
 
 - +5V TP with no cable: 2.41 V (board back-feeds VBUS). With a USB-A to C cable (charge-only, no data) +5V = 5 V and charging works. => USB-C sources that check vSafe0V (laptop C-C) refuse to power the board. Workaround: A-C cable / wall charger. Charge curve: only the first ~50 min captured (host abort bug); full charge curve to be re-captured later.
+- power.info on device (A-C cable, ~3.6 V): CHG low (charging), VBUS yes -> #CHG hardware OK; F9 = battlog firmware issue.
