@@ -4394,3 +4394,165 @@ git-ignored; .txt hexdumps next to them).
 - lcd.c: native mode default (LCD_NATIVE_DEFAULT=1): API stays landscape, controller addressed MV=0 (phys MADCTL = logical & ~MV = 0x80), landscape x -> RASET row (+xoff 1), y -> CASET col (+yoff 2). `display.native` PASS: TL(col2,row1) BR(col129,row160). display.cal/orient/spi/tear and bench.lcd/gfx run in raw mode (lcd_set_native(false)). GPIO speed default 2.
 - demo auto=1 (5 s/scene, 96 MHz, SPI 48 MHz): cubes 143.9 fps (R 3.1 ms, P-wait 3.7), raycaster 143.8 fps (R 5.1, P 1.7), raytracer 80x64x2 41.2 fps (R 24.1, P 0). Present-limited at ~6.9 ms/frame.
 - display.vscroll auto=1: hw step 8.5k cyc (~89 us: gen 3.4k, column write 4.9k, VSCRSADD 0.2k) vs full redraw 1.24M cyc (12.9 ms: render 0.58M + DMA 0.66M). To be judged by eye: smoothness / direction / HUD stays fixed.
+
+### 2026-11-17 15:16:36 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-17 15:16:48 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.867
+- Output: Time elapsed during verifying operation: 00:00:01.673
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-17 15:16:49 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (239004 bytes), expected id: {'fw': '27475cd+dirty', 'build': 1794917777}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=27475cd+dirty build=1794917777, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=11.99s, dfu_to_app=0.71s, total=13.38s
+
+### 2026-11-17 15:16:59 — Run suite display.vscroll (start) [auto]
+
+- Command: `run display.vscroll auto=1 ph=3 t=60`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=27475cd+dirty build=1794917777 busy=idle
+
+### 2026-11-17 15:18:00 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.vscroll auto=1 ph=3 t=60`
+- Result: OK (exit code 0)
+- Suite display.vscroll: PASS results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-151659-display.vscroll.json
+
+### 2026-11-17 15:18:20 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-17 15:18:32 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.863
+- Output: Time elapsed during verifying operation: 00:00:01.662
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-17 15:18:32 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (239020 bytes), expected id: {'fw': '27475cd+dirty', 'build': 1794917895}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=27475cd+dirty build=1794917895, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.62s, program=11.98s, dfu_to_app=0.70s, total=13.38s
+
+### 2026-11-17 15:18:33 — Run suite display.vscroll (start) [auto]
+
+- Command: `run display.vscroll auto=1 ph=3 t=60`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=27475cd+dirty build=1794917895 busy=idle
+
+### 2026-11-17 15:19:33 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.vscroll auto=1 ph=3 t=60`
+- Result: OK (exit code 0)
+- Suite display.vscroll: PASS results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-151833-display.vscroll.json
+
+### 2026-11-17 15:19:50 — Run suite display.vscroll (start) [auto]
+
+- Command: `run display.vscroll auto=1 t=3`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=27475cd+dirty build=1794917895 busy=idle
+
+### 2026-11-17 15:20:02 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.vscroll auto=1 t=3`
+- Result: OK (exit code 0)
+- Suite display.vscroll: PASS results=4 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-151950-display.vscroll.json
+
+### 2026-11-17 15:20:03 — Run suite demo (start) [auto]
+
+- Command: `run demo auto=1 t=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=27475cd+dirty build=1794917895 busy=idle
+
+### 2026-11-17 15:20:09 — hwtest.py run [auto]
+
+- Command: `hwtest.py run demo auto=1 t=2`
+- Result: OK (exit code 0)
+- Suite demo: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-152003-demo.json
+
+### 2026-11-17 15:20:10 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd ping`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK ping lines=1
+
+### 2026-11-17 15:20:11 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=27475cd+dirty build=1794917895 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-17 15:22:20 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-17 15:22:32 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.922
+- Output: Time elapsed during verifying operation: 00:00:01.660
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-17 15:22:33 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (239020 bytes), expected id: {'fw': '27475cd+dirty', 'build': 1794918104}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=27475cd+dirty build=1794918104, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.62s, program=12.03s, dfu_to_app=0.69s, total=13.42s
+
+### 2026-11-17 15:22:41 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd ping`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK ping lines=1
+
+### 2026-11-17 (manual note) vscroll sw_max slowdown
+
+- Cause: vs_gen() called sinf(W*0.12); newlib sinf leaves its fast range reduction once |x| > ~200 (W > ~1700, ~25 s at 67 fps) and gets much slower, so sw_max drifted from ~78 fps to ~61 fps (win_min 61.5 / win_max 78.2 over 60 s). Fixed by reducing the phase in integer (W*1252 & 0xFFFF): sw_max now flat 79.2-79.4 fps over 60 s. Phases never auto-advance in manual mode.
+- Menu/Tests list now compose into a 160x128 RGB565 frame in g_arena (lcd_capture) and DMA it in native order at 48 MHz; demo overlay palette 254/255 were never set (text colour undefined) -> now set + dark box.

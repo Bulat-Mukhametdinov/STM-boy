@@ -163,6 +163,17 @@ static void fb_text(uint8_t *fb, int x, int y, const char *s, uint8_t fg, uint8_
     }
 }
 
+static void fb_box(uint8_t *fb, int x, int y, int w, int h, uint8_t c)
+{
+    for (int px = x; px < x + w && px < FW; px++) {
+        if (px < 0) continue;
+        uint8_t *d = fb + px * FH;
+        for (int py = y; py < y + h && py < FH; py++) {
+            if (py >= 0) d[py] = c;
+        }
+    }
+}
+
 /* ---------------------------------------------------------------- scene A: cubes */
 
 static void pal_cubes(void)
@@ -685,6 +696,8 @@ suite_verdict_t suite_demo(int argc, char **argv)
         if (scene_new) {
             present_wait();
             sc->enter();
+            PAL[IDX_BLACK] = RGB565(0, 0, 40);   /* overlay box + text colours (indices 254/255 were never set) */
+            PAL[IDX_WHITE] = COLOR_WHITE;
             memset(&st, 0, sizeof(st));
             memset(&win, 0, sizeof(win));
             scene_t0 = HAL_GetTick();
@@ -701,10 +714,17 @@ suite_verdict_t suite_demo(int argc, char **argv)
         uint8_t *fb = FBUF(back);
         sc->render(fb, tnow - run_t0, held, aut);
         if (overlay) {
-            fb_text(fb, 1, 1, l1, IDX_WHITE, IDX_BLACK);
-            fb_text(fb, 1, 9, l2, IDX_WHITE, IDX_BLACK);
-            fb_text(fb, 1, 17, l3, IDX_WHITE, IDX_BLACK);
-            fb_text(fb, 1, 25, l4, IDX_WHITE, IDX_BLACK);
+            /* dark box (2 px margin) behind the text so it reads on any scene */
+            int bw = 0;
+            const char *const ls[4] = {l1, l2, l3, l4};
+            for (int i = 0; i < 4; i++) {
+                int w = (int)strlen(ls[i]) * 6;
+                if (w > bw) bw = w;
+            }
+            fb_box(fb, 0, 0, bw + 4, 4 * 8 + 3, IDX_BLACK);
+            for (int i = 0; i < 4; i++) {
+                fb_text(fb, 2, 2 + 8 * i, ls[i], IDX_WHITE, IDX_BLACK);
+            }
         }
         uint32_t c1 = time_cycles();
         uint32_t cw = present_wait();

@@ -24,6 +24,35 @@ static uint32_t s_wpos;             /* pixels already pushed into the window (la
 
 static void raw_push_color(uint16_t color, uint32_t n);
 
+/* Capture mode (lcd_capture): window/push/fill calls render into a 160x128 column-major RGB565
+   framebuffer instead of the panel, so a screen can be composed off-screen and pushed in one go. */
+#define CAP_H 128u
+static uint16_t *s_cap;
+static bool s_cap_col;              /* stream order: true = column-major (lcd_stream_window) */
+static uint16_t s_cx0, s_cy0, s_cx1, s_cy1, s_ccx, s_ccy;
+
+static void cap_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, bool col)
+{
+    s_cx0 = s_ccx = x0; s_cy0 = s_ccy = y0; s_cx1 = x1; s_cy1 = y1; s_cap_col = col;
+}
+
+static void cap_put(const uint16_t *px, uint16_t color, uint32_t n)
+{
+    while (n--) {
+        if (s_ccx < 160u && s_ccy < CAP_H) {
+            s_cap[s_ccx * CAP_H + s_ccy] = px ? *px : color;
+        }
+        if (px) px++;
+        if (s_cap_col) {
+            if (++s_ccy > s_cy1) { s_ccy = s_cy0; s_ccx++; }
+        } else {
+            if (++s_ccx > s_cx1) { s_ccx = s_cx0; s_ccy++; }
+        }
+    }
+}
+
+void lcd_capture(uint16_t *fb) { s_cap = fb; }
+
 static inline bool native_active(void)
 {
     return s_native && (lcd_cfg.madctl & LCD_MADCTL_MV);
@@ -164,6 +193,9 @@ static void cmd_data(uint8_t c, const uint8_t *d, uint32_t n)
 
 void lcd_end(void)
 {
+    if (s_cap) {
+        return;
+    }
     spi_wait_idle();
     CS_HIGH();
     spi_set_dff(false);
@@ -449,6 +481,10 @@ static void send_native_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y
 
 void lcd_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 {
+    if (s_cap) {
+        cap_window(x0, y0, x1, y1, false);
+        return;
+    }
     if (native_active()) {
         /* Deferred: the pixel stream arrives row-major and must be sent column-major. */
         s_win_native = true;
@@ -466,6 +502,10 @@ void lcd_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 
 void lcd_stream_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 {
+    if (s_cap) {
+        cap_window(x0, y0, x1, y1, native_active());
+        return;
+    }
     s_win_native = false;
     if (native_active()) {
         send_native_window(x0, y0, x1, y1);
@@ -507,6 +547,10 @@ static void native_push(const uint16_t *px, uint16_t color, uint32_t n)
 
 void lcd_push_pixels(const uint16_t *px, uint32_t n)
 {
+    if (s_cap) {
+        cap_put(px, 0, n);
+        return;
+    }
     if (s_win_native) {
         native_push(px, 0, n);
     } else {
@@ -516,6 +560,10 @@ void lcd_push_pixels(const uint16_t *px, uint32_t n)
 
 void lcd_push_color(uint16_t color, uint32_t n)
 {
+    if (s_cap) {
+        cap_put(NULL, color, n);
+        return;
+    }
     if (s_win_native) {
         native_push(NULL, color, n);
     } else {

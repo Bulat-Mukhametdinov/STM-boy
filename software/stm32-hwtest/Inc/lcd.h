@@ -91,6 +91,11 @@ void lcd_vscroll_start(uint16_t sadd);
    caller: row = landscape x + xoff in native/MY-less terms), landscape y range y0..y1 (CASET). */
 void lcd_stream_row(uint16_t row, uint16_t y0, uint16_t y1);
 
+/* Off-screen capture: while fb != NULL (160x128 RGB565, column-major fb[x * 128 + y], landscape
+   coordinates) window, push and fill calls and lcd_end render into fb and touch no
+   hardware. Needs native scan order. lcd_capture(NULL) switches back to the panel. */
+void lcd_capture(uint16_t *fb);
+
 /* SPI1 bus variants for the flicker stress test. */
 void lcd_set_frmctr1(const uint8_t b[3]);  /* FRMCTR1 RTNA/FPA/BPA (lcd_init restores the default) */
 void lcd_set_frame16(bool on);       /* pixel data in 16-bit SPI frames */

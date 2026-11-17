@@ -1239,7 +1239,9 @@ static void vs_gen(uint32_t W)
 {
     static const uint16_t c8[8] = {0xF800, 0x07E0, 0x001F, 0xFFE0, 0xF81F, 0x07FF, 0xFD20, 0xAD55};
     uint32_t tc = W >> 4;
-    int ys = 64 + (int)(40.0f * sinf((float)W * 0.12f));
+    /* The phase is reduced to 0..2pi in integer: newlib's sinf takes a slow Payne-Hanek-style path
+       once |x| > ~200 (W > ~1700), which made sw_max slow down over time. 1252/65536 turn = 0.12 rad. */
+    int ys = 64 + (int)(40.0f * sinf((float)((W * 1252u) & 0xFFFFu) * (6.2831853f / 65536.0f)));
     for (int y = 0; y < VS_H; y++) {
         uint16_t c = c8[(tc * 3u + (uint32_t)(y >> 4) * 5u) & 7u];
         if ((tc ^ (uint32_t)(y >> 4)) & 1u) c = (uint16_t)((c >> 1) & 0x7BEFu);
@@ -1270,6 +1272,60 @@ static void vs_write(const vs_t *v, uint32_t W)
     lcd_end();
 }
 
+/* HUD (fixed left columns): composed in the first VS_HUD columns of SW_BUF (arena, column-major
+   RGB565) and pushed to the panel as one native-order window. The software phases never touch
+   those columns afterwards, so the same HUD stays in every frame. */
+#define SW_BUF ((uint16_t *)(void *)g_arena)
+
+static void hud_text(int x, int y, const char *s, uint16_t fg)
+{
+    for (; *s; s++, x += 6) {
+        const uint8_t *g = font5x7_glyph(*s);
+        for (int cx = 0; cx < 5; cx++) {
+            if (x + cx >= VS_HUD) continue;
+            for (int r = 0; r < 7; r++) {
+                if ((g[cx] >> r) & 1u) SW_BUF[(x + cx) * VS_H + y + r] = fg;
+            }
+        }
+    }
+}
+
+static void hud_push(void)
+{
+    lcd_stream_window(0, 0, VS_HUD - 1u, VS_H - 1u);
+    spi1_dff(true);
+    dma3_start(SW_BUF, VS_HUD * VS_H, true, true, false);
+    dma3_finish();
+    lcd_end();
+}
+
+static void hud_hz(char *b, size_t n, uint32_t x10)
+{
+    if (x10 >= 1000u) snprintf(b, n, "%uHz", (unsigned)(x10 / 10u));
+    else snprintf(b, n, "%u.%uHz", (unsigned)(x10 / 10u), (unsigned)(x10 % 10u));
+}
+
+enum { VP_HW60, VP_HWMAX, VP_SW60, VP_SWMAX, VP_N };
+static const char *const k_vp_name[VP_N] = {"hw_60sps", "hw_max", "sw_60fps", "sw_max"};
+static const char *const k_vp_hud[VP_N] = {"HW60", "HWMAX", "SW60", "SWMAX"};
+static const uint8_t k_vp_hz0[VP_N] = {0, 2, 2, 2};   /* default FRMCTR1 preset: hw_60sps = 60.25 Hz, others 80.6 Hz */
+
+static void hud_draw(int ph, int hzi, uint32_t rate10, uint32_t c, bool hw)
+{
+    char b[16];
+    for (uint32_t i = 0; i < VS_HUD * VS_H; i++) SW_BUF[i] = COLOR_NAVY;
+    hud_text(1, 2, k_vp_hud[ph], COLOR_YELLOW);
+    hud_hz(b, sizeof(b), frm_hz_x10(&k_frm[hzi]));
+    hud_text(0, 12, b, COLOR_WHITE);
+    snprintf(b, sizeof(b), "%u%s", (unsigned)((rate10 + 5u) / 10u), hw ? "/s" : "fps");
+    hud_text(0, 22, b, COLOR_GREEN);
+    hud_text(0, 34, "L/R ph", COLOR_GRAY);
+    hud_text(0, 43, "U/D Hz", COLOR_GRAY);
+    snprintf(b, sizeof(b), "%u", (unsigned)(c % 100000u));
+    hud_text(0, 56, b, COLOR_CYAN);
+    hud_push();
+}
+
 static void vs_hw_init(vs_t *v)
 {
     v->my = (lcd_cfg.madctl & LCD_MADCTL_MY) != 0u;
@@ -1289,11 +1345,6 @@ static void vs_hw_init(vs_t *v)
     for (uint32_t W = 0; W < v->N; W++) vs_write(v, W);
     lcd_set_frame16(false);
     lcd_vscroll_start(v->S0);
-    lcd_fill_rect(0, 0, VS_HUD, VS_H, COLOR_NAVY);
-    lcd_fill_rect(VS_HUD, 0, 1, VS_H, COLOR_WHITE);
-    gfx_text(2, 4, "HW", COLOR_WHITE, COLOR_NAVY, 2);
-    gfx_text(2, 22, "VSCRL", COLOR_CYAN, COLOR_NAVY, 1);
-    gfx_text(2, 32, v->my ? "MY->R" : "->L", COLOR_YELLOW, COLOR_NAVY, 1);
 }
 
 /* One pixel step; cyc = {generate column, write column, VSCRSADD command}. The RAM line that held
@@ -1328,22 +1379,15 @@ static void vs_hw_step(vs_t *v, uint32_t cyc[3])
     cyc[2] = tc;
 }
 
-#define SW_BUF ((uint16_t *)(void *)g_arena)
-
+/* Software scroll: the 124 columns right of the HUD are regenerated and the whole frame is pushed
+   by DMA in native order. Same layout as the hw phases (HUD x < VS_HUD, scrolling area from x = VS_HUD). */
 static uint32_t vs_sw_frame(bool my, uint32_t c, uint32_t *present_cyc)
 {
     uint32_t t0 = time_cycles();
-    const uint32_t F = VS_HUD + 1u;
-    for (uint32_t x = 0; x < VS_W; x++) {
-        uint16_t *col = &SW_BUF[x * VS_H];
-        if (x < VS_HUD) {
-            for (int y = 0; y < VS_H; y++) col[y] = COLOR_NAVY;
-        } else {
-            vs_gen(my ? c + 160u - x : c + x + 1u - F);
-            memcpy(col, s_vcol, sizeof(s_vcol));
-        }
+    for (uint32_t x = VS_HUD; x < VS_W; x++) {
+        vs_gen(my ? c + 160u - x : c + x - VS_HUD);
+        memcpy(&SW_BUF[x * VS_H], s_vcol, sizeof(s_vcol));
     }
-    for (int y = 0; y < VS_H; y++) SW_BUF[VS_HUD * VS_H + (uint32_t)y] = COLOR_WHITE;
     uint32_t render = time_cycles() - t0;
     uint32_t t1 = time_cycles();
     lcd_stream_window(0, 0, VS_W - 1u, VS_H - 1u);
@@ -1355,29 +1399,30 @@ static uint32_t vs_sw_frame(bool my, uint32_t c, uint32_t *present_cyc)
     return render;
 }
 
-enum { VP_HW60, VP_HWMAX, VP_SW60, VP_SWMAX, VP_N };
-static const char *const k_vp_name[VP_N] = {"hw_60sps", "hw_max", "sw_60fps", "sw_max"};
-
-/* display.vscroll [auto=1] [t=<s per phase>] [sps=<steps/s of the paced phases, default 60>]
+/* display.vscroll [auto=1] [t=<s per phase>] [sps=<steps/s of the paced phases, default 60>] [ph=0..3: auto runs only that phase]
    Landscape horizontal scrolling with the ST7735S hardware scroll in native addressing. RAM has
    162 lines (the 160 visible ones sit at lines 1..160, offset xoff = 1): VSCRDEF = {TFA, VSA, BFA}
    with TFA + VSA + BFA = 162. The left 36 landscape columns (+ the hidden RAM line) are a fixed
    area (HUD), the scroll area is the other 125 lines; per pixel step only ONE new 128-pixel column
    is written (into the RAM line that just left the visible area) and VSCRSADD advances.
    Phases: hw_60sps (smoothness, 1 px/step), hw_max, sw_60fps (full-frame redraw + DMA, 1 px/frame),
-   sw_max. LEFT/RIGHT switch phase in manual mode, B exits; auto=1 runs every phase for t seconds. */
+   sw_max. LEFT/RIGHT switch phase in manual mode (never automatically), UP/DOWN panel refresh
+   (FRMCTR1 presets 60.25/75/80.6/90/110 Hz, remembered per phase; hw_60sps starts at 60.25 so the
+   60 steps/s match the panel), B exits; auto=1 runs every phase for t seconds. The HUD shows phase,
+   refresh and the measured steps/s (fps) over the last second. */
 suite_verdict_t suite_display_vscroll(int argc, char **argv)
 {
     bool aut = suite_arg_u32(argc, argv, "auto", 0u) != 0u;
     if (!aut && !suite_user_start("display.vscroll",
                                   "HW scroll test (scrolls sideways). LEFT/RIGHT phase: hw60 / hw max / sw60 / sw max, "
-                                  "B exit. Judge smoothness + tearing. A=start B=skip",
+                                  "UP/DOWN panel refresh, B exit. Judge smoothness + tearing. A=start B=skip",
                                   argc, argv)) {
         return SUITE_ABORT;
     }
     uint32_t phase_ms = suite_arg_u32(argc, argv, "t", 4u) * 1000u;
     uint32_t sps = suite_arg_u32(argc, argv, "sps", 60u);
     if (sps == 0u) sps = 60u;
+    uint32_t only = suite_arg_u32(argc, argv, "ph", 99u);
     lcd_saved_t saved;
     lcd_save(&saved);
     lcd_set_native(true);
@@ -1388,7 +1433,9 @@ suite_verdict_t suite_display_vscroll(int argc, char **argv)
     vs_t vs;
     memset(&vs, 0, sizeof(vs));
     bool my = (lcd_cfg.madctl & LCD_MADCTL_MY) != 0u;
-    int ph = 0;
+    int hzp[VP_N];
+    for (int i = 0; i < VP_N; i++) hzp[i] = k_vp_hz0[i];
+    int ph = only < VP_N ? (int)only : 0;
     bool done = false;
     while (!done && v == SUITE_PASS) {
         bool hw = (ph == VP_HW60 || ph == VP_HWMAX);
@@ -1396,11 +1443,15 @@ suite_verdict_t suite_display_vscroll(int argc, char **argv)
         lcd_vscroll_define(0, LCD_GDDRAM_H, 0);
         lcd_vscroll_start(0);
         lcd_fill_rect(0, 0, VS_W, VS_H, COLOR_BLACK);
+        lcd_set_frmctr1(k_frm[hzp[ph]].b);
         if (hw) vs_hw_init(&vs);
+        for (uint32_t i = VS_HUD * VS_H; i < (uint32_t)VS_W * VS_H; i++) SW_BUF[i] = COLOR_BLACK;
+        hud_draw(ph, hzp[ph], 0, 0, hw);
         uint32_t steps = 0, t_start = HAL_GetTick(), t_us0 = time_us();
         uint64_t s_gen = 0, s_wr = 0, s_cmd = 0, s_pres = 0, s_busy = 0;
         uint32_t sw_c = 0;
-        bool change = false;
+        uint32_t w_t0 = t_start, w_steps = 0, rate10 = 0, r_min = 0xFFFFFFFFu, r_max = 0;
+        bool hud_now = false, change = false;
         int next_ph = ph;
         while (!change) {
             if (paced) {
@@ -1421,16 +1472,31 @@ suite_verdict_t suite_display_vscroll(int argc, char **argv)
             }
             s_busy += time_cycles() - cb;
             steps++;
-            if (hw && (steps & 31u) == 0u) {   /* HUD counter: fixed area, not part of the timing */
-                lcd_set_frame16(false);
-                gfx_textf(2, 48, COLOR_WHITE, COLOR_NAVY, 1, "%5" PRIu32, vs.c);
+            w_steps++;
+            uint32_t now = HAL_GetTick();
+            if (now - w_t0 >= 1000u || hud_now) {   /* HUD: fixed area, not part of the timing */
+                if (now - w_t0 >= 1000u) {
+                    rate10 = w_steps * 10000u / (now - w_t0);
+                    if (steps > w_steps) {   /* the first (partial) window is not counted in min/max */
+                        if (rate10 < r_min) r_min = rate10;
+                        if (rate10 > r_max) r_max = rate10;
+                    }
+                    w_t0 = now;
+                    w_steps = 0;
+                }
+                hud_draw(ph, hzp[ph], rate10, hw ? vs.c : sw_c, hw);
+                hud_now = false;
             }
             if ((steps & 7u) == 0u || !paced) {
                 sys_service();
                 if (abort_requested()) { v = SUITE_ABORT; break; }
             }
             if (aut) {
-                if (HAL_GetTick() - t_start >= phase_ms) { change = true; next_ph = ph + 1; }
+                if (HAL_GetTick() - t_start >= phase_ms) {
+                    change = true;
+                    next_ph = ph + 1;
+                    if (only < VP_N) done = true;
+                }
             } else {
                 input_event_t ev;
                 while (input_pop(&ev)) {
@@ -1438,6 +1504,11 @@ suite_verdict_t suite_display_vscroll(int argc, char **argv)
                     if (ev.button == BTN_B) { done = true; change = true; }
                     if (ev.button == BTN_RIGHT) { change = true; next_ph = (ph + 1) % VP_N; }
                     if (ev.button == BTN_LEFT) { change = true; next_ph = (ph + VP_N - 1) % VP_N; }
+                    if (ev.button == BTN_UP || ev.button == BTN_DOWN) {
+                        hzp[ph] = (hzp[ph] + N_FRM + (ev.button == BTN_UP ? 1 : -1)) % N_FRM;
+                        lcd_set_frmctr1(k_frm[hzp[ph]].b);
+                        hud_now = true;
+                    }
                 }
             }
         }
@@ -1445,20 +1516,26 @@ suite_verdict_t suite_display_vscroll(int argc, char **argv)
         if (steps > 8u && ms > 500u) {
             uint32_t cpu = SystemCoreClock / 1000000u;
             uint32_t sps10 = (uint32_t)((uint64_t)steps * 10000u / ms);
+            uint32_t hz10 = frm_hz_x10(&k_frm[hzp[ph]]);
+            uint32_t rmin = r_min == 0xFFFFFFFFu ? sps10 : r_min;
             if (hw) {
                 res_printf("{\"t\":\"bench\",\"suite\":\"display.vscroll\",\"name\":\"%s\",\"steps\":%" PRIu32
-                           ",\"steps_per_s\":%" PRIu32 ".%" PRIu32 ",\"gen_cyc\":%" PRIu32 ",\"write_cyc\":%" PRIu32
+                           ",\"steps_per_s\":%" PRIu32 ".%" PRIu32 ",\"win_min\":%" PRIu32 ".%" PRIu32 ",\"win_max\":%" PRIu32
+                           ".%" PRIu32 ",\"panel_hz\":%" PRIu32 ".%" PRIu32 ",\"gen_cyc\":%" PRIu32 ",\"write_cyc\":%" PRIu32
                            ",\"vscrsadd_cyc\":%" PRIu32 ",\"step_cyc\":%" PRIu32 ",\"step_us\":%" PRIu32
                            ",\"scroll_area\":[%u,%u,%u],\"my\":%s,\"spi_hz\":%" PRIu32 "}",
-                           k_vp_name[ph], steps, sps10 / 10u, sps10 % 10u, (uint32_t)(s_gen / steps),
+                           k_vp_name[ph], steps, sps10 / 10u, sps10 % 10u, rmin / 10u, rmin % 10u, r_max / 10u,
+                           r_max % 10u, hz10 / 10u, hz10 % 10u, (uint32_t)(s_gen / steps),
                            (uint32_t)(s_wr / steps), (uint32_t)(s_cmd / steps), (uint32_t)(s_busy / steps),
                            (uint32_t)(s_busy / steps / cpu), (unsigned)vs.S0, (unsigned)vs.N,
                            (unsigned)(LCD_GDDRAM_H - vs.S0 - vs.N), my ? "true" : "false", lcd_spi_hz());
             } else {
                 res_printf("{\"t\":\"bench\",\"suite\":\"display.vscroll\",\"name\":\"%s\",\"steps\":%" PRIu32
-                           ",\"steps_per_s\":%" PRIu32 ".%" PRIu32 ",\"render_cyc\":%" PRIu32 ",\"present_cyc\":%" PRIu32
+                           ",\"steps_per_s\":%" PRIu32 ".%" PRIu32 ",\"win_min\":%" PRIu32 ".%" PRIu32 ",\"win_max\":%" PRIu32
+                           ".%" PRIu32 ",\"panel_hz\":%" PRIu32 ".%" PRIu32 ",\"render_cyc\":%" PRIu32 ",\"present_cyc\":%" PRIu32
                            ",\"frame_cyc\":%" PRIu32 ",\"frame_us\":%" PRIu32 ",\"spi_hz\":%" PRIu32 "}",
-                           k_vp_name[ph], steps, sps10 / 10u, sps10 % 10u, (uint32_t)(s_gen / steps),
+                           k_vp_name[ph], steps, sps10 / 10u, sps10 % 10u, rmin / 10u, rmin % 10u, r_max / 10u,
+                           r_max % 10u, hz10 / 10u, hz10 % 10u, (uint32_t)(s_gen / steps),
                            (uint32_t)(s_pres / steps), (uint32_t)(s_busy / steps), (uint32_t)(s_busy / steps / cpu),
                            lcd_spi_hz());
             }
@@ -1467,8 +1544,10 @@ suite_verdict_t suite_display_vscroll(int argc, char **argv)
         ph = next_ph % VP_N;
     }
     lcd_set_frame16(false);
+    lcd_set_frmctr1(k_frm[2].b);   /* lcd_init default 80.6 Hz */
     lcd_vscroll_define(0, LCD_GDDRAM_H, 0);
     lcd_vscroll_start(0);
     lcd_restore(&saved);
     return v;
 }
+

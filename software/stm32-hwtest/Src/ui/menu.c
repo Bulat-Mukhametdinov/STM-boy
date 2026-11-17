@@ -2,6 +2,8 @@
    main loop, so host commands keep working while a screen is shown. */
 
 #include "ui.h"
+#include "audio.h"
+#include "bench.h"
 #include "gauge_fw.h"
 #include "board.h"
 #include "clock.h"
@@ -89,6 +91,40 @@ void ui_init(void)
 }
 
 /* ---------------------------------------------------------------- menu */
+
+/* Whole-screen compose: the menu screens render into a 160x128 RGB565 framebuffer in g_arena (lcd
+   capture mode) and the finished frame goes out in native scan order by DMA, so no partial redraw
+   is ever visible. ui_task() only runs while no suite is active (suites own the arena while they
+   run), the audio engine is the only other arena user that can outlive a suite. */
+static bool cv_begin(void)
+{
+    if (!lcd_native() || audio_engine() != AUD_ENG_NONE) {
+        return false;   /* fall back to direct drawing */
+    }
+    lcd_capture((uint16_t *)(void *)g_arena);
+    return true;
+}
+
+static void cv_end(bool on)
+{
+    if (!on) {
+        return;
+    }
+    lcd_capture(NULL);
+    const uint16_t div0 = lcd_cfg.spi_div;
+    const uint32_t speed0 = lcd_gpio_speed();
+    const bool f16 = lcd_frame16();
+    if (speed0 < 2u) lcd_set_gpio_speed(2);
+    lcd_set_spi_div(2);   /* 48 MHz: the push is faster than one panel refresh */
+    lcd_stream_window(0, 0, 159, 127);
+    spi1_dff(true);
+    dma3_start(g_arena, 160u * 128u, true, true, false);
+    dma3_finish();
+    lcd_end();
+    lcd_set_spi_div(div0);
+    lcd_set_gpio_speed(speed0);
+    lcd_set_frame16(f16);
+}
 
 static void draw_menu_item(int i)
 {
@@ -287,15 +323,11 @@ static void draw_tests(void)
 
 static void tests_move(int d)
 {
-    int old = s_tsel;
     s_tsel = (s_tsel + d + g_suite_count) % g_suite_count;
     if (s_tsel < s_ttop || s_tsel >= s_ttop + T_ROWS) {
         s_ttop = (s_tsel < s_ttop) ? s_tsel : s_tsel - T_ROWS + 1;
-        draw_tests();
-        return;
     }
-    draw_test_row(old);
-    draw_test_row(s_tsel);
+    s_dirty = true;
 }
 
 static void run_suite_index(int i)
@@ -336,6 +368,23 @@ static void select_item(int i)
     ui_invalidate();
 }
 
+static void render_screen(void)
+{
+    if (s_scr == SCR_RESULT) {
+        return;
+    }
+    bool cv = cv_begin();
+    switch (s_scr) {
+    case SCR_MENU: draw_menu(); break;
+    case SCR_BUTTONS: draw_buttons(true); break;
+    case SCR_DISPLAY: draw_display_info(); break;
+    case SCR_USBINFO: draw_usb_info(true); break;
+    case SCR_TESTS: draw_tests(); break;
+    case SCR_RESULT: break;
+    }
+    cv_end(cv);
+}
+
 void ui_task(void)
 {
     input_event_t ev;
@@ -343,14 +392,7 @@ void ui_task(void)
 
     if (s_dirty) {
         s_dirty = false;
-        switch (s_scr) {
-        case SCR_MENU: draw_menu(); break;
-        case SCR_BUTTONS: draw_buttons(true); break;
-        case SCR_DISPLAY: draw_display_info(); break;
-        case SCR_USBINFO: draw_usb_info(true); break;
-        case SCR_TESTS: draw_tests(); break;
-        case SCR_RESULT: break;
-        }
+        render_screen();
         s_last_refresh = now;
     }
 
@@ -361,10 +403,8 @@ void ui_task(void)
         switch (s_scr) {
         case SCR_MENU:
             if (ev.button == BTN_UP || ev.button == BTN_DOWN) {
-                int old = s_sel;
                 s_sel = (ev.button == BTN_UP) ? (s_sel + N_ITEMS - 1) % N_ITEMS : (s_sel + 1) % N_ITEMS;
-                draw_menu_item(old);
-                draw_menu_item(s_sel);
+                s_dirty = true;
             } else if (ev.button == BTN_A || ev.button == BTN_CENTER) {
                 select_item(s_sel);
                 return;
@@ -396,7 +436,9 @@ void ui_task(void)
 
     /* periodic refresh */
     if (s_scr == SCR_BUTTONS) {
-        draw_buttons(false);
+        if (input_held() != s_btn_drawn) {
+            render_screen();
+        }
         if (input_held() & BTN_MASK(BTN_B)) {
             if (s_b_hold_start == 0u) {
                 s_b_hold_start = now ? now : 1u;
@@ -411,9 +453,9 @@ void ui_task(void)
     } else if ((uint32_t)(now - s_last_refresh) >= 500u) {
         s_last_refresh = now;
         if (s_scr == SCR_USBINFO) {
-            draw_usb_info(false);
-        } else if (s_scr == SCR_MENU && (usb_state() != s_usb_state || gauge_fw_sig() != s_gauge_sig)) {
-            ui_status_bar();
+            render_screen();
+        } else if ((s_scr == SCR_MENU || s_scr == SCR_TESTS) && (usb_state() != s_usb_state || gauge_fw_sig() != s_gauge_sig)) {
+            render_screen();
         }
     }
 }
