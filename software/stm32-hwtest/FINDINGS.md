@@ -23,7 +23,9 @@ evidence are in `HW_LOG.md` and `tools/results/`.
 - Display: landscape MADCTL 0xA0 offsets x=1 y=2; portrait 0x00 x=2 y=1;
   RGB order; inversion off; gamma table "sitronix" preferred. Bring-up values
   COLSTART=3/ROWSTART=1 were wrong (lost right column and top row).
-- SPI1 to ST7735S stable at 48 MHz (8- and 16-bit frames) at SYSCLK 96 MHz.
+- SPI1 to ST7735S stable at 48 MHz (8- and 16-bit frames) at SYSCLK 96 MHz; scope (PA5): 48.01 MHz,
+  duty 48 %; 48 MHz needs GPIO speed >= medium (low fails: ~1 V swing); 12 MHz on low speed is a clean
+  square (rise 11 ns). Edge ringing seen with fast speeds is mostly probe-loop; v0.2: 22-33 ohm series R on SCK/MOSI.
 - Full-frame 160x128 RGB565 via DMA: 6.83 ms at 48 MHz (146 fps).
 - DFU: software entry (command / 1200-baud touch) 20/20, BOOT0 path and
   recovery from a broken image verified. App->DFU ~0.61 s, DFU->app ~0.76 s.

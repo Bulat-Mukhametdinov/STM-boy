@@ -3783,3 +3783,136 @@ git-ignored; .txt hexdumps next to them).
 - +5V TP with no cable: 2.41 V (board back-feeds VBUS). With a USB-A to C cable (charge-only, no data) +5V = 5 V and charging works. => USB-C sources that check vSafe0V (laptop C-C) refuse to power the board. Workaround: A-C cable / wall charger. Charge curve: only the first ~50 min captured (host abort bug); full charge curve to be re-captured later.
 - power.info on device (A-C cable, ~3.6 V): CHG low (charging), VBUS yes -> #CHG hardware OK; F9 = battlog firmware issue.
 - Correction (user): the charger was NOT connected overnight; it was plugged at 07:00. Timeline: start ~17:00, cutoff ~02:17 (9:18), Stop 4:42, wall charger 07:00-07:48 (~50 min CC charge, CHG flag never set in the log), then laptop C-C (no VBUS, F8), logger aborted at ~07:52 by the host dump attempt.
+
+### 2026-11-17 12:32:24 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: FAIL (exit code 2)
+
+### 2026-11-17 12:33:19 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-17 12:33:36 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-17 12:33:47 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.282
+- Output: Time elapsed during verifying operation: 00:00:01.479
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-17 12:33:48 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (211828 bytes), expected id: {'fw': 'af00cc4+dirty', 'build': 1794906519}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=af00cc4+dirty build=1794906519, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=11.31s, dfu_to_app=0.70s, total=12.70s
+
+### 2026-11-17 12:33:54 — Run suite power.current (start) [auto]
+
+- Command: `run power.current s=9 n=900 entry=0 t=600 step=900`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=af00cc4+dirty build=1794906519 busy=idle
+
+### 2026-11-17 12:43:54 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.current s=9 n=900 entry=0 t=600 step=900 --prompt-timeout 1200`
+- Result: FAIL (exit code 2)
+- Suite power.current: ABORT results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261117-123354-power.current.json
+
+### 2026-11-17 12:50:46 — Scope: SPI1 SCK (PA5, pin 15) at 48 MHz (manual note)
+
+- TDS3032B, CH1 x10 on a wire soldered to PA5, stream = power.current S9 (LCD DMA continuous, div 2), prompts auto-answered by a host script.
+- Attempt 1 (long ground clip): Freq 48.01 MHz, +Duty 48.12 %, Rise 7.49 ns, Pk-Pk 6.44 V (about -1.4..+4.8 V) with strong ringing and step-like reflections on the edges -> beyond the 3.3 V rails, i.e. measurement-loop ringing (wire + long ground lead), not the pin voltage. Asked user to shorten the ground (spring / wrapped wire to the nearest GND) and the wire.
+- Firmware: new command `lcd div <2|4|8|16|32>` to change the SPI1 prescaler on the fly.
+
+### 2026-11-17 13:01:27 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "lcd div 4" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK lcd div lines=2
+- @R {"t": "lcd", "spi_div": 4, "spi_hz": 24000000}
+
+### 2026-11-17 13:03:53 — Enter DFU from application (touch) [auto]
+
+- Command: `1200-baud touch on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)
+
+### 2026-11-17 13:04:04 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 11.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:09.292
+- Output: Time elapsed during verifying operation: 00:00:01.478
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-17 13:04:05 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (211884 bytes), expected id: {'fw': 'af00cc4+dirty', 'build': 1794909829}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=af00cc4+dirty build=1794909829, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=11.22s, dfu_to_app=0.69s, total=12.61s
+
+### 2026-11-17 13:04:42 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "lcd speed 1" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK lcd speed lines=2
+- @R {"t": "lcd", "gpio_speed": 1}
+
+### 2026-11-17 13:05:49 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "lcd speed 0" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK lcd speed lines=2
+- @R {"t": "lcd", "gpio_speed": 0}
+
+### 2026-11-17 13:08:31 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "lcd div 8" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK lcd div lines=2
+- @R {"t": "lcd", "spi_div": 8, "spi_hz": 12000000}
+
+### 2026-11-17 13:11:00 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=1
+
+### 2026-11-17 13:11:01 — Scope: SPI1 SCK results (manual note)
+
+- 48 MHz, speed 3 (very high), short-ish ground: unchanged (Pk-Pk ~6.4 V, ringing ~100-120 MHz).
+- 24 MHz, speed 3: 24.01 MHz, duty 48.9 %, damped ringing after every edge (~8-10 ns period), same Pk-Pk 6.7 V -> ringing amplitude independent of SPI clock; a -1.6 V undershoot AT the MCU pin is impossible with the pin clamp diodes -> dominated by the probe/wire loop. Rise-time readings (7.5 / 18.9 ns) unreliable (10-90 % thresholds hit the ringing).
+- 48 MHz, GPIO speed 1 (medium, new `lcd speed`): display OK, scope trace unchanged.
+- 48 MHz, GPIO speed 0 (low): FAILS - SCK amplitude ~1 V, frequency reading unstable, display frozen on the last good frame.
+- 12 MHz, GPIO speed 0: clean square, 11.97 MHz, duty 50.5 %, rise 11 ns, no ringing, Pk-Pk 3.80 V (probe scale reads ~15 % high).
+- Conclusion: 48 MHz needs OSPEEDR >= medium; recommend 48 MHz + high (2) for margin; v0.2: 22-33 ohm series resistors on SCK/MOSI near the MCU.

@@ -404,6 +404,24 @@ static void dispatch(char *line, bool restricted)
         cmd_answer(argc, argv);
     } else if (strcmp(c, "adccal") == 0 || strcmp(c, "cur") == 0) {
         pwr_cmd(argc, argv);
+    } else if (strcmp(c, "lcd") == 0) {             /* lcd div <2|4|8|16>: SPI1 prescaler on the fly (scope work) */
+        unsigned long d = (argc >= 3 && strcmp(argv[1], "div") == 0) ? strtoul(argv[2], NULL, 0) : 0;
+        if (argc >= 3 && strcmp(argv[1], "speed") == 0) {   /* lcd speed <0..3>: OSPEEDR for SCK/MOSI */
+            unsigned long sp = strtoul(argv[2], NULL, 0);
+            if (sp <= 3u) {
+                lcd_set_gpio_speed((uint32_t)sp);
+                res_printf("{\"t\":\"lcd\",\"gpio_speed\":%lu}", sp);
+                proto_ok("lcd speed");
+            } else {
+                proto_err("lcd", "usage: lcd speed <0..3>");
+            }
+        } else if (d == 2 || d == 4 || d == 8 || d == 16 || d == 32) {
+            lcd_set_spi_div((uint16_t)d);
+            res_printf("{\"t\":\"lcd\",\"spi_div\":%lu,\"spi_hz\":%lu}", d, 96000000ul / d);
+            proto_ok("lcd div");
+        } else {
+            proto_err("lcd", "usage: lcd div <2|4|8|16|32>");
+        }
     } else if (strcmp(c, "battlog") == 0) {
         battlog_cmd(argc, argv, restricted);
     } else if (restricted) {

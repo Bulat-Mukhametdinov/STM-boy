@@ -1,0 +1,72 @@
+{
+  "kind": "run",
+  "suite": "power.current",
+  "command": "run power.current s=9 n=900 entry=0 t=600 step=900",
+  "status": "abort",
+  "exit_code": 2,
+  "done": "@DONE power.current abort",
+  "error": "",
+  "host_time_start": "2026-11-17T12:33:54+03:00",
+  "host_time_end": "2026-11-17T12:43:54+03:00",
+  "duration_s": 600.117,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "af00cc4+dirty",
+    "build": 1794906519,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": true,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 3,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "valid",
+    "w25q": true,
+    "uptime_ms": 7253,
+    "vbus": true,
+    "chg": true,
+    "faults": 0
+  },
+  "results": [
+    {
+      "t": "skip",
+      "suite": "power.current",
+      "reason": "timeout"
+    }
+  ],
+  "prompts": [
+    {
+      "t": "prompt",
+      "id": "power_current_start",
+      "text": "Current measurement: meter in series with the battery lead. States run in order; USB out except S16.",
+      "answers": [
+        "A=start",
+        "B=skip"
+      ],
+      "timeout_ms": 600000
+    }
+  ],
+  "answers": [
+    {
+      "t": "answer",
+      "id": "power_current_start",
+      "answer": "timeout"
+    }
+  ],
+  "binaries": [],
+  "log": []
+}
