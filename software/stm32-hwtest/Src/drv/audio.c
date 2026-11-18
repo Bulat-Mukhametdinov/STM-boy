@@ -235,13 +235,22 @@ void DMA2_Stream5_IRQHandler(void)
     if (f & (S5_TE | S5_DME)) {
         g_aud_stats.dma_err++;
     }
+    if (f & S5_FE) {
+        g_aud_stats.fe++;
+    }
     if (f & S5_HT) {
         g_aud_stats.dma_ht++;
         fill_block(&s_buf[0], AUD_HALF);
+        if (DMA2_Stream5->NDTR > AUD_HALF) {   /* HT: DMA should be in the 2nd half (NDTR <= HALF) */
+            g_aud_stats.uf++;
+        }
     }
     if (f & S5_TC) {
         g_aud_stats.dma_tc++;
         fill_block(&s_buf[AUD_HALF], AUD_HALF);
+        if (DMA2_Stream5->NDTR <= AUD_HALF) {  /* TC: DMA should be in the 1st half (NDTR > HALF) */
+            g_aud_stats.uf++;
+        }
     }
 }
 

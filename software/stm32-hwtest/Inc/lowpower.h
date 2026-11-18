@@ -30,4 +30,14 @@ void lp_peripherals_wake(void);        /* reverse; backlight stays off */
    wake reconfigures EXTI9 to PA9 for the duration (restored on return). */
 uint32_t lp_stop(uint32_t timeout_s, uint32_t mask);
 
+/* Timing of the last lp_stop() (power.sleep): entry_us = lp_stop() entry -> just before WFI (RTC/EXTI setup);
+   clk_cyc = DWT cycles from the first instruction after the wake-up to the end of clock_init_96mhz() (HSE start +
+   PLL lock; the core runs from HSI 16 MHz for nearly all of it, so us ~ clk_cyc / 16); cause = LP_WAKE_*. */
+typedef struct {
+    uint32_t entry_us;
+    uint32_t clk_cyc;
+    uint32_t cause;
+} lp_stop_info_t;
+extern lp_stop_info_t lp_last_stop;
+
 #endif

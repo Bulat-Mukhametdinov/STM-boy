@@ -106,6 +106,8 @@ uint32_t lcd_gpio_speed(void);
 
 /* Backlight on/off (full brightness / off), routed through backlight.h. */
 void lcd_backlight(bool on);
+void lcd_cmd_raw(uint8_t c, const uint8_t *params, uint32_t n);   /* command + n parameter bytes, CS released */
+void lcd_colmod(uint8_t mode);       /* COLMOD 0x3A: 0x03 12 bit, 0x05 16 bit, 0x06 18 bit (3 bytes/px) */
 void lcd_sleep(bool on);             /* DISPOFF+SLPIN / SLPOUT+DISPON (blocks ~130 ms on wake) */
 
 /* Low-level streaming: lcd_set_window() leaves the controller in RAMWR with

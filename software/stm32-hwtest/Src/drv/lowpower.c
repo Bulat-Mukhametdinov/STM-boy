@@ -1,4 +1,5 @@
 #include "lowpower.h"
+#include <string.h>
 #include "adc.h"
 #include "backlight.h"
 #include "board.h"
@@ -7,6 +8,7 @@
 #include "lcd.h"
 #include "power.h"
 #include "w25q.h"
+#include "timebase.h"
 #include "stm32f4xx_hal.h"
 
 extern PCD_HandleTypeDef hpcd;
@@ -152,8 +154,12 @@ void lp_peripherals_wake(void)
 
 /* ---------------------------------------------------------------- Stop */
 
+lp_stop_info_t lp_last_stop;
+
 uint32_t lp_stop(uint32_t timeout_s, uint32_t mask)
 {
+    uint32_t t_in = time_us();
+    memset(&lp_last_stop, 0, sizeof(lp_last_stop));
     uint32_t exti9_save = SYSCFG->EXTICR[2];
     bool vbus = (mask & LP_WAKE_VBUS) != 0u;
 
@@ -188,8 +194,11 @@ uint32_t lp_stop(uint32_t timeout_s, uint32_t mask)
     if (!(s_wake_flags & mask)) {
         HAL_SuspendTick();
         HAL_PWREx_EnableFlashPowerDown();
+        lp_last_stop.entry_us = time_us() - t_in;
+        uint32_t c0 = 0;
         for (;;) {
             HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+            c0 = DWT->CYCCNT;           /* first cycles after the wake-up: core runs from HSI 16 MHz */
             if (vbus && power_vbus()) {
                 s_wake_flags |= LP_WAKE_VBUS;
             }
@@ -199,9 +208,11 @@ uint32_t lp_stop(uint32_t timeout_s, uint32_t mask)
         }
         HAL_PWREx_DisableFlashPowerDown();
         clock_init_96mhz();
+        lp_last_stop.clk_cyc = DWT->CYCCNT - c0;
         HAL_ResumeTick();
     }
     cause = s_wake_flags & mask;
+    lp_last_stop.cause = cause;
 
     if (timeout_s) {
         wut_disarm();

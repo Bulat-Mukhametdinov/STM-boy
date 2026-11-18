@@ -595,6 +595,24 @@ void lcd_fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
     lcd_end();
 }
 
+/* Raw command (+ parameters) for the sleep / COLMOD tests; no waiting after it. */
+void lcd_cmd_raw(uint8_t c, const uint8_t *params, uint32_t n)
+{
+    if (s_cap) {
+        return;
+    }
+    cmd(c);
+    for (uint32_t i = 0; i < n; i++) {
+        spi_tx8(params[i]);
+    }
+    lcd_end();
+}
+
+void lcd_colmod(uint8_t mode)
+{
+    lcd_cmd_raw(0x3A, &mode, 1);
+}
+
 /* Sleep mode (P2 current measurement): DISPOFF + SLPIN, or SLPOUT (120 ms) + DISPON. */
 void lcd_sleep(bool on)
 {

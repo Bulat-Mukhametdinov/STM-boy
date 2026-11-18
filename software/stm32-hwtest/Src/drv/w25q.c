@@ -210,15 +210,20 @@ w25q_status_t w25q_erase_sector(uint32_t addr)
     if ((addr % W25Q_SECTOR_SIZE) != 0u || !write_ok(addr, W25Q_SECTOR_SIZE)) {
         return W25Q_ERR_PARAM;
     }
-    w25q_status_t st = wait_ready(TIMEOUT_PAGE_MS);
-    if (st != W25Q_OK) {
-        return st;
+    /* F4: the 0x20 erase was sometimes silently not executed (returned in ~11 us,
+       WEL left set, data unchanged). A real 4K erase takes >= ~40 ms (typ 45, seen
+       53-89 ms), so an erase that "finishes" in < 1 ms is treated as rejected and retried. */
+    for (int attempt = 0; attempt < 3; attempt++) {
+        uint32_t us = 0;
+        w25q_status_t st = w25q_erase_cmd(CMD_SECTOR_ERASE, addr, &us);
+        if (st != W25Q_OK) {
+            return st;
+        }
+        if (us >= 1000u) {
+            return W25Q_OK;
+        }
     }
-    write_enable();
-    CS_LOW();
-    send_cmd_addr(CMD_SECTOR_ERASE, addr);
-    end();
-    return wait_ready(TIMEOUT_ERASE_MS);
+    return W25Q_ERR_TIMEOUT;
 }
 
 w25q_status_t w25q_power_down(void)

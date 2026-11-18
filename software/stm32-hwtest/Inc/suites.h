@@ -63,6 +63,14 @@ suite_verdict_t suite_input_chord(int argc, char **argv);
 suite_verdict_t suite_backlight(int argc, char **argv);
 suite_verdict_t suite_backlight_user(int argc, char **argv);
 
+suite_verdict_t suite_stress_game(int argc, char **argv);
+suite_verdict_t suite_soak(int argc, char **argv);
+suite_verdict_t suite_display_colmod(int argc, char **argv);
+suite_verdict_t suite_input_latency(int argc, char **argv);
+suite_verdict_t suite_stream_video(int argc, char **argv);
+suite_verdict_t suite_power_sleep(int argc, char **argv);
+suite_verdict_t suite_power_ampdip(int argc, char **argv);
+
 suite_verdict_t suite_audio_tone(int argc, char **argv);
 suite_verdict_t suite_audio_sweep(int argc, char **argv);
 suite_verdict_t suite_audio_chirp(int argc, char **argv);

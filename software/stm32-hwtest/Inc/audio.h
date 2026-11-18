@@ -46,6 +46,8 @@ typedef struct {
     volatile uint32_t cyc_max;
     volatile uint32_t calls;       /* number of timed bodies (A: samples, B: blocks) */
     volatile uint32_t clipped;     /* samples hit by the clip guard */
+    volatile uint32_t uf;          /* engine B: DMA had already wrapped into the half just rendered (underrun) */
+    volatile uint32_t fe;          /* engine B: DMA FIFO error flag (informational, direct mode) */
     volatile uint32_t last_us;     /* TIM2 time_us() at the last A sample / B block ISR entry */
 } aud_stats_t;
 

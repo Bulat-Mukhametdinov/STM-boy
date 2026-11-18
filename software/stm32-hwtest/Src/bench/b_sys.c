@@ -367,6 +367,36 @@ static void wake_run(const char *name, bool wfi)
     emit_samples("bench.sys", name, v, NIRQ, NULL);
 }
 
+/* power.sleep (c): wake latency, `n` samples (cycles at the CPU clock) after a TIM5 compare `delay_cyc` ahead */
+void bench_wake_cycles(bool wfi, uint32_t delay_cyc, uint32_t *v, uint32_t n);
+void bench_wake_cycles(bool wfi, uint32_t delay_cyc, uint32_t *v, uint32_t n)
+{
+    RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;
+    (void)RCC->APB1ENR;
+    TIM5->CR1 = 0;
+    TIM5->PSC = 0;
+    TIM5->ARR = 0xFFFFFFFFu;
+    TIM5->EGR = TIM_EGR_UG;
+    TIM5->CR1 = TIM_CR1_CEN;
+    NVIC_SetPriority(TIM5_IRQn, 0);
+    NVIC_EnableIRQ(TIM5_IRQn);
+    for (uint32_t i = 0; i < n + 1u; i++) {
+        s_wake_flag = false;
+        TIM5->SR = 0;
+        TIM5->CCR1 = TIM5->CNT + delay_cyc;
+        TIM5->DIER = TIM_DIER_CC1IE;
+        while (!s_wake_flag) {
+            if (wfi) {
+                __WFI();
+            }
+        }
+        if (i > 0) v[i - 1] = s_wake_cyc;
+    }
+    NVIC_DisableIRQ(TIM5_IRQn);
+    TIM5->CR1 = 0;
+    TIM5->DIER = 0;
+}
+
 /* ---- ADC ---- */
 
 static uint32_t adc_convert_cycles(uint32_t smp, uint32_t *val)

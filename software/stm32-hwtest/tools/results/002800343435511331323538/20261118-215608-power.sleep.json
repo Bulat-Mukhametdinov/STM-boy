@@ -1,0 +1,130 @@
+{
+  "kind": "run",
+  "suite": "power.sleep",
+  "command": "run power.sleep",
+  "status": "disconnected",
+  "exit_code": 2,
+  "done": "",
+  "error": "serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))",
+  "host_time_start": "2026-11-18T21:56:08+03:00",
+  "host_time_end": "2026-11-18T21:56:08+03:00",
+  "duration_s": 0.397,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "9c91e4f+dirty",
+    "build": 1795028146,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": true,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 54,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "valid",
+    "w25q": true,
+    "uptime_ms": 2838,
+    "vbus": true,
+    "chg": false,
+    "faults": 536879233,
+    "fault": {
+      "pc": "28002190",
+      "lr": "08001C49",
+      "cfsr": "00000100",
+      "hfsr": "40000000"
+    }
+  },
+  "results": [
+    {
+      "t": "sleep_state",
+      "suite": "power.sleep",
+      "state": "B",
+      "what": "DISPOFF 0x28, BL on",
+      "hold_s": 0
+    },
+    {
+      "t": "sleep_state",
+      "suite": "power.sleep",
+      "state": "C",
+      "what": "BL off, display on",
+      "hold_s": 0
+    },
+    {
+      "t": "sleep_state",
+      "suite": "power.sleep",
+      "state": "D",
+      "what": "DISPOFF + BL off",
+      "hold_s": 0
+    },
+    {
+      "t": "sleep_state",
+      "suite": "power.sleep",
+      "state": "E",
+      "what": "SLPIN + BL off",
+      "hold_s": 0
+    },
+    {
+      "t": "sleep_lcd",
+      "suite": "power.sleep",
+      "dispoff_cmd_us": 2,
+      "dispon_cmd_us": 2,
+      "slpin_cmd_us": 2,
+      "slpout_cmd_us": 2,
+      "backlight_off_us": 0,
+      "backlight_on_us": 0,
+      "lcd_sleep_in_ms": 5,
+      "lcd_sleep_out_ms": 132,
+      "note": "sleep-out includes the 120 ms SLPOUT wait + 10 ms; sleep-in a 5 ms wait; DISPOFF keeps GRAM, backlight stays on (panel shows blank); backlight off is instant (PWM)"
+    },
+    {
+      "t": "sleep_wfi",
+      "suite": "power.sleep",
+      "cpu_mhz": 96,
+      "spin_cyc": [
+        28,
+        28,
+        34
+      ],
+      "wfi_cyc": [
+        28,
+        28,
+        34
+      ],
+      "wfi_us_med_x100": 29,
+      "note": "min,med,max cycles TIM5 compare -> ISR; WFI = Sleep mode, clocks keep running"
+    },
+    {
+      "t": "sleep_hint",
+      "suite": "power.sleep",
+      "measure_with_meter": [
+        "A idle WFI, BL 100%",
+        "B DISPOFF 0x28, BL on",
+        "C BL off, display on",
+        "D DISPOFF + BL off",
+        "E SLPIN + BL off",
+        "F E + W25Q power-down",
+        "G Stop (power.current S1)"
+      ],
+      "how": "run power.sleep hold=15 and read the battery current (J2) during each 'state' line; USB stays active in A-F"
+    }
+  ],
+  "prompts": [],
+  "answers": [],
+  "binaries": [],
+  "log": [
+    "power.sleep: entering Stop for 2 s (USB detaches); read with `run power.sleep report`"
+  ]
+}

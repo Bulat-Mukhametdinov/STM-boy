@@ -18,6 +18,7 @@
 #include "bench.h"
 #include "cmd.h"
 #include "font.h"
+#include "gamepipe.h"
 #include "gfx.h"
 #include "input.h"
 #include "clock.h"
@@ -86,8 +87,18 @@ static inline void conv_chunk(uint32_t k, uint16_t *dst)
     }
 }
 
+volatile uint32_t g_gp_dma_err;   /* DMA2 S3 TEIF/DMEIF seen (game pipeline test) */
+volatile uint32_t g_gp_dma_fe;    /* DMA2 S3 FEIF seen */
+
+static inline void s3_count_err(uint32_t lisr)
+{
+    if (lisr & ((1u << 25) | (1u << 24))) g_gp_dma_err++;
+    if (lisr & (1u << 22)) g_gp_dma_fe++;
+}
+
 static void present_isr(void)
 {
+    s3_count_err(DMA2->LISR);
     if (DMA2->LISR & S3_TC) {
         DMA2->LIFCR = S3_ALL;
         uint32_t k = s_pk;
@@ -141,6 +152,7 @@ static uint32_t present_wait(void)
     spi1_wait_idle();
     SPI1->CR2 &= ~SPI_CR2_TXDMAEN;
     DMA2_Stream3->CR &= ~(DMA_SxCR_EN | DMA_SxCR_TCIE);
+    s3_count_err(DMA2->LISR);
     DMA2->LIFCR = S3_ALL;
     lcd_end();
     s_pending = false;
@@ -861,3 +873,59 @@ suite_verdict_t suite_demo(int argc, char **argv)
     lcd_fill_rect(0, 0, FW, FH, COLOR_BLACK);
     return v;
 }
+
+/* ---------------------------------------------------------------- game pipeline API (gamepipe.h) */
+
+static struct {
+    uint16_t div;
+    uint32_t speed;
+    bool f16, nat, open;
+} s_gp;
+
+void gp_open(void)
+{
+    s_gp.div = lcd_cfg.spi_div;
+    s_gp.speed = lcd_gpio_speed();
+    s_gp.f16 = lcd_frame16();
+    s_gp.nat = lcd_set_native(true);
+    if (s_gp.speed < 2u) lcd_set_gpio_speed(2);
+    lcd_apply_spi_div(clock_lcd_div_for_hz(48000000u));
+    lcd_set_frame16(false);
+    lcd_fill_rect(0, 0, FW, FH, COLOR_BLACK);
+    g_dma3_hook = present_isr;
+    NVIC_SetPriority(DMA2_Stream3_IRQn, 2);
+    NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+    s_pending = false;
+    s_gp.open = true;
+}
+
+void gp_close(void)
+{
+    if (!s_gp.open) return;
+    present_wait();
+    NVIC_DisableIRQ(DMA2_Stream3_IRQn);
+    g_dma3_hook = NULL;
+    lcd_set_frame16(s_gp.f16);
+    lcd_set_gpio_speed(s_gp.speed);
+    lcd_apply_spi_div(s_gp.div);
+    lcd_set_native(s_gp.nat);
+    lcd_fill_rect(0, 0, FW, FH, COLOR_BLACK);
+    s_gp.open = false;
+}
+
+uint8_t *gp_fb(int i) { return FBUF(i & 1); }
+uint16_t *gp_pal(void) { return PAL; }
+void gp_start(const uint8_t *fb) { present_start(fb); }
+uint32_t gp_wait(void) { return present_wait(); }
+void gp_text(uint8_t *fb, int x, int y, const char *s, uint8_t fg, uint8_t bg) { fb_text(fb, x, y, s, fg, bg); }
+void gp_box(uint8_t *fb, int x, int y, int w, int h, uint8_t c) { fb_box(fb, x, y, w, h, c); }
+
+void gp_game_enter(void)
+{
+    pal_ray();
+    ray_enter();
+    PAL[IDX_BLACK] = RGB565(0, 0, 40);
+    PAL[IDX_WHITE] = COLOR_WHITE;
+}
+
+void gp_game_render(uint8_t *fb, uint32_t t_ms) { render_ray(fb, t_ms, 0u, true); }

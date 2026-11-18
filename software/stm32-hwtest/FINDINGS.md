@@ -11,7 +11,7 @@ evidence are in `HW_LOG.md` and `tools/results/`.
 | F1 | CLOSED 2026-11-18 (reflashed, user verified POWER works correctly). ATtiny13 power-off hold time is ~4 s instead of 0.5 s (2-3 s hold + release does nothing). ROOT CAUSE: `attiny13/timebase.c` started Timer0 with /64 while OCR0A was computed for /8 (config.h) - fixed in code (e1aa2f5) and REFLASHED by the user 2026-11-17, verified 2026-11-18 -> all ATtiny intervals ~8x longer (ACK timeout ~20 s, hard reset ~64 s). May explain "RetroPort does not power off". | User observation 2026-11-13, power.handshake | Check `attiny13/config.h` / `timebase.c` math; measure OFF_REQ timing with scope; reflash ATtiny (needs avr-gcc + USBasp) |
 | F2 | PB2 `AMP_SD` reads TIED_LOW, expected weak 100k pull-down (R23). Pull-down is much stronger than 100k (PAM8302A SD input or wrong R23). | `pins` suite, twice | Measure PB2 net to GND (board off) |
 | F3 | CLOSED 2026-11-16: scope shows 1.000 kHz / 49.99 %% (firmware IDR sampling artefact). Backlight PWM duty measured 47.4 % for 50 % requested at every frequency (frequency exact). Likely IDR-sampling artefact. | `backlight` suite | Scope on PA6 / Q1 base |
-| F4 | `hwcal save` erase of 0xFFF000 sometimes does not take effect (step=erase_verify, SR1=02 = WEL still set). Recurred 2026-11-17 twice in a row; a standalone `w25q erase4k FFF000 force` then works. 2026-11-18: 4 KB erase (0x20) at 0xFE0000 also silently rejected with WEL stuck; 64 KB block erase (0xD8) works -> 4K erase unreliable in the top region of the chip. | HW_LOG 2026-11-13, 2026-11-17 | Investigate hwcal_save erase path (WREN/ready sequence, SPI state left by other code) |
+| F4 | MITIGATED 2026-11-18: `w25q_erase_sector()` now goes through `w25q_erase_cmd` and retries when the erase "finishes" in < 1 ms (rejected command); 3 consecutive `hwcal save` incl. an erase passed. Root cause of the rejected 0x20 command still unknown. `hwcal save` erase of 0xFFF000 sometimes does not take effect (step=erase_verify, SR1=02 = WEL still set). Recurred 2026-11-17 twice in a row; a standalone `w25q erase4k FFF000 force` then works. 2026-11-18: 4 KB erase (0x20) at 0xFE0000 also silently rejected with WEL stuck; 64 KB block erase (0xD8) works -> 4K erase unreliable in the top region of the chip. | HW_LOG 2026-11-13, 2026-11-17 | Investigate hwcal_save erase path (WREN/ready sequence, SPI state left by other code) |
 | F6 | Enabling the PAM8302A (AMP_SD high) browned out the ATtiny (powered from +V) when the battery path had extra series resistance (multimeter 200 mA range, ~7 ohm) -> ATtiny reset -> power cut. Risk with a weak/cold battery or high-impedance cell. | power.current S10, 2026-11-16 | Re-test amp enable on battery without meter at low SoC; consider amp soft-start / bulk cap on +V / ATtiny BOD |
 | F7 | `lowpower.c` RTC wakeup flag clear wrote INIT=1 (stopped the RTC) -> Stop never woke by timer. FIXED in firmware. | power.current S1 | — |
 | F8 | Board back-feeds ~1.9-2.5 V onto the +5V/VBUS rail (known float). With a USB-C to C cable the laptop (USB-C source) sees VBUS not at vSafe0V (<0.8 V) and never turns on 5 V -> no charging, VBUS sense false, while USB data still works. Wall charger (no vSafe0V check) charged fine. | +5V TP = 1.87-2.0 V with laptop C-C cable, 2026-11-17 | Confirm: +5V with cable removed; A-C cable test. v0.2: find the leak path / add VBUS bleed so +5V < 0.8 V without USB |
@@ -21,6 +21,13 @@ evidence are in `HW_LOG.md` and `tools/results/`.
 | F5 | Button B release bounce up to 17.6 ms (others < 4 ms). | `input.bounce` | Use >= 20 ms release debounce; check switch |
 
 ## Confirmed Facts
+
+- Block C (2026-11-18, 96 MHz): game-like load (raycaster 60 fps + 4-voice audio DMA + W25Q DMA
+  streaming + ADC) for 60 s and a 3-min soak: 0 audio underruns, 0 DMA errors, 0 CRC errors, CPU ~31 %.
+  DMA2 priorities: audio S5 very high, LCD S3 high; W25Q DMA1 S0 high. COLMOD full-frame DMA:
+  12-bit 5.12 ms, 16-bit 6.83 ms, 18-bit 10.24 ms. Video streaming from W25Q: 8bpp 140 fps at
+  SPI3 24 MHz (2.87 MB/s). LCD sleep-out 132 ms, Stop wake (HSE+PLL) ~0.9 ms, USB re-enum ~350 ms.
+  Amp-enable dip on USB power ~14 mV (repeat on battery for F6).
 
 - Display: landscape MADCTL 0xA0 offsets x=1 y=2; portrait 0x00 x=2 y=1;
   RGB order; inversion off; gamma table "sitronix" preferred. Bring-up values

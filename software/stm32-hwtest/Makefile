@@ -81,6 +81,10 @@ SRC_OWN := \
   Src/drv/backlight.c \
   Src/ui/t_display.c \
   Src/ui/t_demo.c \
+  Src/ui/t_stress.c \
+  Src/ui/t_lcdx.c \
+  Src/ui/t_video.c \
+  Src/ui/t_sleep.c \
   Src/ui/t_flash.c \
   Src/ui/t_w25q.c \
   Src/ui/t_mem.c \

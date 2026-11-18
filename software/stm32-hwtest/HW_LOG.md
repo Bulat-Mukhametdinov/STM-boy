@@ -5822,3 +5822,667 @@ git-ignored; .txt hexdumps next to them).
 - Result: OK (exit code 0)
 - COM10: status=ok final=@OK oc status lines=2
 - @R {"t": "oc", "ev": "status", "slots_used": 39, "slots": 2048, "seq": 42, "pending": 0, "boot_fail": "oc attempt 144 MHz ws2 FAILED: iwdg"}
+
+### 2026-11-18 21:22:35 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 39, "slots": 2048, "seq": 42, "pending": 0, "boot_fail": "oc attempt 144 MHz ws2 FAILED: iwdg"}
+
+### 2026-11-18 21:41:00 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:41:15 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 14.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.587
+- Output: Time elapsed during verifying operation: 00:00:01.899
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:41:15 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273824 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795027257}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795027257, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=14.93s, dfu_to_app=0.72s, total=16.32s
+
+### 2026-11-18 21:41:29 — Run suite stress.game (start) [auto]
+
+- Command: `run stress.game s=60`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027257 busy=idle
+
+### 2026-11-18 21:42:29 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stress.game s=60`
+- Result: FAIL (exit code 1)
+- Suite stress.game: FAIL results=7 pass=0 fail=1
+- Failed: stress.game/summary
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-214129-stress.game.json
+
+### 2026-11-18 21:42:52 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:43:07 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 14.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.605
+- Output: Time elapsed during verifying operation: 00:00:01.897
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:43:08 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273832 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795027363}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795027363, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=14.95s, dfu_to_app=0.72s, total=16.33s
+
+### 2026-11-18 21:43:08 — Run suite stress.game (start) [auto]
+
+- Command: `run stress.game s=60`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027363 busy=idle
+
+### 2026-11-18 21:44:08 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stress.game s=60`
+- Result: OK (exit code 0)
+- Suite stress.game: PASS results=7 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-214308-stress.game.json
+
+### 2026-11-18 21:44:15 — Run suite soak (start) [auto]
+
+- Command: `run soak min=3`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027363 busy=idle
+
+### 2026-11-18 21:47:15 — hwtest.py run [auto]
+
+- Command: `hwtest.py run soak min=3`
+- Result: OK (exit code 0)
+- Suite soak: PASS results=19 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-214415-soak.json
+
+### 2026-11-18 21:47:16 — Run suite stress.game (start) [auto]
+
+- Command: `run stress.game s=15 fps=0`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027363 busy=idle
+
+### 2026-11-18 21:47:31 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stress.game s=15 fps=0`
+- Result: OK (exit code 0)
+- Suite stress.game: PASS results=3 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-214716-stress.game.json
+
+### 2026-11-18 21:48:34 — Run suite stream.video (start) [auto]
+
+- Command: `run stream.video`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027363 busy=idle
+
+### 2026-11-18 21:48:36 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stream.video --timeout 200`
+- Result: FAIL (exit code 1)
+- Suite stream.video: FAIL results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-214834-stream.video.json
+
+### 2026-11-18 21:48:37 — Run suite display.colmod (start) [auto]
+
+- Command: `run display.colmod auto=1 t=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027363 busy=idle
+
+### 2026-11-18 21:48:43 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.colmod auto=1 t=2`
+- Result: OK (exit code 0)
+- Suite display.colmod: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-214837-display.colmod.json
+
+### 2026-11-18 21:48:44 — Run suite power.ampdip (start) [auto]
+
+- Command: `run power.ampdip`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027363 busy=idle
+
+### 2026-11-18 21:48:45 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.ampdip`
+- Result: OK (exit code 0)
+- Suite power.ampdip: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-214844-power.ampdip.json
+
+### 2026-11-18 21:49:03 — Run suite stream.video (start) [auto]
+
+- Command: `run stream.video`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027363 busy=idle
+
+### 2026-11-18 21:49:04 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stream.video --timeout 200`
+- Result: FAIL (exit code 1)
+- Suite stream.video: FAIL results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-214903-stream.video.json
+
+### 2026-11-18 21:49:05 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q read F80000 64"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-18 21:49:40 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q erase4k F82000"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q erase4k lines=2
+- @R {"t": "w25q_erase4k", "addr": "F82000", "st": 0, "st_s": "ok", "sr1_before": "00", "sr1": "00", "us": 54981, "first16_blank": true}
+
+### 2026-11-18 21:49:41 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q erase4k FDB000"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q erase4k lines=2
+- @R {"t": "w25q_erase4k", "addr": "FDB000", "st": 0, "st_s": "ok", "sr1_before": "00", "sr1": "00", "us": 54780, "first16_blank": true}
+
+### 2026-11-18 21:50:19 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q read F80000 48"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-18 21:50:20 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan F80000 0x5B000 4096"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q scan lines=2
+- @R {"t": "w25q_scan", "addr": "F80000", "len": 372736, "step": 4096, "granules": 91, "blank": 1, "used": 90, "nonff_bytes": 357649, "first_nonff": "F80000", "last_nonff": "FDAFFF", "ranges": [["F80000",
+
+### 2026-11-18 21:50:48 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:51:03 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.628
+- Output: Time elapsed during verifying operation: 00:00:01.897
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:51:03 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (274008 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795027844}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795027844, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=14.96s, dfu_to_app=0.71s, total=16.36s
+
+### 2026-11-18 21:51:04 — Run suite stream.video (start) [auto]
+
+- Command: `run stream.video`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027844 busy=idle
+
+### 2026-11-18 21:51:05 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stream.video --timeout 200`
+- Result: FAIL (exit code 1)
+- Suite stream.video: FAIL results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215104-stream.video.json
+
+### 2026-11-18 21:51:45 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:52:00 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.618
+- Output: Time elapsed during verifying operation: 00:00:01.903
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:52:01 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (274024 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795027902}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795027902, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=14.96s, dfu_to_app=0.71s, total=16.36s
+
+### 2026-11-18 21:52:02 — Run suite stream.video (start) [auto]
+
+- Command: `run stream.video`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027902 busy=idle
+
+### 2026-11-18 21:52:03 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stream.video --timeout 200`
+- Result: FAIL (exit code 1)
+- Suite stream.video: FAIL results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215202-stream.video.json
+
+### 2026-11-18 21:52:38 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:52:53 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.616
+- Output: Time elapsed during verifying operation: 00:00:01.906
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:52:54 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (274112 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795027955}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795027955, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=14.97s, dfu_to_app=0.72s, total=16.35s
+
+### 2026-11-18 21:52:55 — Run suite stream.video (start) [auto]
+
+- Command: `run stream.video`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795027955 busy=idle
+
+### 2026-11-18 21:53:17 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stream.video --timeout 200`
+- Result: OK (exit code 0)
+- Suite stream.video: PASS results=8 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215255-stream.video.json
+
+### 2026-11-18 21:53:33 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:53:48 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 14.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.540
+- Output: Time elapsed during verifying operation: 00:00:01.896
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:53:49 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273864 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795028009}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795028009, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=14.89s, dfu_to_app=0.71s, total=16.27s
+
+### 2026-11-18 21:53:50 — Run suite stream.video (start) [auto]
+
+- Command: `run stream.video s=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028009 busy=idle
+
+### 2026-11-18 21:53:58 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stream.video s=2`
+- Result: OK (exit code 0)
+- Suite stream.video: PASS results=5 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215349-stream.video.json
+
+### 2026-11-18 21:53:59 — Run suite stress.game (start) [auto]
+
+- Command: `run stress.game s=10`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028009 busy=idle
+
+### 2026-11-18 21:54:09 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stress.game s=10`
+- Result: OK (exit code 0)
+- Suite stress.game: PASS results=2 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215359-stress.game.json
+
+### 2026-11-18 21:54:25 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:54:40 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.631
+- Output: Time elapsed during verifying operation: 00:00:01.897
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:54:40 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273976 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795028061}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795028061, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=14.97s, dfu_to_app=0.71s, total=16.35s
+
+### 2026-11-18 21:54:41 — Run suite power.ampdip (start) [auto]
+
+- Command: `run power.ampdip`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028061 busy=idle
+
+### 2026-11-18 21:54:42 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.ampdip`
+- Result: OK (exit code 0)
+- Suite power.ampdip: PASS results=4 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215441-power.ampdip.json
+
+### 2026-11-18 21:55:20 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:55:35 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.607
+- Output: Time elapsed during verifying operation: 00:00:01.899
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:55:36 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273864 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795028116}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795028116, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=14.95s, dfu_to_app=0.71s, total=16.33s
+
+### 2026-11-18 21:55:37 — Run suite power.ampdip (start) [auto]
+
+- Command: `run power.ampdip`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028116 busy=idle
+
+### 2026-11-18 21:55:37 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.ampdip`
+- Result: OK (exit code 0)
+- Suite power.ampdip: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215537-power.ampdip.json
+
+### 2026-11-18 21:55:50 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:56:05 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 14.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.593
+- Output: Time elapsed during verifying operation: 00:00:01.912
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:56:05 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273864 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795028146}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795028146, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=14.94s, dfu_to_app=0.71s, total=16.32s
+
+### 2026-11-18 21:56:06 — Run suite power.ampdip (start) [auto]
+
+- Command: `run power.ampdip`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028146 busy=idle
+
+### 2026-11-18 21:56:07 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.ampdip`
+- Result: OK (exit code 0)
+- Suite power.ampdip: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215606-power.ampdip.json
+
+### 2026-11-18 21:56:08 — Run suite power.sleep (start) [auto]
+
+- Command: `run power.sleep`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028146 busy=idle
+
+### 2026-11-18 21:56:08 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.sleep --timeout 40`
+- Result: FAIL (exit code 2)
+- Suite power.sleep: DISCONNECTED results=7 pass=0 fail=0 (serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)))
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215608-power.sleep.json
+
+### 2026-11-18 21:56:22 — Run suite power.sleep (start) [auto]
+
+- Command: `run power.sleep report`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028146 busy=idle
+
+### 2026-11-18 21:56:22 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.sleep report`
+- Result: OK (exit code 0)
+- Suite power.sleep: PASS results=4 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215622-power.sleep.json
+
+### 2026-11-18 21:56:35 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:56:50 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 14.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.591
+- Output: Time elapsed during verifying operation: 00:00:01.897
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:56:51 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273912 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795028192}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795028192, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=14.92s, dfu_to_app=0.72s, total=16.30s
+
+### 2026-11-18 21:56:52 — Run suite power.sleep (start) [auto]
+
+- Command: `run power.sleep`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028192 busy=idle
+
+### 2026-11-18 21:56:52 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.sleep --timeout 40`
+- Result: FAIL (exit code 2)
+- Suite power.sleep: DISCONNECTED results=8 pass=0 fail=0 (serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)))
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215652-power.sleep.json
+
+### 2026-11-18 21:57:01 — Run suite power.sleep (start) [auto]
+
+- Command: `run power.sleep report`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028192 busy=idle
+
+### 2026-11-18 21:57:01 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.sleep report`
+- Result: OK (exit code 0)
+- Suite power.sleep: PASS results=4 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215701-power.sleep.json
+
+### 2026-11-18 21:57:10 — Run suite input.latency (start) [auto]
+
+- Command: `run input.latency t=5`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028192 busy=idle
+
+### 2026-11-18 21:57:15 — hwtest.py run [auto]
+
+- Command: `hwtest.py run input.latency t=5`
+- Result: FAIL (exit code 2)
+- Suite input.latency: ABORT results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-215710-input.latency.json
+
+### Manual note (block C, agent)
+- stress.game s=60 (96 MHz, VBUS present): 3601 frames @60 fps, 0 missed, frame max 7.2 ms (avg 5.1 ms, CPU ~31 %), audio 2585/2585 blocks, 0 late/underrun, 0 TE/DME, 0 CRC errors/3601 chunks; unlimited fps = 138.8 fps, still clean. soak min=3 clean (temp 29.4 C, Vbat 4.18 V). FEIF is set ~19x/frame on the LCD stream DMA2 S3 (direct mode, benign, reported as fe_lcd, not a failure). PL: audio S5 3, LCD S3 2, W25Q RX 2 / TX 1, ADC S4 1.
+- w25q_erase_sector() (Src/drv/w25q.c) returned OK in ~11 us without erasing in the stream.video loop (data then AND-ed onto old content); w25q_erase_cmd(0x20, ...) (55-65 ms, waits on BUSY) works. Block-C suites use erase_cmd; worth fixing/understanding the driver function.
+- power.ampdip on USB (VBUS present): amp enable / 1 kHz -12 dBFS tone / amp off give <= ~14 mV dip against +-6 mV noise at 24 kS/s; ADC channel reads ~0.1 V for the first ~45 ms after ADC start (start-up artefact, pre-roll 120 ms used). Needs a battery-only repeat for F6.
+- power.sleep: Stop wake clock restart ~14.5k cyc at HSI = ~0.9 ms, LCD wake 132 ms, USB re-enumeration ~350 ms after usb_stop/start (stale CONFIGURED after plain DevConnect), WFI wake 28 cyc median (0.29 us).
+
+### 2026-11-18 22:00:32 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.58 s
+- cmd: @OK dfu
+
+### 2026-11-18 22:00:47 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 14.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.609
+- Output: Time elapsed during verifying operation: 00:00:01.897
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 22:00:48 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273656 bytes), expected id: {'fw': '9c91e4f+dirty', 'build': 1795028428}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=9c91e4f+dirty build=1795028428, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.58s, program=14.94s, dfu_to_app=0.71s, total=16.31s
+
+### 2026-11-18 22:01:11 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal save" --timeout 15`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal save lines=2
+- @R {"t": "hwcal_save", "seq": 4, "slot": "B"}
+
+### 2026-11-18 22:01:13 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal save" --timeout 15`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal save lines=2
+- @R {"t": "hwcal_save", "seq": 5, "slot": "A"}
+
+### 2026-11-18 22:01:14 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal save" --timeout 15`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal save lines=2
+- @R {"t": "hwcal_save", "seq": 6, "slot": "B"}
+
+### 2026-11-18 22:01:45 — W25Q erase fix (manual note)
+
+- Block C agent found `w25q_erase_sector()` returning OK in ~11 us without erasing (likely the F4 root symptom). It now uses `w25q_erase_cmd(0x20)` and retries if the erase completes in < 1 ms. Verified: `hwcal save` x3 (seq 4 B, 5 A after a sector erase, 6 B) all OK.

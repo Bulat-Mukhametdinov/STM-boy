@@ -1,0 +1,114 @@
+{
+  "kind": "run",
+  "suite": "power.sleep",
+  "command": "run power.sleep report",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE power.sleep pass",
+  "error": "",
+  "host_time_start": "2026-11-18T21:56:22+03:00",
+  "host_time_end": "2026-11-18T21:56:22+03:00",
+  "duration_s": 0.064,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "9c91e4f+dirty",
+    "build": 1795028146,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": true,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 54,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "valid",
+    "w25q": true,
+    "uptime_ms": 15730,
+    "vbus": true,
+    "chg": false,
+    "faults": 536879233,
+    "fault": {
+      "pc": "28002190",
+      "lr": "08001C49",
+      "cfsr": "00000100",
+      "hfsr": "40000000"
+    }
+  },
+  "results": [
+    {
+      "t": "sleep_lcd",
+      "suite": "power.sleep",
+      "dispoff_cmd_us": 2,
+      "dispon_cmd_us": 2,
+      "slpin_cmd_us": 2,
+      "slpout_cmd_us": 2,
+      "backlight_off_us": 0,
+      "backlight_on_us": 0,
+      "lcd_sleep_in_ms": 5,
+      "lcd_sleep_out_ms": 132,
+      "note": "sleep-out includes the 120 ms SLPOUT wait + 10 ms; sleep-in a 5 ms wait; DISPOFF keeps GRAM, backlight stays on (panel shows blank); backlight off is instant (PWM)"
+    },
+    {
+      "t": "sleep_stop",
+      "suite": "power.sleep",
+      "cause": 1,
+      "rtc_s": 2,
+      "periph_sleep_us": 5603,
+      "stop_entry_us": 3,
+      "clk_restart_cyc_hsi": 14487,
+      "clk_restart_us_est": 905,
+      "periph_wake_ms": 132,
+      "usb_reenum_ms": 0,
+      "usb_how": 0,
+      "note": "clk_restart = wake-up -> HSE+PLL back at 96 MHz (~cyc/16 MHz); usb_how 0 = enumerated by itself after DevConnect, 1 = needed usb_stop/start, 2 = not within 6 s; periph_wake includes the 130 ms LCD wake"
+    },
+    {
+      "t": "sleep_wfi",
+      "suite": "power.sleep",
+      "cpu_mhz": 96,
+      "spin_cyc": [
+        28,
+        28,
+        34
+      ],
+      "wfi_cyc": [
+        28,
+        28,
+        34
+      ],
+      "wfi_us_med_x100": 29,
+      "note": "min,med,max cycles TIM5 compare -> ISR; WFI = Sleep mode, clocks keep running"
+    },
+    {
+      "t": "sleep_hint",
+      "suite": "power.sleep",
+      "measure_with_meter": [
+        "A idle WFI, BL 100%",
+        "B DISPOFF 0x28, BL on",
+        "C BL off, display on",
+        "D DISPOFF + BL off",
+        "E SLPIN + BL off",
+        "F E + W25Q power-down",
+        "G Stop (power.current S1)"
+      ],
+      "how": "run power.sleep hold=15 and read the battery current (J2) during each 'state' line; USB stays active in A-F"
+    }
+  ],
+  "prompts": [],
+  "answers": [],
+  "binaries": [],
+  "log": []
+}

@@ -75,6 +75,8 @@ void dma3_start(const void *src, uint32_t items, bool w16, bool minc, bool irq);
 void dma3_finish(void);
 extern void (*g_dma3_hook)(void);   /* when set, DMA2_Stream3_IRQHandler just calls it (Src/ui/t_demo.c) */
 
+void bench_wake_cycles(bool wfi, uint32_t delay_cyc, uint32_t *v, uint32_t n);   /* b_sys.c, TIM5 compare wake */
+
 extern uint8_t g_arena[];
 #define ARENA_BYTES (72u * 1024u)
 
