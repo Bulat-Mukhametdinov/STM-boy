@@ -46,6 +46,7 @@ const char *w25q_status_str(w25q_status_t s);
 /* P3/P5 extensions. Writes (program/erase) are refused below W25Q_HWTEST_BASE. */
 uint8_t w25q_read_reg(uint8_t cmd);                 /* 0x05 SR1, 0x35 SR2, 0x15 SR3 */
 uint8_t w25q_read_lock(uint32_t addr);               /* 0x3D individual lock bit */
+void w25q_global_unlock(void);                       /* 0x98: volatile individual lock bits -> unlocked */
 w25q_status_t w25q_read_sfdp(uint8_t *buf, size_t n);
 w25q_status_t w25q_erase_cmd(uint8_t cmd, uint32_t addr, uint32_t *us); /* 0x20/0x52/0xD8 */
 w25q_status_t w25q_program_page_timed(uint32_t addr, const void *buf, size_t len, uint32_t *us);

@@ -29,6 +29,11 @@ static uint32_t s_last_req_ms;
 static int16_t s_win[WIN];
 static uint32_t s_win_n;
 
+static uint32_t s_adcpre = 1u;   /* ADC->CCR ADCPRE field: 0=/2 1=/4 2=/6 3=/8 */
+
+void adc_set_pre(uint32_t pre) { s_adcpre = pre & 3u; }
+uint32_t adc_pre_div(void) { return 2u * (s_adcpre + 1u); }
+
 void adc_init(void)
 {
     memset(&s_res, 0, sizeof(s_res));
@@ -66,7 +71,7 @@ void adc_request(void)
     RCC->AHB1ENR |= RCC_AHB1ENR_DMA2EN;
     (void)RCC->AHB1ENR;
     gpio_config(BAT_SNS_PORT, BAT_SNS_PIN, GPIO_MODE_AN_, GPIO_PULL_NONE_, GPIO_SPEED_LOW_, 0);
-    ADC->CCR = (1u << ADC_CCR_ADCPRE_Pos) | ADC_CCR_TSVREFE;   /* PCLK2/4 */
+    ADC->CCR = (s_adcpre << ADC_CCR_ADCPRE_Pos) | ADC_CCR_TSVREFE;
     ADC1->CR2 = 0;
     ADC1->CR1 = ADC_CR1_SCAN;
     ADC1->SMPR1 = (7u << 21) | (7u << 24);                      /* IN17, IN18: 480 cycles */

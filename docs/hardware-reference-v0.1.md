@@ -156,12 +156,38 @@ ART gives about 28 % on a small loop (18.8 vs 26.0 cycles/iteration, `bench.flas
 
 ### Overclock And Underclock
 
-Pending. Block B (clock profile sweep with IWDG supervision and an OC journal at
-W25Q `0xFE0000-0xFEFFFF`, see `Src/clock_profile.c` and `Src/oc.c`) is in
-progress. Not measured yet: stable maximum SYSCLK, LCD/W25Q limits per
-frequency, current versus frequency (state S17), audio Fs accuracy after a
-frequency change. USB works only on SYSCLK values that give an exact 48 MHz
-(multiples of 48 MHz with suitable P/Q).
+MEASURED 2026-11-18 with `oc.sweep` (clock profile in `Src/clock_profile.c`:
+every SYSCLK change re-derives SysTick, TIM2 1 MHz, SPI1/SPI3 dividers, ADC
+prescaler, backlight and audio timers; IWDG + OC journal at W25Q
+`0xFE0000-0xFEFFFF`; the device always boots at 96 MHz). Die temperature stayed
+at ~28 C. Amplifier off during the sweep.
+
+| SYSCLK MHz | Flash WS | APB1/APB2 div | CPU Mops/s | LCD fps (full frame DMA) | W25Q 1 MB CRC | Audio Fs | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 48 | 1 | 1/1 | 47 | 72 | ok | exact | pass |
+| 64 | 2 | 2/1 | 63 | 96 | ok | exact | pass |
+| 84 | 2 | 2/1 | 83 | 126 | ok | exact | pass |
+| **96** | 3 | 2/1 | 95 | **144** | ok | exact | pass |
+| 100 | 3 | 2/1 | 99 | 76 (SPI1 limited to 25 MHz) | ok | exact | pass |
+| 120 | 4 | 4/2 | 119 | 91 (SPI1 30 MHz) | ok | exact | pass |
+| **144** | 5 | 4/2 | 143 | 109 (SPI1 36 MHz) | ok | exact | pass, **max stable** |
+| 152 | 6 | 4/2 | - | - | - | - | FAIL: silent wrong results |
+| 168 | 6 | 4/2 | - | - | - | - | FAIL: HardFault |
+
+- CPU throughput scales exactly with SYSCLK; audio Fs stayed within -21 ppm of
+  the timer-derived value at every step (timers re-derived correctly).
+- **Overclocking does not speed up the display.** Keeping APB2 within spec
+  above 100 MHz needs APB2 = SYSCLK/2, so SPI1 = SYSCLK/4 < 48 MHz. **96 MHz is
+  the optimum for graphics**; overclock only helps compute-bound work (e.g. the
+  ray tracer). Overclocking APB2 itself (SPI1 > 48 MHz) was not tested.
+- Minimum flash wait states with ART caches off (`oc.ws`): 2 at 96 MHz, 2 at
+  120 MHz, 3 at 144 MHz (spec rule: 3/4/5). One step lower hangs. No margin -
+  use the spec values.
+- Everything above 100 MHz is out of spec and varies chip to chip: **do not
+  ship firmware that depends on it.** At most an optional "turbo" profile.
+- USB works only on SYSCLK values giving an exact 48 MHz from PLLQ (96, 120,
+  144 MHz in the stable range); the firmware stops/restarts USB around switches.
+- Not measured yet: current versus frequency (state S17).
 
 > Warning: anything above 100 MHz is outside the datasheet. When results exist
 > they will be marked "not for release".

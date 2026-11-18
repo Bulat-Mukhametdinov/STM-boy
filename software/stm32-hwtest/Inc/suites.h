@@ -54,6 +54,8 @@ suite_verdict_t suite_display_tear(int argc, char **argv);
 suite_verdict_t suite_display_native(int argc, char **argv);
 suite_verdict_t suite_display_vscroll(int argc, char **argv);
 suite_verdict_t suite_demo(int argc, char **argv);
+suite_verdict_t suite_oc_sweep(int argc, char **argv);
+suite_verdict_t suite_oc_ws(int argc, char **argv);
 suite_verdict_t suite_pins(int argc, char **argv);
 suite_verdict_t suite_input_live(int argc, char **argv);
 suite_verdict_t suite_input_bounce(int argc, char **argv);

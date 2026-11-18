@@ -50,6 +50,7 @@ static uint32_t s_fs_mhz = 46875000u;
 static float s_fs = 46875.0f;
 static bool s_amp;
 static bool s_pwm_on;
+static uint32_t s_req_fs;                 /* requested Fs of the running engine (re-derived on clock change) */
 
 /* quantiser */
 static struct {
@@ -444,7 +445,8 @@ bool audio_engine_start(aud_engine_t e, uint32_t fs_hz, aud_dither_t d)
     audio_engine_stop();
     q.err = 0;
     q.mode = (uint8_t)d;
-    uint32_t car = g_aud_carriers[s_carrier].carrier_hz;
+    uint32_t car = tim1_clk() / (g_aud_carriers[s_carrier].arr + 1u);   /* actual carrier at the current clock */
+    s_req_fs = fs_hz;
     if (e == AUD_ENG_A) {
         uint32_t clk = clock_tim_apb1_hz();
         uint32_t div = (clk + fs_hz / 2u) / fs_hz;
@@ -613,4 +615,18 @@ void audio_voice_chirp(unsigned v, float f0, float f1, float dur_s, float db)
     p->ratio = powf(f1 / f0, 1.0f / n);
     p->step = (uint32_t)p->stepf;
     p->type = AUD_GEN_CHIRP;
+}
+
+/* SYSCLK/APB changed: the carrier (TIM1 ARR is in ticks) scales with the clock, but the sample
+   rate must stay nominal, so a running engine is restarted and its divider re-derived. */
+void audio_clock_changed(void)
+{
+    aud_engine_t e = s_engine;
+    if (e == AUD_ENG_NONE) {
+        return;
+    }
+    uint32_t fs = s_req_fs;
+    aud_dither_t d = (aud_dither_t)q.mode;
+    audio_engine_stop();
+    (void)audio_engine_start(e, fs, d);
 }

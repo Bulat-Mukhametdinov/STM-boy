@@ -4556,3 +4556,1269 @@ git-ignored; .txt hexdumps next to them).
 
 - Cause: vs_gen() called sinf(W*0.12); newlib sinf leaves its fast range reduction once |x| > ~200 (W > ~1700, ~25 s at 67 fps) and gets much slower, so sw_max drifted from ~78 fps to ~61 fps (win_min 61.5 / win_max 78.2 over 60 s). Fixed by reducing the phase in integer (W*1252 & 0xFFFF): sw_max now flat 79.2-79.4 fps over 60 s. Phases never auto-advance in manual mode.
 - Menu/Tests list now compose into a 160x128 RGB565 frame in g_arena (lcd_capture) and DMA it in native order at 48 MHz; demo overlay palette 254/255 were never set (text colour undefined) -> now set + dark box.
+
+### 2026-11-18 20:24:13 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-18 20:46:11 — ATtiny13 fix verified (manual note)
+
+- User: after reflashing the Timer0 prescaler fix, POWER hold/power-off works correctly. F1 closed.
+
+### 2026-11-18 20:49:34 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 1.06 s
+- cmd: @OK dfu
+
+### 2026-11-18 20:49:46 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.193
+- Output: Time elapsed during verifying operation: 00:00:01.764
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 20:49:47 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (252472 bytes), expected id: {'fw': 'd8384c2+dirty', 'build': 1795024148}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=d8384c2+dirty build=1795024148, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=1.06s, program=12.42s, dfu_to_app=0.71s, total=14.27s
+
+### 2026-11-18 20:49:48 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+- @R {"t": "clk", "sysclk": 96000000, "hclk": 96000000, "pclk1": 48000000, "pclk2": 96000000, "tim1": 96000000, "tim2": 96000000, "ws": 3, "apb1_div": 2, "apb2_div": 1, "pll_n": 96, "pll_p": 2, "pll_q": 4,
+
+### 2026-11-18 20:50:16 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk set 120"`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=2
+- @R {"t": "clk", "plan": {"mhz": 120, "n": 120, "p": 2, "q": 5, "ws": 4, "apb1_div": 4, "apb2_div": 2, "usb_ok": true, "in_spec": false}}
+
+### 2026-11-18 20:50:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=1
+
+### 2026-11-18 20:50:29 — Run suite bench.cpu (start) [auto]
+
+- Command: `run bench.cpu`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=d8384c2+dirty build=1795024148 busy=idle
+
+### 2026-11-18 20:52:29 — hwtest.py run [auto]
+
+- Command: `hwtest.py run bench.cpu`
+- Result: FAIL (exit code 2)
+- Suite bench.cpu: TIMEOUT results=32 pass=0 fail=0 (no output for 120.0s)
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-205023-bench.cpu.json
+
+### 2026-11-18 20:52:33 — Board lock busy [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: ERROR locked by pid 18804 ('hwtest.py cmd "clk set 96"' since 2026-11-18T20:52:30+03:00)
+
+### 2026-11-18 20:52:33 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid 18804 ('hwtest.py cmd "clk set 96"' since 2026-11-18T20:52:30+03:00); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-18 20:52:40 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk set 96"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=2
+
+### 2026-11-18 20:52:40 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+
+### 2026-11-18 20:52:52 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+
+### 2026-11-18 20:53:14 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+
+### 2026-11-18 20:53:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+
+### 2026-11-18 20:53:38 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+
+### 2026-11-18 20:53:42 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: FAIL (exit code 2)
+
+### 2026-11-18 20:53:48 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: FAIL (exit code 2)
+
+### 2026-11-18 20:53:59 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK info lines=2
+
+### 2026-11-18 20:54:05 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd reset`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 20:54:09 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+- @R {"t": "clk", "sysclk": 96000000, "hclk": 96000000, "pclk1": 48000000, "pclk2": 96000000, "tim1": 96000000, "tim2": 96000000, "ws": 3, "apb1_div": 2, "apb2_div": 1, "pll_n": 96, "pll_p": 2, "pll_q": 4,
+
+### 2026-11-18 20:54:10 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+- @R {"t": "clk", "sysclk": 96000000, "hclk": 96000000, "pclk1": 48000000, "pclk2": 96000000, "tim1": 96000000, "tim2": 96000000, "ws": 3, "apb1_div": 2, "apb2_div": 1, "pll_n": 96, "pll_p": 2, "pll_q": 4,
+
+### 2026-11-18 20:54:44 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk set 120"`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=2
+- @R {"t": "clk", "plan": {"mhz": 120, "n": 120, "p": 2, "q": 5, "ws": 4, "apb1_div": 4, "apb2_div": 2, "usb_ok": true, "in_spec": false}}
+
+### 2026-11-18 20:54:45 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=1
+
+### 2026-11-18 20:54:45 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=1
+
+### 2026-11-18 20:54:46 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=1
+
+### 2026-11-18 20:55:21 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd info`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+- @R {"t": "info", "uid": "002800343435511331323538", "serial": "315A356C3435", "fw": "d8384c2+dirty", "build": 1795024148, "clk": 120000000, "opt": "-O2", "busy": "idle", "hwcal": true, "reset": "sft", "f
+
+### 2026-11-18 20:55:32 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK info lines=2
+- @R {"t": "clk", "sysclk": 120000000, "hclk": 120000000, "pclk1": 30000000, "pclk2": 60000000, "tim1": 60000000, "tim2": 120000000, "ws": 4, "apb1_div": 4, "apb2_div": 2, "pll_n": 120, "pll_p": 2, "pll_q"
+
+### 2026-11-18 20:56:12 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.65 s
+- cmd: port vanished right after 'dfu' (assumed success): serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 20:56:24 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.180
+- Output: Time elapsed during verifying operation: 00:00:01.757
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 20:56:25 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (252456 bytes), expected id: {'fw': 'd8384c2+dirty', 'build': 1795024565}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=d8384c2+dirty build=1795024565, CDC enumerations=1
+- Timing: info_before=3.06s, app_to_dfu=0.65s, program=12.39s, dfu_to_app=0.71s, total=16.84s
+
+### 2026-11-18 20:56:52 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk set 120"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 20:56:57 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+- @R {"t": "clk", "sysclk": 120000000, "hclk": 120000000, "pclk1": 30000000, "pclk2": 60000000, "tim1": 60000000, "tim2": 120000000, "ws": 4, "apb1_div": 4, "apb2_div": 2, "pll_n": 120, "pll_p": 2, "pll_q"
+
+### 2026-11-18 20:56:58 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK clk lines=2
+- @R {"t": "clk", "sysclk": 120000000, "hclk": 120000000, "pclk1": 30000000, "pclk2": 60000000, "tim1": 60000000, "tim2": 120000000, "ws": 4, "apb1_div": 4, "apb2_div": 2, "pll_n": 120, "pll_p": 2, "pll_q"
+
+### 2026-11-18 20:57:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "clk set 96"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 20:57:40 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.sweep"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 20:59:06 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 2, "slots": 2048, "seq": 2, "pending": 0, "boot_fail": ""}
+
+### 2026-11-18 20:59:12 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=4
+- @R {"t": "oc", "i": 0, "seq": 1, "ev": "result", "mhz": 96, "ws": 3, "apb1": 2, "apb2": 1, "step": 254, "pass": false, "reason": "audio", "checks": "1F", "cpu_mops": 24576, "lcd_fps10": 1440, "aud_ppm":
+- @R {"t": "oc", "i": 1, "seq": 2, "ev": "note", "mhz": 0, "ws": 0, "apb1": 0, "apb2": 0, "step": 0, "pass": false, "reason": "iwdg", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_dC":
+- @R {"t": "oc", "ev": "log_end", "records": 2, "slots": 2048, "boot_fail": ""}
+
+### 2026-11-18 20:59:13 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=d8384c2+dirty build=1795024565 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 20:59:51 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=d8384c2+dirty build=1795024565 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:00:06 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=d8384c2+dirty build=1795024565 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:00:22 — Board lock busy [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR locked by pid 14296 ('hwtest.py flash --wait-lock 60 build/hwtest.bin' since 2026-11-18T21:00:22+03:00)
+
+### 2026-11-18 21:00:22 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid 14296 ('hwtest.py flash --wait-lock 60 build/hwtest.bin' since 2026-11-18T21:00:22+03:00); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-18 21:00:23 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:00:35 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.173
+- Output: Time elapsed during verifying operation: 00:00:01.756
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:00:36 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash --wait-lock 60 build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (252672 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795024809}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795024809, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=12.38s, dfu_to_app=0.70s, total=13.77s
+
+### 2026-11-18 21:00:38 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:00:48 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log clear lines=2
+- @R {"t": "oc", "ev": "clear", "ok": true}
+
+### 2026-11-18 21:00:54 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:01:10 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:01:11 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.sweep"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:01:25 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=64000000 busy=oc.sweep reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:01:41 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=oc.sweep reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:01:52 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-18 21:01:57 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-18 21:02:13 — Board lock busy [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: ERROR locked by pid 20508 ('hwtest.py info' since 2026-11-18T21:02:13+03:00)
+
+### 2026-11-18 21:02:13 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid 20508 ('hwtest.py info' since 2026-11-18T21:02:13+03:00); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-18 21:02:13 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:02:23 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-18 21:02:29 — Board lock busy [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR locked by pid 18272 ('hwtest.py cmd "oc status"' since 2026-11-18T21:02:28+03:00)
+
+### 2026-11-18 21:02:29 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid 18272 ('hwtest.py cmd "oc status"' since 2026-11-18T21:02:28+03:00); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-18 21:02:29 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 17, "slots": 2048, "seq": 18, "pending": 0, "boot_fail": "oc attempt 168 MHz ws6 FAILED: fault"}
+
+### 2026-11-18 21:02:42 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=17
+- @R {"t": "oc", "i": 2, "seq": 4, "ev": "result", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": true, "reason": "none", "checks": "FF", "cpu_mops": 47, "lcd_fps10": 720, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 3, "seq": 5, "ev": "attempt", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 4, "seq": 6, "ev": "result", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": true, "reason": "none", "checks": "FF", "cpu_mops": 63, "lcd_fps10": 960, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 5, "seq": 7, "ev": "attempt", "mhz": 84, "ws": 2, "apb1": 2, "apb2": 1, "step": 3, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 6, "seq": 8, "ev": "result", "mhz": 84, "ws": 2, "apb1": 2, "apb2": 1, "step": 3, "pass": true, "reason": "none", "checks": "FF", "cpu_mops": 83, "lcd_fps10": 1260, "aud_ppm": -21, "t
+
+### 2026-11-18 21:02:44 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:03:00 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:03:16 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:03:26 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.58 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:03:32 — Board lock busy [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR locked by pid 6760 ('hwtest.py flash build/hwtest.bin' since 2026-11-18T21:03:25+03:00)
+
+### 2026-11-18 21:03:32 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid 6760 ('hwtest.py flash build/hwtest.bin' since 2026-11-18T21:03:25+03:00); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-18 21:03:38 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.157
+- Output: Time elapsed during verifying operation: 00:00:01.756
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:03:39 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (252672 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795024809}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795024809, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.58s, program=12.36s, dfu_to_app=0.72s, total=13.73s
+
+### 2026-11-18 21:03:48 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795024809 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:03:50 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:04:02 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.178
+- Output: Time elapsed during verifying operation: 00:00:01.758
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:04:03 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (252792 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795025025}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795025025, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=12.38s, dfu_to_app=0.71s, total=13.77s
+
+### 2026-11-18 21:04:03 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:04:11 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log clear lines=2
+- @R {"t": "oc", "ev": "clear", "ok": true}
+
+### 2026-11-18 21:04:11 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.sweep list=48,64,84,96,100,120,144,152,160,168,192,216"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:04:19 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=48000000 busy=oc.sweep reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:04:35 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:04:50 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=11
+- @R {"t": "oc", "i": 8, "seq": 10, "ev": "result", "mhz": 96, "ws": 3, "apb1": 2, "apb2": 1, "step": 4, "pass": true, "reason": "none", "checks": "FF", "cpu_mops": 95, "lcd_fps10": 1440, "aud_ppm": -21, "
+- @R {"t": "oc", "i": 9, "seq": 11, "ev": "attempt", "mhz": 100, "ws": 3, "apb1": 2, "apb2": 1, "step": 5, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "tem
+- @R {"t": "oc", "i": 10, "seq": 12, "ev": "result", "mhz": 100, "ws": 3, "apb1": 2, "apb2": 1, "step": 5, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 99, "lcd_fps10": 759, "aud_ppm": -21,
+- @R {"t": "oc", "i": 11, "seq": 13, "ev": "attempt", "mhz": 120, "ws": 4, "apb1": 4, "apb2": 2, "step": 6, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "te
+- @R {"t": "oc", "i": 12, "seq": 14, "ev": "result", "mhz": 120, "ws": 4, "apb1": 4, "apb2": 2, "step": 6, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 119, "lcd_fps10": 910, "aud_ppm": -21,
+
+### 2026-11-18 21:04:51 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:05:07 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:05:09 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=11
+- @R {"t": "oc", "i": 8, "seq": 10, "ev": "result", "mhz": 96, "ws": 3, "apb1": 2, "apb2": 1, "step": 4, "pass": true, "reason": "none", "checks": "FF", "cpu_mops": 95, "lcd_fps10": 1440, "aud_ppm": -21, "
+- @R {"t": "oc", "i": 9, "seq": 11, "ev": "attempt", "mhz": 100, "ws": 3, "apb1": 2, "apb2": 1, "step": 5, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "tem
+- @R {"t": "oc", "i": 10, "seq": 12, "ev": "result", "mhz": 100, "ws": 3, "apb1": 2, "apb2": 1, "step": 5, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 99, "lcd_fps10": 759, "aud_ppm": -21,
+- @R {"t": "oc", "i": 11, "seq": 13, "ev": "attempt", "mhz": 120, "ws": 4, "apb1": 4, "apb2": 2, "step": 6, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "te
+- @R {"t": "oc", "i": 12, "seq": 14, "ev": "result", "mhz": 120, "ws": 4, "apb1": 4, "apb2": 2, "step": 6, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 119, "lcd_fps10": 910, "aud_ppm": -21,
+
+### 2026-11-18 21:05:22 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:05:38 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:05:50 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q read 0xFE0000 256"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q read lines=2
+
+### 2026-11-18 21:05:54 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:06:10 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025025 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:06:12 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.57 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:06:25 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.187
+- Output: Time elapsed during verifying operation: 00:00:01.757
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:06:25 — Board lock busy [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR locked by pid 19756 ('hwtest.py flash build/hwtest.bin' since 2026-11-18T21:06:12+03:00)
+
+### 2026-11-18 21:06:25 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid 19756 ('hwtest.py flash build/hwtest.bin' since 2026-11-18T21:06:12+03:00); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-18 21:06:26 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (253104 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795025168}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795025168, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.57s, program=12.39s, dfu_to_app=0.71s, total=13.77s
+
+### 2026-11-18 21:06:26 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=19
+- @R {"t": "oc", "i": 0, "ev": "bad", "hex": "434F00000100000020000100", "crc_calc": "87C61ECB", "crc_rec": "00000080"}
+- @R {"t": "oc", "i": 1, "ev": "bad", "hex": "434F01000200000000000000", "crc_calc": "6303660F", "crc_rec": "00008000"}
+- @R {"t": "oc", "i": 2, "ev": "bad", "hex": "434F02010400000030000101", "crc_calc": "C6A09F4A", "crc_rec": "02003240"}
+- @R {"t": "oc", "i": 3, "ev": "bad", "hex": "434F00000400000000000000", "crc_calc": "9A4B0359", "crc_rec": "30852202"}
+- @R {"t": "oc", "i": 4, "ev": "bad", "hex": "434F02000400000000000000", "crc_calc": "83E351A5", "crc_rec": "1CA29141"}
+
+### 2026-11-18 21:06:41 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025168 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:06:57 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025168 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:07:03 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 17, "slots": 2048, "seq": 18, "pending": 0, "boot_fail": ""}
+
+### 2026-11-18 21:07:07 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log clear lines=2
+- @R {"t": "oc", "ev": "clear", "ok": true}
+
+### 2026-11-18 21:07:08 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=2
+- @R {"t": "oc", "ev": "log_end", "records": 0, "slots": 2048, "boot_fail": ""}
+
+### 2026-11-18 21:07:13 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025168 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:07:26 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.sweep list=96,120 max=0 t=2"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:07:29 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025168 clk=96000000 busy=oc.sweep reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:07:40 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=19
+- @R {"t": "oc", "i": 0, "ev": "bad", "hex": "434F00000100000020000100", "crc_calc": "87C61ECB", "crc_rec": "00000080"}
+- @R {"t": "oc", "i": 1, "ev": "bad", "hex": "434F01000200000000000000", "crc_calc": "6303660F", "crc_rec": "00008000"}
+- @R {"t": "oc", "i": 2, "ev": "bad", "hex": "434F02010400000020000100", "crc_calc": "C1960AEC", "crc_rec": "00001200"}
+- @R {"t": "oc", "i": 3, "ev": "bad", "hex": "434F00000400000000000000", "crc_calc": "9A4B0359", "crc_rec": "20000200"}
+- @R {"t": "oc", "i": 4, "ev": "bad", "hex": "434F02000400000000000000", "crc_calc": "2848A7E0", "crc_rec": "04001000"}
+
+### 2026-11-18 21:07:41 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 17, "slots": 2048, "seq": 18, "pending": 0, "boot_fail": ""}
+
+### 2026-11-18 21:07:44 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025168 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:07:58 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 17, "slots": 2048, "seq": 18, "pending": 0, "boot_fail": ""}
+
+### 2026-11-18 21:08:00 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025168 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:08:16 — Board lock busy [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: ERROR locked by pid None (None since None)
+
+### 2026-11-18 21:08:16 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: ERROR (exit code 3)
+- Error: LockBusy: board is locked by pid None (None since None); use --wait-lock [SECONDS] to wait. Lock file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\.board.lock
+
+### 2026-11-18 21:08:16 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025168 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:08:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log clear lines=2
+- @R {"t": "oc", "ev": "clear", "ok": true}
+
+### 2026-11-18 21:08:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.sweep list=96,120 max=0 t=2"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:08:32 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3516508+dirty build=1795025168 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-18 21:08:58 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=19
+- @R {"t": "oc", "i": 0, "ev": "bad", "hex": "434F00000100000020000100", "crc_calc": "87C61ECB", "crc_rec": "00000080"}
+- @R {"t": "oc", "i": 1, "ev": "bad", "hex": "434F01000200000000000000", "crc_calc": "6303660F", "crc_rec": "00008000"}
+- @R {"t": "oc", "i": 2, "ev": "bad", "hex": "434F02010400000020000100", "crc_calc": "C1960AEC", "crc_rec": "00000000"}
+- @R {"t": "oc", "i": 3, "ev": "bad", "hex": "434F00000400000000000000", "crc_calc": "9A4B0359", "crc_rec": "00000000"}
+- @R {"t": "oc", "i": 4, "ev": "bad", "hex": "434F02000400000000000000", "crc_calc": "2848A7E0", "crc_rec": "04000000"}
+
+### 2026-11-18 21:09:30 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log clear lines=2
+- @R {"t": "oc", "ev": "clear", "ok": true}
+
+### 2026-11-18 21:09:30 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q scan 0xFE0000 0x10000 4096"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q scan lines=2
+- @R {"t": "w25q_scan", "addr": "FE0000", "len": 65536, "step": 4096, "granules": 16, "blank": 15, "used": 1, "nonff_bytes": 535, "first_nonff": "FE0000", "last_nonff": "FE021F", "ranges": [["FE0000", "FE1
+
+### 2026-11-18 21:09:38 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q info"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR w25q usage: w25q id | read <addr_hex> <len> | crc <addr_hex> <len> | scan <addr_hex> <len> [step] lines=1
+
+### 2026-11-18 21:09:44 — Run suite w25q.info (start) [auto]
+
+- Command: `run w25q.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=3516508+dirty build=1795025168 busy=idle
+
+### 2026-11-18 21:09:44 — hwtest.py run [auto]
+
+- Command: `hwtest.py run w25q.info`
+- Result: OK (exit code 0)
+- Suite w25q.info: PASS results=3 pass=3 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261118-210944-w25q.info.json
+
+### 2026-11-18 21:10:05 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.58 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:10:17 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.203
+- Output: Time elapsed during verifying operation: 00:00:01.757
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:10:18 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (253352 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795025400}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795025400, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.58s, program=12.39s, dfu_to_app=0.71s, total=13.76s
+
+### 2026-11-18 21:10:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR oc clear failed lines=5
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 0, "sr1": "02"}
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 1, "sr1": "02"}
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 2, "sr1": "02"}
+- @R {"t": "oc", "ev": "clear", "ok": false}
+
+### 2026-11-18 21:10:32 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 17, "slots": 2048, "seq": 18, "pending": 0, "boot_fail": ""}
+
+### 2026-11-18 21:10:35 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:10:47 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.193
+- Output: Time elapsed during verifying operation: 00:00:01.757
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:10:48 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (253360 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795025431}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795025431, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.62s, program=12.39s, dfu_to_app=0.72s, total=13.81s
+
+### 2026-11-18 21:10:49 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR oc clear failed lines=5
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 0, "sr1": "02"}
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 1, "sr1": "02"}
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 2, "sr1": "02"}
+- @R {"t": "oc", "ev": "clear", "ok": false}
+
+### 2026-11-18 21:11:16 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:11:28 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.187
+- Output: Time elapsed during verifying operation: 00:00:01.757
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:11:29 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (253376 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795025471}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795025471, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=12.39s, dfu_to_app=0.71s, total=13.77s
+
+### 2026-11-18 21:11:29 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR oc clear failed lines=5
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 0, "sr1": "02", "lock": 1}
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 1, "sr1": "02", "lock": 1}
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 2, "sr1": "02", "lock": 1}
+- @R {"t": "oc", "ev": "clear", "ok": false}
+
+### 2026-11-18 21:12:43 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.57 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:12:56 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.179
+- Output: Time elapsed during verifying operation: 00:00:01.757
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:12:56 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (253552 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795025552}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795025552, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.57s, program=12.37s, dfu_to_app=0.72s, total=13.73s
+
+### 2026-11-18 21:12:57 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR oc clear failed lines=5
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 0, "sr1": "02", "lock": 1}
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 1, "sr1": "02", "lock": 1}
+- @R {"t": "oc", "ev": "erase_retry", "addr": "FE0000", "try": 2, "sr1": "02", "lock": 1}
+- @R {"t": "oc", "ev": "clear", "ok": false}
+
+### 2026-11-18 21:13:44 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:13:56 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.166
+- Output: Time elapsed during verifying operation: 00:00:01.758
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:13:57 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (253648 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795025619}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795025619, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=12.37s, dfu_to_app=0.70s, total=13.74s
+
+### 2026-11-18 21:13:58 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log clear lines=3
+- @R {"t": "oc", "ev": "block_erase", "st": 0, "us": 282115, "sr1": "00"}
+- @R {"t": "oc", "ev": "clear", "ok": true}
+
+### 2026-11-18 21:14:30 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-18 21:14:42 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 12.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:10.189
+- Output: Time elapsed during verifying operation: 00:00:01.764
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-18 21:14:43 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (253472 bytes), expected id: {'fw': '3516508+dirty', 'build': 1795025666}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3516508+dirty build=1795025666, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=12.40s, dfu_to_app=0.70s, total=13.77s
+
+### 2026-11-18 21:14:44 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.sweep list=96,120 max=0 t=2"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:15:14 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=5
+- @R {"t": "oc", "i": 0, "seq": 1, "ev": "attempt", "mhz": 96, "ws": 3, "apb1": 2, "apb2": 1, "step": 1, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 1, "seq": 2, "ev": "result", "mhz": 96, "ws": 3, "apb1": 2, "apb2": 1, "step": 1, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 95, "lcd_fps10": 1440, "aud_ppm": -21, "t
+- @R {"t": "oc", "i": 2, "seq": 3, "ev": "note", "mhz": 0, "ws": 0, "apb1": 0, "apb2": 0, "step": 0, "pass": false, "reason": "sweep_end", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp
+- @R {"t": "oc", "ev": "log_end", "records": 3, "slots": 2048, "boot_fail": ""}
+
+### 2026-11-18 21:15:36 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log clear"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log clear lines=3
+- @R {"t": "oc", "ev": "block_erase", "st": 0, "us": 276302, "sr1": "00"}
+- @R {"t": "oc", "ev": "clear", "ok": true}
+
+### 2026-11-18 21:15:36 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.sweep list=48,64,84,96,100,120,144,152,160,168,192,216"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:15:49 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-18 21:15:51 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-18 21:16:00 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-18 21:16:05 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-18 21:16:10 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-18 21:16:11 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-18 21:16:22 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-18 21:16:32 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 17, "slots": 2048, "seq": 20, "pending": 0, "boot_fail": ""}
+
+### 2026-11-18 21:16:41 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 17, "slots": 2048, "seq": 20, "pending": 0, "boot_fail": ""}
+
+### 2026-11-18 21:17:01 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=19
+- @R {"t": "oc", "i": 0, "seq": 4, "ev": "attempt", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 1, "seq": 5, "ev": "result", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 47, "lcd_fps10": 720, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 2, "seq": 6, "ev": "attempt", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 3, "seq": 7, "ev": "result", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 63, "lcd_fps10": 960, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 4, "seq": 8, "ev": "attempt", "mhz": 84, "ws": 2, "apb1": 2, "apb2": 1, "step": 3, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+
+### 2026-11-18 21:17:12 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.ws"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:17:42 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 23, "slots": 2048, "seq": 26, "pending": 0, "boot_fail": "oc attempt 96 MHz ws1 FAILED: iwdg"}
+
+### 2026-11-18 21:17:57 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 23, "slots": 2048, "seq": 26, "pending": 0, "boot_fail": "oc attempt 96 MHz ws1 FAILED: iwdg"}
+
+### 2026-11-18 21:19:03 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 23, "slots": 2048, "seq": 26, "pending": 0, "boot_fail": "oc attempt 96 MHz ws1 FAILED: iwdg"}
+
+### 2026-11-18 21:19:47 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=25
+- @R {"t": "oc", "i": 0, "seq": 4, "ev": "attempt", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 1, "seq": 5, "ev": "result", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 47, "lcd_fps10": 720, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 2, "seq": 6, "ev": "attempt", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 3, "seq": 7, "ev": "result", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 63, "lcd_fps10": 960, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 4, "seq": 8, "ev": "attempt", "mhz": 84, "ws": 2, "apb1": 2, "apb2": 1, "step": 3, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+
+### 2026-11-18 21:19:56 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.ws list=120,144"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:20:24 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=33
+- @R {"t": "oc", "i": 0, "seq": 4, "ev": "attempt", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 1, "seq": 5, "ev": "result", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 47, "lcd_fps10": 720, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 2, "seq": 6, "ev": "attempt", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 3, "seq": 7, "ev": "result", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 63, "lcd_fps10": 960, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 4, "seq": 8, "ev": "attempt", "mhz": 84, "ws": 2, "apb1": 2, "apb2": 1, "step": 3, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+
+### 2026-11-18 21:20:33 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "run oc.ws list=144"`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+
+### 2026-11-18 21:20:41 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR oc busy lines=1
+
+### 2026-11-18 21:20:49 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc log"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc log lines=41
+- @R {"t": "oc", "i": 0, "seq": 4, "ev": "attempt", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 1, "seq": 5, "ev": "result", "mhz": 48, "ws": 1, "apb1": 1, "apb2": 1, "step": 1, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 47, "lcd_fps10": 720, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 2, "seq": 6, "ev": "attempt", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+- @R {"t": "oc", "i": 3, "seq": 7, "ev": "result", "mhz": 64, "ws": 2, "apb1": 2, "apb2": 1, "step": 2, "pass": true, "reason": "none", "checks": "7F", "cpu_mops": 63, "lcd_fps10": 960, "aud_ppm": -21, "te
+- @R {"t": "oc", "i": 4, "seq": 8, "ev": "attempt", "mhz": 84, "ws": 2, "apb1": 2, "apb2": 1, "step": 3, "pass": false, "reason": "none", "checks": "00", "cpu_mops": 0, "lcd_fps10": 0, "aud_ppm": 0, "temp_
+
+### Manual note (block B, agent)
+- oc.sweep (default list + 152/160/168): 48..144 MHz pass; 152 MHz fails (CPU kernel checksum mismatch, no fault); 168 MHz HardFault (PC 0x28000010). Max stable 144 MHz.
+- oc.ws (caches off): min flash WS 2 @96, 2 @120, 3 @144 (IWDG reset one step below).
+- W25Q sector erase 0x20 at 0xFE0000 is rejected (WEL stays set); the OC log is cleared with a 64 KB block erase (0xD8) instead.
+- USB kept alive across a PLL restart delivers stale/partial CDC data; clock_set_mhz now always stops USB cleanly and restarts it on a 48 MHz-capable clock.
+
+### 2026-11-18 21:21:28 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "oc status"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK oc status lines=2
+- @R {"t": "oc", "ev": "status", "slots_used": 39, "slots": 2048, "seq": 42, "pending": 0, "boot_fail": "oc attempt 144 MHz ws2 FAILED: iwdg"}

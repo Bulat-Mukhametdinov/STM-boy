@@ -57,6 +57,8 @@ bool backlight_set_freq(uint32_t hz)
     return true;
 }
 
+void backlight_retune(void) { (void)backlight_set_freq(s_hz); }
+
 uint32_t backlight_freq_hz(void)
 {
     return clock_tim_apb1_hz() / ((TIM3->PSC + 1u) * (TIM3->ARR + 1u));

@@ -68,6 +68,7 @@ uint16_t audio_mid(void);                           /* CCR for 50 % */
 /* Engines */
 bool audio_engine_start(aud_engine_t e, uint32_t fs_hz, aud_dither_t d);
 void audio_engine_stop(void);
+void audio_clock_changed(void);                     /* re-derive timers after a SYSCLK change */
 aud_engine_t audio_engine(void);
 uint32_t audio_fs_mhz(void);                        /* actual sample rate x1000 */
 uint32_t audio_rcr_div(void);                       /* engine B: RCR+1 */

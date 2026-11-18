@@ -33,6 +33,8 @@ typedef struct {
 } adc_result_t;
 
 void adc_init(void);                 /* reset state (does not touch the hardware) */
+void adc_set_pre(uint32_t pre);      /* ADCPRE field 0..3 (/2 /4 /6 /8), effective from the next batch */
+uint32_t adc_pre_div(void);          /* current ADC prescaler as a divider */
 void adc_request(void);              /* start one batch (non-blocking) */
 void adc_task(void);                 /* call often: drives the batch; with background on it requests every 250 ms */
 void adc_background(bool on);        /* main-loop periodic sampling (250 ms) */

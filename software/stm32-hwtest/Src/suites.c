@@ -42,6 +42,8 @@ const suite_t g_suites[] = {
     {"display.native", suite_display_native, "native-scan translation self-check: corner markers + mapping + cost", 0},
     {"display.vscroll", suite_display_vscroll, "[U] hardware scroll (VSCRDEF/VSCRSADD) vs full redraw [auto=1] [t=] [sps=]", SUITE_F_USER},
     {"demo", suite_demo, "[U] 3D cubes / raycaster / raytracer, 8bpp+palette DMA present [auto=1] [t=] [scene=] [fps=]", SUITE_F_USER},
+    {"oc.sweep", suite_oc_sweep, "AUTONOMOUS clock sweep [list=48,64,..] [max=260] [step=8] [t=10]; IWDG + W25Q journal; USB drops; ends with a reset; read with `oc log`", 0},
+    {"oc.ws", suite_oc_ws, "min flash wait states per freq [list=96,120,144] (caches off, journal, ends with a reset)", 0},
     {"backlight.user", suite_backlight_user, "[U] lowest usable level + flicker/whine per PWM freq", SUITE_F_USER},
     {"input.live", suite_input_live, "[U] press every button once (POWER excluded)", SUITE_F_USER},
     {"input.chord", suite_input_chord, "[U] button combinations", SUITE_F_USER},

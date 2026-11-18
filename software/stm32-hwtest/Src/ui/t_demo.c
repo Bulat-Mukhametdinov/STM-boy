@@ -20,7 +20,9 @@
 #include "font.h"
 #include "gfx.h"
 #include "input.h"
+#include "clock.h"
 #include "lcd.h"
+#include "oc.h"
 #include "log.h"
 #include "timebase.h"
 #include "ui.h"
@@ -631,6 +633,8 @@ typedef struct {
     uint64_t c_render, c_wait, c_pace, c_frame;
 } stats_t;
 
+uint32_t g_demo_fps100, g_demo_frames;
+
 static void emit_stats(const scene_t *sc, const stats_t *st, uint32_t cap)
 {
     if (st->frames == 0u) return;
@@ -638,6 +642,8 @@ static void emit_stats(const scene_t *sc, const stats_t *st, uint32_t cap)
     uint32_t cpms = SystemCoreClock / 1000u;
     uint64_t busy_den = st->c_frame ? st->c_frame : 1u;
     uint32_t fps100 = (uint32_t)((uint64_t)st->frames * 100u * SystemCoreClock / busy_den);
+    g_demo_fps100 = fps100;
+    g_demo_frames = st->frames;
     uint32_t r100 = (uint32_t)(st->c_render * 100u / st->frames / cpms);
     uint32_t w100 = (uint32_t)(st->c_wait * 100u / st->frames / cpms);
     uint32_t f100 = (uint32_t)(st->c_frame * 100u / st->frames / cpms);
@@ -648,6 +654,20 @@ static void emit_stats(const scene_t *sc, const stats_t *st, uint32_t cap)
                ",\"spi_mhz\":%" PRIu32 "}",
                sc->name, fmt2(a, sizeof(a), fps100), fmt2(b, sizeof(b), r100), fmt2(c, sizeof(c), w100),
                fmt2(d, sizeof(d), f100), fmt2(e, sizeof(e), cpu100), st->frames, mhz, cap, lcd_spi_hz() / 1000000u);
+}
+
+/* Clock list for CENTER+UP/DOWN: fixed profiles plus every frequency the OC sweep marked stable. */
+static uint32_t demo_clock_list(uint16_t *out, uint32_t max)
+{
+    static const uint16_t base[] = {48, 72, 84, 96, 120, 144, 168, 192};
+    uint32_t n = 0;
+    for (uint32_t i = 0; i < sizeof(base) / sizeof(base[0]); i++) out[n++] = base[i];
+    uint16_t st[16];
+    uint32_t m = oc_stable_list(st, 16);
+    for (uint32_t i = 0; i < m && n < max; i++) {
+        if (st[i] > 192u) out[n++] = st[i];
+    }
+    return n;
 }
 
 suite_verdict_t suite_demo(int argc, char **argv)
@@ -668,7 +688,7 @@ suite_verdict_t suite_demo(int argc, char **argv)
     const bool f16_0 = lcd_frame16();
     bool nat0 = lcd_set_native(true);
     if (speed0 < 2u) lcd_set_gpio_speed(2);
-    lcd_set_spi_div(2);   /* 48 MHz */
+    lcd_apply_spi_div(clock_lcd_div_for_hz(48000000u));   /* 48 MHz where the bus allows */
     lcd_set_frame16(false);
     lcd_fill_rect(0, 0, FW, FH, COLOR_BLACK);
 
@@ -681,6 +701,13 @@ suite_verdict_t suite_demo(int argc, char **argv)
     suite_verdict_t v = SUITE_PASS;
     int back = 0;
     bool overlay = true, scene_new = true, done = false;
+    bool center_used = false;
+    uint16_t clk_list[24];
+    uint32_t clk_n = demo_clock_list(clk_list, 24);
+    int clk_i = 0;
+    for (uint32_t i = 0; i < clk_n; i++) {
+        if (clk_list[i] == SystemCoreClock / 1000000u) clk_i = (int)i;
+    }
     uint32_t cap_modes[3] = {0, 60, 30};
     int cap_i = cap_fps == 60u ? 1 : (cap_fps == 30u ? 2 : 0);
     if (cap_fps != 0u && cap_fps != 60u && cap_fps != 30u) cap_modes[0] = cap_fps;   /* custom value as mode 0 */
@@ -709,6 +736,7 @@ suite_verdict_t suite_demo(int argc, char **argv)
         uint32_t cap = cap_modes[cap_i];
         uint32_t tnow = HAL_GetTick();
         uint16_t held = aut ? 0u : input_held();
+        if (held & BTN_MASK(BTN_CENTER)) held &= (uint16_t)~(BTN_MASK(BTN_UP) | BTN_MASK(BTN_DOWN));
 
         uint32_t c0 = time_cycles();
         uint8_t *fb = FBUF(back);
@@ -782,7 +810,25 @@ suite_verdict_t suite_demo(int argc, char **argv)
         }
         input_event_t ev;
         while (input_pop(&ev)) {
-            if (!ev.pressed) continue;
+            if (!ev.pressed) {
+                if (ev.button == BTN_CENTER && !center_used) cap_i = (cap_i + 1) % 3;   /* tap = fps cap */
+                continue;
+            }
+            if (ev.button == BTN_CENTER) {
+                center_used = false;
+                continue;
+            }
+            if ((ev.button == BTN_UP || ev.button == BTN_DOWN) && (input_held() & BTN_MASK(BTN_CENTER))) {
+                center_used = true;   /* CENTER held + UP/DOWN: next/previous clock profile */
+                int ni = clk_i + (ev.button == BTN_UP ? 1 : -1);
+                if (ni >= 0 && ni < (int)clk_n) {
+                    present_wait();
+                    clk_i = ni;
+                    (void)clock_set_mhz(clk_list[clk_i], NULL);
+                    scene_new = true;
+                }
+                continue;
+            }
             int ns = scene;
             switch (ev.button) {
             case BTN_LEFT:   if (scene == 0) ns = (scene + N_SCENES - 1) % N_SCENES; break;
@@ -790,7 +836,6 @@ suite_verdict_t suite_demo(int argc, char **argv)
             case BTN_X:      ns = (scene + 1) % N_SCENES; break;
             case BTN_Y:      ns = (scene + N_SCENES - 1) % N_SCENES; break;
             case BTN_A:      overlay = !overlay; break;
-            case BTN_CENTER: cap_i = (cap_i + 1) % 3; break;
             case BTN_B:      done = true; break;
             default: break;
             }
@@ -808,7 +853,10 @@ suite_verdict_t suite_demo(int argc, char **argv)
     NVIC_DisableIRQ(DMA2_Stream3_IRQn);
     g_dma3_hook = NULL;
     lcd_set_frame16(f16_0);
-    lcd_set_spi_div(div0);
+    if (SystemCoreClock != 96000000u) {
+        (void)clock_set_mhz(96u, NULL);   /* the demo clock control always returns to the boot profile */
+    }
+    lcd_apply_spi_div(div0);
     lcd_set_native(nat0);
     lcd_fill_rect(0, 0, FW, FH, COLOR_BLACK);
     return v;

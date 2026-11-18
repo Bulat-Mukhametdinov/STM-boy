@@ -44,6 +44,7 @@ void lcd_cfg_defaults(lcd_cfg_t *c);
 void lcd_init(void);                 /* full reset + init + clear all 132x162 */
 void lcd_apply_cfg(void);            /* re-send MADCTL / INV / gamma / SPI speed (gamma 0 => re-init) */
 void lcd_set_spi_div(uint16_t div);
+void lcd_apply_spi_div(uint16_t div);   /* retune only (clock profile), target unchanged */
 uint32_t lcd_spi_hz(void);
 uint16_t lcd_width(void);
 uint16_t lcd_height(void);

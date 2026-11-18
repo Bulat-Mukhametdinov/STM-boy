@@ -12,6 +12,9 @@
 #define USB_LINE_TOOLONG "\001toolong"  /* queued instead of an overlong line */
 
 void usb_init(void);
+void usb_stop(void);          /* clean USBD_Stop (host sees a disconnect); no-op when not running */
+void usb_start(void);         /* USBD_Start again (re-enumeration); needs a 48 MHz USB clock */
+bool usb_is_running(void);
 bool usb_configured(void);
 bool usb_dtr(void);
 uint32_t usb_baud(void);

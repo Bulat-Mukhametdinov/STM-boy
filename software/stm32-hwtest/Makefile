@@ -64,6 +64,8 @@ SRC_OWN := \
   Src/stm32f4xx_it.c \
   Src/board.c \
   Src/clock.c \
+  Src/clock_profile.c \
+  Src/oc.c \
   Src/timebase.c \
   Src/dfu.c \
   Src/log.c \

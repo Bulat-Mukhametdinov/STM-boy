@@ -4,6 +4,7 @@
 #include "lcd.h"
 #include "backlight.h"
 #include "board.h"
+#include "clock.h"
 #include "stm32f4xx_hal.h"
 
 #define SPI_WAIT_LIMIT 200000u
@@ -139,9 +140,17 @@ static void spi1_setup(uint16_t div)
     SPI1->CR1 |= SPI_CR1_SPE;
 }
 
+/* Clock-profile retune: same as lcd_set_spi_div but does not change the target rate. */
+void lcd_apply_spi_div(uint16_t div)
+{
+    lcd_cfg.spi_div = (uint16_t)(2u << div_to_br(div));
+    spi1_setup(lcd_cfg.spi_div);
+}
+
 void lcd_set_spi_div(uint16_t div)
 {
     lcd_cfg.spi_div = (uint16_t)(2u << div_to_br(div));
+    clock_lcd_target_set(HAL_RCC_GetPCLK2Freq() / lcd_cfg.spi_div); /* user choice = new target */
     spi1_setup(lcd_cfg.spi_div);
 }
 

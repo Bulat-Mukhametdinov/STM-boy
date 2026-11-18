@@ -197,3 +197,38 @@ Matrix ids are carrier-major: `M01-M12` 750k/7b, `M13-M24` 375k/8b, `M25-M36` 18
 11k,16k,22k,32k x dither OFF,TPDF,NS (`M19` = 375k/8b 22k OFF, `M20` TPDF, `M21` NS). Host analysis: `tools/audio_fr.py`
 (FR table, -6 dB band edges, high-pass/shelf suggestion, matrix table, JSON). TIM5 is shared with `bench.sys` (wake latency): its
 ISR is dispatched from the audio `TIM5_IRQHandler` when no audio engine runs.
+
+## Block B: clock profiles and OC sweep
+
+Boot is always 96 MHz (HSE 8 MHz, M=4, N=96, P=2, Q=4). `clock_set_mhz(N)` switches at run time: SYSCLK -> HSI, WS 7, PLL
+reprogrammed (VCO = 2*N MHz, P in 2/4/6/8, Q = VCO/48 when integral, PLL-lock timeout -> error and fall back to 96, no reset),
+target WS (ceil(N/30)-1, +1 above 100 MHz unless `ws=`), APB1 = SYSCLK/{1,2,4,8} <= 50 MHz, APB2 <= 100 MHz, SYSCLK -> PLL.
+`clock_apply_derived()` then recomputes SystemCoreClock, SysTick 1 kHz, TIM2 1 MHz (count preserved), SPI1 (LCD, <= target:
+the rate configured at the first switch, demo uses 48 MHz), SPI3 (W25Q, <= its configured rate, default 12 MHz), ADC prescaler
+(/4,/6,/8, <= 24.5 MHz), TIM3 backlight 1 kHz, audio TIM1/TIM5/RCR (engine B Fs is quantised by the RCR divider, so it is only
+nominal at integer carrier ratios; engine A is exact). USB: always stopped cleanly before the switch (host sees a disconnect and
+COM re-enumerates) and restarted afterwards when the PLLQ output is exactly 48 MHz and HCLK >= 30 MHz; otherwise the device runs
+without USB until it is back on a USB-capable clock.
+
+- `clk info` -> `@R {"t":"clk","sysclk","hclk","pclk1","pclk2","tim1"(APB1 timers),"tim2"(APB2 timers),"ws","apb1_div","apb2_div","pll_n","pll_p","pll_q","spi1_hz","spi3_hz","adc_hz","bl_hz","usb_ok","usb_up","status"}`
+- `clk set <MHz> [ws=N] [apb1_max=MHz] [apb2_max=MHz] [lcd=MHz] [w25q=MHz] [adc=MHz]` -> `@R {"t":"clk","plan":{...,"in_spec":bool}}`,
+  then the switch (COM drops), then `clk info` + `@OK clk` if USB came back. 8..300 MHz. Not persistent: reset = 96 MHz.
+- `demo`: hold CENTER + UP/DOWN steps through 48/72/84/96/120/144/168/192 (+ frequencies the sweep marked stable above 192);
+  a CENTER tap (released without UP/DOWN) still toggles the fps cap. Exit returns to 96 MHz.
+- `oc log [clear]` dumps the OC journal as `@R {"t":"oc","ev":"attempt"|"result"|"note",...}` lines + `{"ev":"log_end"}`;
+  `oc stable` lists frequencies whose latest result is a pass; `oc status`.
+
+Journal: W25Q 0xFE0000-0xFEFFFF, 32-byte CRC-protected records (read back after every write); copy of the pending ATTEMPT in
+`.noinit`. IWDG (~2 s) is armed for the whole suite and only fed from `sys_service()` while the sweep is healthy (a hang or fault
+stops the feed). On the next boot an ATTEMPT without RESULT becomes a FAIL record with the reset cause (iwdg/sft/bor/pin/por) or
+`fault` (+PC) -- see `oc log` `boot_fail`. Temperature > 85 C aborts. AMP_SD is never raised. A suite always ends with a
+reset (the only way to stop the IWDG).
+
+- `run oc.sweep [list=48,64,84,96,100,120,144,168,192,216] [max=260] [step=8] [t=10]`: reference run at 96 MHz, then per
+  frequency: ATTEMPT record, switch, checks (timebase TIM2 vs DWT, CPU int/float/memcpy kernels with identical checksums + soak
+  `t*150 ms`, flash CRC x20, RAM march 16 KB, W25Q 1 MB CRC vs the 96 MHz reference, LCD raycaster 2 s -> fps, audio engine B
+  1 s DMA block count -> Fs, ADC VDDA 3.0..3.6 V + die temperature, USB enumerated flag), RESULT record. After the list it goes
+  on in `step` MHz until the first failure or `max`. First failure -> back to 96 MHz, record, stop. Emits
+  `@R {"t":"oc","ev":"result",...}` per step (lost while USB is down: use `oc log`).
+- `run oc.ws [list=96,120,144]`: lowest flash wait-state count that still passes the self-check with the ART caches off
+  (records use step = 0x80|ws; a combination that already has a FAIL record is not retried).

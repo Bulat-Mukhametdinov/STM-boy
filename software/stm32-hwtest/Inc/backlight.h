@@ -14,6 +14,7 @@
 
 void backlight_init(void);
 bool backlight_set_freq(uint32_t hz);       /* 50 Hz .. 100 kHz; keeps the duty */
+void backlight_retune(void);                /* re-derive PSC/ARR after a SYSCLK change */
 uint32_t backlight_freq_hz(void);           /* actual (after integer PSC/ARR) */
 void backlight_set_ppm(uint32_t ppm);       /* duty in ppm: 0 = off, 1000000 = always on */
 uint32_t backlight_ppm(void);               /* requested duty */

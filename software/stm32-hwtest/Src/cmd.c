@@ -3,6 +3,8 @@
    which ends with "@DONE <suite> pass|fail|abort". */
 
 #include "cmd.h"
+#include "clock.h"
+#include "oc.h"
 #include "bench.h"
 #include "board.h"
 #include "clock.h"
@@ -440,7 +442,7 @@ static void dispatch(char *line, bool restricted)
             }
         } else if (d == 2 || d == 4 || d == 8 || d == 16 || d == 32) {
             lcd_set_spi_div((uint16_t)d);
-            res_printf("{\"t\":\"lcd\",\"spi_div\":%lu,\"spi_hz\":%lu}", d, 96000000ul / d);
+            res_printf("{\"t\":\"lcd\",\"spi_div\":%lu,\"spi_hz\":%lu}", d, (unsigned long)lcd_spi_hz());
             proto_ok("lcd div");
         } else {
             proto_err("lcd", "usage: lcd div <2|4|8|16|32>");
@@ -449,6 +451,10 @@ static void dispatch(char *line, bool restricted)
         battlog_cmd(argc, argv, restricted);
     } else if (restricted) {
         proto_err(c, "busy");
+    } else if (strcmp(c, "clk") == 0) {
+        clk_cmd(argc, argv);
+    } else if (strcmp(c, "oc") == 0) {
+        oc_cmd(argc, argv);
     } else if (strcmp(c, "crc") == 0) {
         cmd_crc();
     } else if (strcmp(c, "w25q") == 0) {
@@ -485,6 +491,7 @@ static void hello_check(void)
 void cmd_poll(void)
 {
     char line[USB_RX_LINE_MAX];
+    oc_wdg_service();
     hello_check();
     while (usb_rx_pop_line(line, sizeof(line))) {
         dispatch(line, false);
@@ -496,6 +503,7 @@ void sys_service(void)
     char line[USB_RX_LINE_MAX];
     log_poll();
     power_poll();
+    oc_wdg_service();
     hello_check();
     while (usb_rx_pop_line(line, sizeof(line))) {
         dispatch(line, true);

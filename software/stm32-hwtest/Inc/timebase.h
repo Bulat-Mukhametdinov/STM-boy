@@ -11,6 +11,7 @@
  * Call timebase_init() after every SYSCLK change. */
 
 void timebase_init(void);
+void timebase_retune(void);   /* TIM2 prescaler only, count preserved (clock_apply_derived) */
 
 static inline uint32_t time_us(void) { return TIM2->CNT; }
 static inline uint32_t time_cycles(void) { return DWT->CYCCNT; }

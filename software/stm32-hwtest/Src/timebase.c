@@ -35,3 +35,13 @@ void timebase_systick_hook(void)
 {
     input_tick_1ms();
 }
+
+/* SYSCLK/APB changed: keep TIM2 at 1 MHz without losing its count. */
+void timebase_retune(void)
+{
+    uint32_t cnt = TIM2->CNT;
+    TIM2->PSC = (clock_tim_apb1_hz() / 1000000u) - 1u;
+    TIM2->EGR = TIM_EGR_UG;   /* load PSC (also clears CNT) */
+    TIM2->CNT = cnt;
+    TIM2->SR = 0;
+}

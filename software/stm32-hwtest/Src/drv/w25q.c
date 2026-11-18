@@ -467,3 +467,12 @@ w25q_status_t w25q_read_dma(uint32_t addr, void *buf, size_t len, bool fast)
     }
     return W25Q_OK;
 }
+
+/* Global Block/Sector Unlock (0x98): clears the volatile individual lock bits only (no data is touched). */
+void w25q_global_unlock(void)
+{
+    write_enable();
+    CS_LOW();
+    xfer(0x98u);
+    end();
+}

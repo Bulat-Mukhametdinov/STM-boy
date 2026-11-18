@@ -16,6 +16,7 @@
 #include "lcd.h"
 #include "log.h"
 #include "noinit.h"
+#include "oc.h"
 #include "power.h"
 #include "timebase.h"
 #include "ui.h"
@@ -72,6 +73,7 @@ int main(void)
     lcd_cfg_defaults(&lcd_cfg);
     w25q_init();
     hwcal_load();
+    oc_boot_check();
     apply_hwcal_to_hw();
 
     backlight_init();         /* TIM3_CH1 PWM on PA6, output off until the screen is drawn */
