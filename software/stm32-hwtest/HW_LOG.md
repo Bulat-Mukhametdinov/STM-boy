@@ -7799,3 +7799,100 @@ git-ignored; .txt hexdumps next to them).
 - CDC: COM10 sn=315A356C3435
 - DFU (CLI): none
 - DFU (PnP): none
+
+### 2026-11-19 20:40:04 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort --timeout 5`
+- Result: ERROR (exit code 2)
+- Error: DeviceDisconnected: cannot open COM10: could not open port 'COM10': PermissionError(13, 'Access is denied.', None, 5)
+
+### 2026-11-19 20:40:18 — Enter DFU from application (touch) [auto]
+
+- Command: `1200-baud touch on COM10 (sn=315A356C3435)`
+- Result: FAIL no DFU device within 10 s
+- touch: exception (expected): could not open port 'COM10': PermissionError(13, 'Access is denied.', None, 5)
+
+### 2026-11-19 20:41:18 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: FAIL (exit code 2)
+
+### 2026-11-19 20:41:57 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.58 s
+- cmd: @OK dfu
+
+### 2026-11-19 20:42:34 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: FAIL (exit code 1, 36.9 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: ��������������������������������������������������Error:
+- Output: Error: failed to download Sector[0]
+- Output: Error: failed to download the File
+
+### 2026-11-19 20:42:59 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: FAIL (exit code 1)
+- Image: build\hwtest.bin (287520 bytes), expected id: {'fw': '37e264b+dirty', 'build': 1795109882}
+- Programmer: exit code 1, verified=False, errors: Error: failed to download Sector[0]; Error: failed to download the File
+- App after start: FAIL CDC port did not appear, CDC enumerations=0
+- Timing: info_before=0.05s, app_to_dfu=0.58s, program=36.94s, dfu_to_app=24.98s, total=62.58s
+
+### 2026-11-19 20:44:50 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): USB1 sn=None
+- DFU (PnP): 315A356C3435
+
+### 2026-11-19 20:44:51 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-19 20:46:05 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: ERROR (exit code 2)
+- Error: HwtestError: DFU device has no serial number; refusing to connect without sn=
+
+### 2026-11-19 20:46:53 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 20:52:34 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-19 20:52:42 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 20:52:42 — Interrupted DFU flash, recovered over SWD (manual note)
+
+- hwtest.py flash of the hp=0 build: first attempt 'CDC port did not appear', second saw a DF11 device without a serial number (refused), then the board vanished from USB. Board did not boot (3V3 present).
+- SWD (ST-LINK 37FF71064E573436CD711443, 3.25 V): readback of 0x08000000..+287520 = first 4096 B match the image, the rest erased (0xFF) -> DFU download interrupted after the first page. Reflashed over SWD (mode=UR, -w build/hwtest.bin 0x08000000 -v -rst): verified OK.
+
+### 2026-11-19 20:52:46 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=37e264b+dirty build=1795109882 clk=96000000 busy=idle reset=por uid=002800343435511331323538
