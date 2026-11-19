@@ -7019,3 +7019,48 @@ git-ignored; .txt hexdumps next to them).
 - Timing: info_before=0.05s, app_to_dfu=0.60s, program=15.24s, dfu_to_app=0.71s, total=16.62s
 
 - 2026-11-19 (manual) media: W25Q 64K erase (0xD8) was silently skipped on the first upload (erase 2 ms total, F4 again); retry-on-<1ms fixed it (203 real erases = 55 s). Upload 13.2 MB ~94 s. media.play NOT run on hardware (user hold). Two earlier trial runs ended after 3-6 s with auto=10/20 and no key pressed (suspected spurious B edge); auto mode now ignores keys.
+
+### 2026-11-19 12:03:28 — Run suite input.latency (start) [auto]
+
+- Command: `run input.latency n=20 t=900`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4d8ac13+dirty build=1795078228 busy=idle
+
+### 2026-11-19 12:05:32 — hwtest.py run [auto]
+
+- Command: `hwtest.py run input.latency n=20 t=900 --prompt-timeout 1800`
+- Result: FAIL (exit code 2)
+- Suite input.latency: DISCONNECTED results=0 pass=0 fail=0 (serial port lost: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22)))
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-120328-input.latency.json
+
+### 2026-11-19 12:05:42 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-19 12:06:04 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 13:11:27 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 13:11:27 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-19 13:25:50 — Optical latency attempt (manual note)
+
+- OWON XDS3202A: CH1 = PA8 marker (R24), CH2 = yellow LED as light sensor (x1, 10 mV/div, 20 MHz BW). Marker OK, LED gave no visible step (earlier 80 Hz ripple at x10 was pickup). No photodiode available -> optical latency skipped; documented a derived estimate of ~20-40 ms button-to-pixel.

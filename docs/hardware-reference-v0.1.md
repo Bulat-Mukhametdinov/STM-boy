@@ -615,6 +615,12 @@ End-to-end procedure (button to light, planned):
    one panel period (13-17 ms at 60-75 Hz; the refresh is not synchronised),
    plus the TN liquid-crystal response of several ms.
 
+> Estimate (DERIVED, 2026-11-19; optical measurement skipped - no photodiode available, a
+> yellow LED gave no usable signal): button edge -> EXTI handler: microseconds; full-frame DMA at
+> 48 MHz ~7 ms; wait for the panel scan to reach the area: 0-12.4 ms at 80.6 Hz; TN liquid-crystal
+> response ~10-20 ms => **~20-40 ms button-to-pixel**, plus up to one game-loop frame (16.7 ms at
+> 60 fps) before the game logic sees the input.
+
 ## 9. Audio
 
 ### Chain
