@@ -1,0 +1,7 @@
+sysclk_mhz,battery_ma,fps,note
+48,50.9,20.3,"demo raytracer, BL100, 16-bit, meter in battery lead 200 mA range"
+72,57.3,30.4,"demo raytracer, BL100, 16-bit, meter in battery lead 200 mA range"
+84,60.6,35.9,"demo raytracer, BL100, 16-bit, meter in battery lead 200 mA range"
+96,63.3,40.7,"demo raytracer, BL100, 16-bit, meter in battery lead 200 mA range"
+120,66.8,51.0,"demo raytracer, BL100, 16-bit, meter in battery lead 200 mA range"
+144,69.3,61.0,"demo raytracer, BL100, 16-bit, meter in battery lead 200 mA range"

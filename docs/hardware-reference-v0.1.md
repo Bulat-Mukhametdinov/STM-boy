@@ -187,7 +187,18 @@ at ~28 C. Amplifier off during the sweep.
   ship firmware that depends on it.** At most an optional "turbo" profile.
 - USB works only on SYSCLK values giving an exact 48 MHz from PLLQ (96, 120,
   144 MHz in the stable range); the firmware stops/restarts USB around switches.
-- Not measured yet: current versus frequency (state S17).
+- Current versus frequency: see below.
+
+#### Current Versus Frequency
+
+MEASURED 2026-11-19 (demo ray tracer, compute-bound, backlight 100 %, 16-bit,
+meter in the battery lead): 48 MHz 50.9 mA / 20.3 fps, 72: 57.3 / 30.4,
+84: 60.6 / 35.9, 96: 63.3 / 40.7, 120: 66.8 / 51.0, 144: 69.3 / 61.0.
+Linear fit **0.19 mA per MHz + 43.5 mA** fixed (mostly backlight). fps scales
+exactly with SYSCLK, so charge per frame falls from 2.51 to 1.14 mA*s: for
+compute-bound scenes a higher clock is more energy-efficient. Down-clocking
+96 -> 48 MHz saves only ~12 mA; **the backlight level dominates battery life.**
+
 
 > Warning: anything above 100 MHz is outside the datasheet. When results exist
 > they will be marked "not for release".

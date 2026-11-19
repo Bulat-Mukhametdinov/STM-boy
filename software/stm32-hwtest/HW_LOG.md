@@ -7064,3 +7064,31 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-19 13:25:50 — Optical latency attempt (manual note)
 
 - OWON XDS3202A: CH1 = PA8 marker (R24), CH2 = yellow LED as light sensor (x1, 10 mV/div, 20 MHz BW). Marker OK, LED gave no visible step (earlier 80 Hz ripple at x10 was pickup). No photodiode available -> optical latency skipped; documented a derived estimate of ~20-40 ms button-to-pixel.
+
+### 2026-11-19 13:38:36 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 13:42:55 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 13:45:55 — Currents: off state and S12 (manual note)
+
+- Board OFF (ATtiny only, 3V3 disabled): ~0.004 mA = ~4 uA on the meter's 2 mA range -> ~35 mAh/year, negligible vs cell self-discharge.
+- S12 (BL100 + LCD DMA full frames + CPU burn) on battery: 60.5 mA (200 mA range, USB unplugged right after start). ~239 mW at ~3.95 V.
+- Re-ran battlog_analyze.py with --p12 239: delivered ~500 mAh / 1.88 Wh to the 3.30 V cutoff - 60 %% above the 310 mAh nominal of LP233350. Unresolved: verify the cell marking and get an independent capacity from a full logged charge (BQ24075 CC ~175 mA).
+- Bug: S12 load progress bar on the left is drawn in landscape order under native mode (scrambled).
+
+### 2026-11-19 13:55:44 — Current vs SYSCLK (manual note)
+
+- demo raytracer (compute-bound), BL 100 %, COLMOD 16-bit, on battery, meter 200 mA range: 48 MHz 50.9 mA 20.3 fps; 72: 57.3 / 30.4; 84: 60.6 / 35.9; 96: 63.3 / 40.7; 120: 66.8 / 51.0; 144: 69.3 / 61.0.
+- Linear fit: 0.191 mA/MHz + 43.5 mA (static part dominated by the backlight). fps scales exactly with SYSCLK. Charge per frame falls with frequency (2.51 -> 1.14 mA*s/frame): for compute-bound work higher clock is MORE energy-efficient (fixed backlight/system power amortised).
