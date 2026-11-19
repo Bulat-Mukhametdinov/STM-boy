@@ -7,6 +7,10 @@
    Engine A: TIM5 update ISR per sample writes TIM1->CCR1 (any sample rate).
    Engine B: TIM1 repetition counter (update rate = carrier/(RCR+1)); TIM1_UP -> DMA2 S5 Ch6
              circular double buffer -> TIM1->CCR1; DMA HT/TC IRQ renders the other half.
+   Engine NS (noise-shaped, PCM voice only, carrier 375 kHz/8 bit or 750 kHz/7 bit): RCR = 0, TIM1 update DMA writes CCR1
+             every carrier period; the HT/TC ISR renders 25 PCM samples (500 periods) per half through the polyphase
+             interpolator + error-feedback quantiser of Inc/ns_core.h. Needs 2048 B DMA ring + sizeof(ns_t) behind it
+             (audio_set_buffer). audio_fs_mhz()/audio_played() count carrier periods in this mode.
    Samples come from a small synth mixer (4 voices) + master gain/slew + hard clip guard +
    quantiser to the carrier resolution with optional TPDF dither / 1st-order noise shaping.
    Everything is amp-safe by default: master -24 dBFS, output clip guard -6 dBFS until
@@ -29,7 +33,7 @@ typedef struct {
 extern const aud_carrier_t g_aud_carriers[AUD_NCARR];
 
 typedef enum { AUD_DITHER_OFF = 0, AUD_DITHER_TPDF, AUD_DITHER_SHAPED } aud_dither_t;
-typedef enum { AUD_ENG_NONE = 0, AUD_ENG_A, AUD_ENG_B } aud_engine_t;
+typedef enum { AUD_ENG_NONE = 0, AUD_ENG_A, AUD_ENG_B, AUD_ENG_NS } aud_engine_t;
 typedef enum { AUD_PA8_LOW = 0, AUD_PA8_HIGH, AUD_PA8_HIZ } aud_pa8_t;
 typedef enum {
     AUD_GEN_OFF = 0, AUD_GEN_SINE, AUD_GEN_SQUARE, AUD_GEN_WHITE, AUD_GEN_PINK, AUD_GEN_CHIRP, AUD_GEN_PCM
@@ -76,6 +80,9 @@ aud_engine_t audio_engine(void);
 uint32_t audio_fs_mhz(void);                        /* actual sample rate x1000 */
 uint32_t audio_rcr_div(void);                       /* engine B: RCR+1 */
 void audio_dither_set(aud_dither_t d);
+void audio_ns_config(unsigned order, unsigned damp8);   /* engine NS shaper: order 0..2, TPDF amplitude in 1/8 LSB (before start) */
+uint32_t audio_pcm_rate_mhz(void);                  /* actual PCM sample rate x1000 (NS: carrier / L) */
+uint32_t audio_half(void);                          /* DMA half-buffer length in carrier periods */
 
 /* Mixer */
 void audio_set_master_db(float db);                 /* <= 0, slewed ~3 ms */
@@ -89,7 +96,7 @@ void audio_voice_chirp(unsigned v, float f0, float f1, float dur_s, float db);
 void audio_silence(void);                           /* all voices off */
 
 /* PCM stream voice 0 (media.play): u8 or s16 mono ring (power-of-two size) filled by the caller; engine B only. */
-void audio_set_buffer(void *p);                     /* engine B DMA buffer (2 * AUD_HALF * 2 B), default g_arena */
+void audio_set_buffer(void *p);                     /* engine B/NS DMA buffer (2 * AUD_HALF * 2 B; NS: + 512 B state), default g_arena */
 void audio_pcm_start(uint8_t *ring, uint32_t size, uint32_t rate_hz, float db, unsigned bits); /* bits 8 (u8) / 16 (s16 LE) */
 void audio_pcm_pause(bool p);                       /* hold the read position, output 0 (fade the master to -90 dB first) */
 void audio_pcm_put(const uint8_t *src, uint32_t n); /* caller checks audio_pcm_free() */

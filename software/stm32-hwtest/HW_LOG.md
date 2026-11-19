@@ -7637,3 +7637,132 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-19 18:31:59 — Crackle workaround + carrier listening (manual note)
 
 - media.play hp=1200: much better, rare micro-crackles; hp=1600: crackles gone (sound thin). Background noise remained on the 375 kHz/8-bit carrier (~12 dB more quantisation/dither noise than the 10-bit design). car=2 (187.5 kHz/9 bit) + hp=1600: noticeably quieter background, pause silent (PA8 hi-Z). Interim defaults set: car=2, hp=1600. Next: per-carrier-period noise-shaped PWM.
+
+### 2026-11-19 18:48:57 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=3e0ea9a+dirty build=1795102258 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-19 18:48:58 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "media info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK media info lines=2
+- @R {"t": "media_info", "valid": true, "why": "ok", "magic": "564D4253", "version": 2, "w": 160, "h": 128, "fps": 15, "frames": 580, "audio_rate": 18750, "audio_bits": 16, "frame_stride": 23492, "audio_by
+
+### 2026-11-19 18:49:04 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.65 s
+- cmd: @OK dfu
+
+### 2026-11-19 18:49:19 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.833
+- Output: Time elapsed during verifying operation: 00:00:01.984
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 18:49:20 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (286472 bytes), expected id: {'fw': 'f5789a4+dirty', 'build': 1795103278}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=f5789a4+dirty build=1795103278, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.65s, program=15.27s, dfu_to_app=0.72s, total=16.71s
+
+### 2026-11-19 18:49:29 — Run suite media.play (start) [auto]
+
+- Command: `run media.play auto=10 mute=1 vid=0 eng=ns`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=f5789a4+dirty build=1795103278 busy=idle
+
+### 2026-11-19 18:49:39 — hwtest.py run [auto]
+
+- Command: `hwtest.py run media.play auto=10 mute=1 vid=0 eng=ns`
+- Result: OK (exit code 0)
+- Suite media.play: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-184929-media.play.json
+
+### 2026-11-19 18:53:52 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-19 18:54:08 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:13.019
+- Output: Time elapsed during verifying operation: 00:00:01.997
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 18:54:08 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (287520 bytes), expected id: {'fw': 'f5789a4+dirty', 'build': 1795103629}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=f5789a4+dirty build=1795103629, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.61s, program=15.49s, dfu_to_app=0.71s, total=16.89s
+
+### 2026-11-19 18:54:09 — Run suite media.play (start) [auto]
+
+- Command: `run media.play auto=10 mute=1 vid=0 eng=ns`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=f5789a4+dirty build=1795103629 busy=idle
+
+### 2026-11-19 18:54:20 — hwtest.py run [auto]
+
+- Command: `hwtest.py run media.play auto=10 mute=1 vid=0 eng=ns`
+- Result: OK (exit code 0)
+- Suite media.play: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-185409-media.play.json
+
+### 2026-11-19 18:54:40 — Run suite media.play (start) [auto]
+
+- Command: `run media.play auto=30 mute=1 eng=ns`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=f5789a4+dirty build=1795103629 busy=idle
+
+### 2026-11-19 18:55:10 — hwtest.py run [auto]
+
+- Command: `hwtest.py run media.play auto=30 mute=1 eng=ns`
+- Result: OK (exit code 0)
+- Suite media.play: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-185440-media.play.json
+
+### 2026-11-19 18:55:11 — Run suite media.play (start) [auto]
+
+- Command: `run media.play auto=30 mute=1 eng=b`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=f5789a4+dirty build=1795103629 busy=idle
+
+### 2026-11-19 18:55:41 — hwtest.py run [auto]
+
+- Command: `hwtest.py run media.play auto=30 mute=1 eng=b`
+- Result: OK (exit code 0)
+- Suite media.play: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-185511-media.play.json
+
+### 2026-11-19 18:59:44 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=f5789a4+dirty build=1795103629 clk=96000000 busy=idle reset=sft uid=002800343435511331323538

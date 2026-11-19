@@ -3,6 +3,7 @@
 #include "audio.h"
 #include "board.h"
 #include "clock.h"
+#include "ns_core.h"
 #include "cmd.h"
 #include "timebase.h"
 #include "stm32f4xx.h"
@@ -62,8 +63,12 @@ static struct {
 } q;
 
 extern uint8_t g_arena[];   /* main.c scratch: free while an audio suite runs (suites are exclusive) */
-static uint16_t *s_bufp = (uint16_t *)(void *)g_arena;   /* engine B DMA ring: 2 * AUD_HALF * 2 B */
+static uint16_t *s_bufp = (uint16_t *)(void *)g_arena;   /* engine B/NS DMA ring: 2 * AUD_HALF * 2 B (+ NS state behind it) */
 #define s_buf s_bufp
+static uint32_t s_half = AUD_HALF;       /* DMA half-buffer length in periods (NS: 500 / 480) */
+static uint32_t s_ns_npcm, s_ns_lratio = 20;              /* NS: PCM samples rendered per half */
+static uint8_t s_ns_order = 2, s_ns_damp = 4;   /* NS shaper order / TPDF amplitude in 1/8 LSB */
+#define s_ns ((ns_t *)(void *)((uint8_t *)s_bufp + 2u * AUD_HALF * 2u))   /* ns_t lives right behind the DMA ring */
 void audio_set_buffer(void *p) { s_bufp = p ? (uint16_t *)p : (uint16_t *)(void *)g_arena; }
 
 /* PCM stream voice (media.play): mono ring (unsigned 8-bit or signed 16-bit LE) filled by the main loop, linear
@@ -163,7 +168,7 @@ static inline int32_t voice_sample(voice_t *v)
             }
         }
         s_pcm.phase = ph;
-        s = s_pcm.prev + (((s_pcm.cur - s_pcm.prev) * (int32_t)ph) >> 16);
+        s = s_pcm.prev + (int32_t)(((int64_t)(s_pcm.cur - s_pcm.prev) * (int32_t)ph) >> 16);
         break;
     }
     default:
@@ -226,6 +231,45 @@ static inline void stat_cyc(uint32_t c)
     if (c < s->cyc_min) s->cyc_min = c;
 }
 
+/* next PCM sample for the NS engine (the NS path needs the PCM rate = carrier / L, no interpolation) */
+static inline int32_t pcm_next(void)
+{
+    if (s_pcm.paused) {
+        return 0;
+    }
+    int32_t v;
+    if (s_pcm.head - s_pcm.tail >= s_pcm.bytes) {
+        uint32_t t = s_pcm.tail;
+        if (s_pcm.bytes == 2u) {
+            v = (int32_t)(int16_t)(uint16_t)(s_pcm.buf[t & s_pcm.mask] | (s_pcm.buf[(t + 1u) & s_pcm.mask] << 8));
+        } else {
+            v = ((int32_t)s_pcm.buf[t & s_pcm.mask] - 128) << 8;
+        }
+        s_pcm.tail = t + s_pcm.bytes;
+    } else {
+        v = 0;
+        s_pcm.under++;
+    }
+    return v;
+}
+
+static void ns_block(uint16_t *dst)
+{
+    uint32_t c0 = DWT->CYCCNT;
+    ns_t *n = s_ns;
+    int32_t pcm[NS_MAXPCM];
+    for (uint32_t i = 0; i < s_ns_npcm; i++) {
+        pcm[i] = pcm_next();
+    }
+    n->gtgt = s_gtgt;
+    n->lim = s_lim;
+    n->vgain = s_v[0].gain;
+    uint32_t cl0 = n->clipped;
+    ns_render(n, dst, pcm, s_ns_npcm);
+    g_aud_stats.clipped += n->clipped - cl0;
+    stat_cyc(DWT->CYCCNT - c0);
+}
+
 static void fill_block(uint16_t *dst, uint32_t n)
 {
     uint32_t c0 = DWT->CYCCNT;
@@ -281,17 +325,21 @@ void DMA2_Stream5_IRQHandler(void)
     if (f & S5_FE) {
         g_aud_stats.fe++;
     }
+    const uint32_t half = s_half;
+    const bool ns = s_engine == AUD_ENG_NS;
     if (f & S5_HT) {
         g_aud_stats.dma_ht++;
-        fill_block(&s_buf[0], AUD_HALF);
-        if (DMA2_Stream5->NDTR > AUD_HALF) {   /* HT: DMA should be in the 2nd half (NDTR <= HALF) */
+        if (ns) ns_block(&s_buf[0]);
+        else fill_block(&s_buf[0], half);
+        if (DMA2_Stream5->NDTR > half) {   /* HT: DMA should be in the 2nd half (NDTR <= HALF) */
             g_aud_stats.uf++;
         }
     }
     if (f & S5_TC) {
         g_aud_stats.dma_tc++;
-        fill_block(&s_buf[AUD_HALF], AUD_HALF);
-        if (DMA2_Stream5->NDTR <= AUD_HALF) {  /* TC: DMA should be in the 1st half (NDTR > HALF) */
+        if (ns) ns_block(&s_buf[half]);
+        else fill_block(&s_buf[half], half);
+        if (DMA2_Stream5->NDTR <= half) {  /* TC: DMA should be in the 1st half (NDTR > HALF) */
             g_aud_stats.uf++;
         }
     }
@@ -513,6 +561,24 @@ void audio_dither_set(aud_dither_t d)
 {
     q.err = 0;
     q.mode = (uint8_t)d;
+    if (s_engine == AUD_ENG_NS) {
+        s_ns->dmul = (d == AUD_DITHER_OFF) ? 0 : (int32_t)((uint32_t)s_ns_damp << (s_ns->lsh - 16u));
+        s_ns->e1 = s_ns->e2 = 0;
+    }
+}
+
+/* NS engine shaper (set before audio_engine_start): order 0..2 (NTF (1 - z^-1)^order), TPDF dither amplitude in 1/8 LSB. */
+void audio_ns_config(unsigned order, unsigned damp8)
+{
+    s_ns_order = (uint8_t)(order > 2u ? 2u : order);
+    s_ns_damp = (uint8_t)(damp8 > 16u ? 16u : damp8);
+}
+
+uint32_t audio_half(void) { return s_half; }
+
+uint32_t audio_pcm_rate_mhz(void)
+{
+    return s_engine == AUD_ENG_NS ? (uint32_t)(((uint64_t)s_fs_mhz) / s_rcr_div / s_ns_lratio) : s_fs_mhz;
 }
 
 bool audio_engine_start(aud_engine_t e, uint32_t fs_hz, aud_dither_t d)
@@ -525,6 +591,57 @@ bool audio_engine_start(aud_engine_t e, uint32_t fs_hz, aud_dither_t d)
     q.mode = (uint8_t)d;
     uint32_t car = tim1_clk() / (g_aud_carriers[s_carrier].arr + 1u);   /* actual carrier at the current clock */
     s_req_fs = fs_hz;
+    if (e == AUD_ENG_NS) {
+        /* one PCM sample = L carrier periods: 375 kHz/8 bit -> L = 20, 750 kHz/7 bit -> L = 40 (rate must match exactly) */
+        const unsigned bits = g_aud_carriers[s_carrier].bits;
+        const uint32_t L = (bits == 8u) ? 20u : 40u;
+        if ((bits != 8u && bits != 7u) || (uint64_t)fs_hz * L != car || s_pcm.bytes == 0u) {
+            return false;
+        }
+        s_ns_lratio = L;
+        s_ns_npcm = (bits == 8u) ? 25u : 12u;
+        s_half = s_ns_npcm * L;
+        s_rcr_div = 1;
+        s_fs_mhz = car * 1000u;           /* audio_played() counts carrier periods */
+        s_fs = (float)fs_hz;
+        ns_t *n = s_ns;
+        ns_reset(n);
+        ns_config(n, bits, s_ns_order, d == AUD_DITHER_OFF ? 0u : s_ns_damp);
+        n->rng = 0xC0FFEE11u;
+        n->gcur = s_gcur;
+        n->gtgt = s_gtgt;
+        n->vgain = s_v[0].gain;
+        n->lim = s_lim;
+        n->gsh = 7u;
+        audio_stats_reset();
+        ns_block(&s_buf[0]);
+        ns_block(&s_buf[s_half]);
+        audio_stats_reset();
+        DMA2_Stream5->CR = 0;
+        while (DMA2_Stream5->CR & DMA_SxCR_EN) {
+        }
+        DMA2->HIFCR = S5_ALL;
+        DMA2_Stream5->PAR = (uint32_t)&TIM1->CCR1;
+        DMA2_Stream5->M0AR = (uint32_t)s_buf;
+        DMA2_Stream5->NDTR = 2u * s_half;
+        DMA2_Stream5->FCR = 0;
+        DMA2_Stream5->CR = (6u << DMA_SxCR_CHSEL_Pos) | (3u << DMA_SxCR_PL_Pos) | DMA_SxCR_MSIZE_0 |
+                           DMA_SxCR_PSIZE_0 | DMA_SxCR_MINC | DMA_SxCR_CIRC | (1u << DMA_SxCR_DIR_Pos) |
+                           DMA_SxCR_HTIE | DMA_SxCR_TCIE | DMA_SxCR_TEIE | DMA_SxCR_DMEIE;
+        NVIC_SetPriority(DMA2_Stream5_IRQn, 5);
+        NVIC_EnableIRQ(DMA2_Stream5_IRQn);
+        s_engine = AUD_ENG_NS;
+        DMA2_Stream5->CR |= DMA_SxCR_EN;
+        TIM1->CR1 &= ~TIM_CR1_CEN;
+        TIM1->RCR = 0;
+        TIM1->CNT = 0;
+        TIM1->EGR = TIM_EGR_UG;
+        TIM1->SR = 0;
+        TIM1->DIER = TIM_DIER_UDE;
+        TIM1->CR1 |= TIM_CR1_CEN;
+        return true;
+    }
+    s_half = AUD_HALF;
     if (e == AUD_ENG_A) {
         uint32_t clk = clock_tim_apb1_hz();
         uint32_t div = (clk + fs_hz / 2u) / fs_hz;
@@ -596,7 +713,10 @@ void audio_engine_stop(void)
         TIM5->DIER = 0;
         NVIC_DisableIRQ(TIM5_IRQn);
         TIM5->SR = 0;
-    } else if (s_engine == AUD_ENG_B) {
+    } else if (s_engine == AUD_ENG_B || s_engine == AUD_ENG_NS) {
+        if (s_engine == AUD_ENG_NS) {
+            s_gcur = s_ns->gcur;
+        }
         TIM1->DIER = 0;
         DMA2_Stream5->CR = 0;
         uint32_t n = 0;
@@ -750,5 +870,5 @@ uint32_t audio_played(void)
     uint32_t tc = g_aud_stats.dma_tc, nd = DMA2_Stream5->NDTR;
     bool pend = (DMA2->HISR & S5_TC) != 0u;
     __enable_irq();
-    return (tc + (pend ? 1u : 0u)) * 2u * AUD_HALF + (2u * AUD_HALF - nd);
+    return (tc + (pend ? 1u : 0u)) * 2u * s_half + (2u * s_half - nd);
 }

@@ -8,14 +8,20 @@
                native column-major order (fb[x * 128 + y]), audio_bytes_per_frame u8 mono PCM
 
    media.play: the demo's present pipeline (DMA2 S3 / 48 MHz SPI1, per-frame palette) while the NEXT frame is fetched by
-   W25Q DMA (24 MHz SPI3). Audio = engine B (PCM stream voice, 10 bit carrier 93.75 kHz, RCR+1 = 5 -> 18750 Hz = the
-   container rate, played 1:1, 16 -> 10 bit with TPDF dither) fed from a ring two frames ahead; the video is paced by
-   the audio clock (DMA position), so A/V stays in sync; frames that are late by more than two periods are skipped.
+   W25Q DMA (24 MHz SPI3). Audio = PCM stream voice fed from a ring two frames ahead, two engines (`eng=`):
+     eng=ns (default): noise-shaped PWM, carrier 375 kHz / 8 bit (car=1; car=0 = 750 kHz / 7 bit), TIM1 RCR = 0, CCR1 is
+       written by DMA2 S5 EVERY carrier period (375 k DMA transfers/s). 18.75 kHz PCM -> 4x polyphase FIR (64 taps) ->
+       linear to the carrier -> TPDF dither (dith= 1/8 LSB, default 4 = +-0.5 LSB) -> 2nd-order error feedback (ns=
+       order 0..2) -> 8 bit; the quantisation noise sits above ~20 kHz (Inc/ns_core.h, host model tools/ns_sim.py).
+     eng=b: engine B, RCR+1 periods per sample (car=2: 187.5 kHz / 9 bit, RCR+1 = 10 -> 18750 Hz), PCM played 1:1, 16 -> 9
+       bit TPDF dither (the previous behaviour).
+   The video is paced by the audio clock (DMA position), so A/V stays in sync; frames that are late by more than two
+   periods are skipped. `mute=1` keeps SD# low (amp off, nothing audible) while the engine runs: CPU / DMA tests.
    CENTER pauses: master fades to -90 dB, the PCM voice holds its read position, the engine keeps running at
    mid-scale (amp stays on: no pop), the paused time is removed from the audio clock. Output peak is limited to
    -9 dBFS (clip guard + data ceiling -9.3 dBFS).
-   Arena (on top of gamepipe.h): palette 1 at 45568 (512), audio DMA buffer 46080 (2048), PCM ring 49152 (8192),
-   audio temp 57344 (3072). `media write`: capture ring 0 (8192), page 8192 (256), verify buffer 12288 (4096). */
+   Arena (on top of gamepipe.h): palette 1 at 45568 (512), audio DMA buffer 46080 (2048) + NS render state 48128 (ns_t,
+   < 512 B), PCM ring 49152 (8192), audio temp 57344 (3072). `media write`: capture ring 0 (8192), page 8192 (256), verify buffer 12288 (4096). */
 
 #include "suites.h"
 #include "audio.h"
@@ -286,8 +292,14 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     /* car: PWM carrier index (0 = 750k/7b, 1 = 375k/8b, 2 = 187.5k/9b, 3 = 93.75k/10b). 93.75 kHz leaks
        ~1.2 Vpp to the amp input through the 1st-order RC (scope 2026-11-19) -> whine; default 375 kHz
        (RCR+1 = 20 -> exactly 18750 Hz). att: extra attenuation in dB (overload test). */
-    uint32_t car = suite_arg_u32(argc, argv, "car", 2u);   /* interim default 187.5 kHz / 9 bit (2026-11-19 listening: quieter than 375k/8b, pause silent with PA8 hi-Z) */
-    if (car > 3u) car = 1u;
+    const char *eng_s = suite_arg_str(argc, argv, "eng", "ns");
+    bool use_ns = strcmp(eng_s, "b") != 0;
+    uint32_t car = suite_arg_u32(argc, argv, "car", use_ns ? 1u : 2u);   /* b: 187.5 kHz / 9 bit (2026-11-19 listening: quieter than 375k/8b); ns: 375 kHz / 8 bit */
+    if (car > 3u) car = use_ns ? 1u : 2u;
+    if (use_ns && car > 1u) car = 1u;                      /* NS needs 8 bit (L = 20) or 7 bit (L = 40) */
+    bool mute = suite_arg_u32(argc, argv, "mute", 0u) != 0u;   /* SD# stays low: the engine runs, nothing is audible */
+    uint32_t ns_order = suite_arg_u32(argc, argv, "ns", 2u);
+    uint32_t ns_damp = suite_arg_u32(argc, argv, "dith", 4u);
     uint32_t att_db = suite_arg_u32(argc, argv, "att", 0u);
     bool pause_hiz = suite_arg_u32(argc, argv, "phiz", 1u) != 0u;   /* pause with PA8 floating (default) */
     bool vid = suite_arg_u32(argc, argv, "vid", 1u) != 0u;          /* vid=0: audio only (no W25Q video reads, no LCD DMA) */
@@ -330,10 +342,12 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     fetch_audio(&h, 0);
     if (h.frames > 1u) fetch_audio(&h, 1);
     audio_pwm_start(car, false);    /* default 375 kHz / 8 bit; RCR derived by the engine (18750 Hz exact for car 0..3) */
-    audio_amp_on(0);                /* pop-free: PWM to mid with the amp off, 30 ms, then SD# */
-    bool eng = audio_engine_start(AUD_ENG_B, efs_arg ? efs_arg : h.audio_rate, AUD_DITHER_TPDF);   /* TPDF beats 1st-order shaped in-band */
-    const uint32_t fs_mhz = audio_fs_mhz();
-    const bool rate_exact = fs_mhz == h.audio_rate * 1000u;   /* else the PCM voice interpolates (and A/V stays locked) */
+    if (!mute) audio_amp_on(0);     /* pop-free: PWM to mid with the amp off, 30 ms, then SD# */
+    if (use_ns) audio_ns_config(ns_order, ns_damp);
+    bool eng = audio_engine_start(use_ns ? AUD_ENG_NS : AUD_ENG_B, efs_arg && !use_ns ? efs_arg : h.audio_rate, AUD_DITHER_TPDF);   /* b: TPDF beats 1st-order shaped in-band */
+    const uint32_t fs_mhz = audio_fs_mhz();                   /* clock of audio_played(): NS = carrier periods */
+    const uint32_t pcm_mhz = audio_pcm_rate_mhz();
+    const bool rate_exact = pcm_mhz == h.audio_rate * 1000u;   /* else the PCM voice interpolates (and A/V stays locked) */
     uint64_t pause_acc = 0;   /* audio-clock time spent paused (us) */
     bool paused = false;
 
@@ -447,6 +461,11 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     for (uint32_t t = time_us(); (uint32_t)(time_us() - t) < 20000u;) sys_service();
     uint32_t under = audio_pcm_under();
     uint32_t uf = g_aud_stats.uf, alate = g_aud_stats.late, aerr = g_aud_stats.dma_err, clipped = g_aud_stats.clipped;
+    uint32_t a_blocks = g_aud_stats.calls, a_cmax = g_aud_stats.cyc_max, a_cpp100 = 0, a_cpu100 = 0;
+    if (a_blocks && el_ms) {   /* ISR cost: cycles per output period (x100) and share of the CPU (% x100) */
+        a_cpp100 = (uint32_t)((uint64_t)g_aud_stats.cyc_sum * 100u / ((uint64_t)a_blocks * audio_half()));
+        a_cpu100 = (uint32_t)((uint64_t)g_aud_stats.cyc_sum * 10000u / ((uint64_t)el_ms * (SystemCoreClock / 1000u)));
+    }
     audio_engine_stop();
     audio_amp_off(0);
     audio_shutdown();
@@ -463,6 +482,11 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     res_printf("{\"t\":\"media_diag\",\"suite\":\"media.play\",\"vid\":%s,\"verify\":%s,\"chunks\":%" PRIu32
                ",\"mismatch_chunks\":%" PRIu32 ",\"mismatch_bytes\":%" PRIu32 ",\"att_db\":%" PRIu32 ",\"carrier\":%" PRIu32 "}",
                vid ? "true" : "false", s_verify ? "true" : "false", s_vchunks, s_vmis, s_vbytes, att_db, car);
+    res_printf("{\"t\":\"media_audio\",\"eng\":\"%s\",\"mute\":%s,\"ns_order\":%" PRIu32 ",\"dith8\":%" PRIu32 ",\"blocks\":%" PRIu32
+               ",\"half_periods\":%" PRIu32 ",\"cyc_per_period_x100\":%" PRIu32 ",\"cyc_block_max\":%" PRIu32
+               ",\"cpu_pct_x100\":%" PRIu32 "}",
+               use_ns ? "ns" : "b", mute ? "true" : "false", use_ns ? ns_order : 0u, use_ns ? ns_damp : 0u, a_blocks,
+               audio_half(), a_cpp100, a_cmax, a_cpu100);
     res_printf("{\"t\":\"media_play\",\"suite\":\"media.play\",\"frames_presented\":%" PRIu32 ",\"skipped\":%" PRIu32
                ",\"late\":%" PRIu32 ",\"fps\":%s,\"fps_nominal\":%" PRIu32 ",\"ms\":%" PRIu32 ",\"audio_underruns\":%" PRIu32
                ",\"audio_dma_uf\":%" PRIu32 ",\"audio_late\":%" PRIu32 ",\"audio_dma_err\":%" PRIu32 ",\"audio_clipped\":%"
@@ -470,7 +494,7 @@ suite_verdict_t suite_media_play(int argc, char **argv)
                ",\"max_late_ms\":%" PRIu32 ",\"audio_rate\":%" PRIu32 ",\"engine_hz\":%" PRIu32 ",\"rate_exact\":%s,\"bits\":16}",
                presented, skipped, late, fmt2(a, sizeof(a), fps100), h.fps, el_ms, under, uf, alate, aerr, clipped,
                fmt2(b, sizeof(b), el_ms ? (uint32_t)((uint64_t)s_rd_bytes * 100u / (el_ms * 1000u)) : 0u),
-               fmt2(c, sizeof(c), mbps100), s_rd_err, gp_err, max_late_us / 1000u, h.audio_rate, fs_mhz / 1000u, rate_exact ? "true" : "false");
+               fmt2(c, sizeof(c), mbps100), s_rd_err, gp_err, max_late_us / 1000u, h.audio_rate, pcm_mhz / 1000u, rate_exact ? "true" : "false");
     ui_con_begin("media.play");
     ui_con_line(under || skipped || s_rd_err ? COLOR_YELLOW : COLOR_GREEN, "%s fps und %u skip %u",
                 fmt2(a, sizeof(a), fps100), (unsigned)under, (unsigned)skipped);
