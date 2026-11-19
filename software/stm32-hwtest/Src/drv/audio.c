@@ -66,12 +66,16 @@ static uint16_t *s_bufp = (uint16_t *)(void *)g_arena;   /* engine B DMA ring: 2
 #define s_buf s_bufp
 void audio_set_buffer(void *p) { s_bufp = p ? (uint16_t *)p : (uint16_t *)(void *)g_arena; }
 
-/* PCM stream voice (media.play): unsigned 8-bit mono ring filled by the main loop, linear interpolation to the engine
-   rate. head/tail are monotonic byte counters; an empty ring plays silence and counts an underrun. */
+/* PCM stream voice (media.play): mono ring (unsigned 8-bit or signed 16-bit LE) filled by the main loop, linear
+   interpolation to the engine rate (step = 65536 when the PCM rate equals the engine rate: plays 1:1). head/tail are
+   monotonic byte counters; an empty ring plays silence and counts an underrun. `paused` holds the read position
+   (outputs 0, no underrun) so a pause can resume exactly where it stopped. */
 static struct {
     const uint8_t *buf;
     uint32_t mask, rate, step;      /* step: Q16 PCM samples per output sample */
+    uint32_t bytes;                 /* 1 (u8) or 2 (s16 LE) per sample */
     volatile uint32_t head, tail, under;
+    volatile bool paused;
     uint32_t phase;
     int32_t prev, cur;
 } s_pcm;
@@ -136,13 +140,23 @@ static inline int32_t voice_sample(voice_t *v)
         v->step = (uint32_t)v->stepf;
         break;
     case AUD_GEN_PCM: {
+        if (s_pcm.paused) {
+            s = 0;
+            break;
+        }
         uint32_t ph = s_pcm.phase + s_pcm.step;
         if (ph >= 65536u) {
             ph -= 65536u;
             s_pcm.prev = s_pcm.cur;
-            if (s_pcm.tail != s_pcm.head) {
-                s_pcm.cur = ((int32_t)s_pcm.buf[s_pcm.tail & s_pcm.mask] - 128) << 8;
-                s_pcm.tail++;
+            if (s_pcm.head - s_pcm.tail >= s_pcm.bytes) {
+                uint32_t t = s_pcm.tail;
+                if (s_pcm.bytes == 2u) {
+                    s_pcm.cur = (int32_t)(int16_t)(uint16_t)(s_pcm.buf[t & s_pcm.mask] |
+                                                              (s_pcm.buf[(t + 1u) & s_pcm.mask] << 8));
+                } else {
+                    s_pcm.cur = ((int32_t)s_pcm.buf[t & s_pcm.mask] - 128) << 8;
+                }
+                s_pcm.tail = t + s_pcm.bytes;
             } else {
                 s_pcm.cur = 0;
                 s_pcm.under++;
@@ -458,13 +472,19 @@ void audio_shutdown(void)
 
 /* ------------------------------------------------------------------ engines */
 
+/* Q16 PCM samples per output sample, exact integer math from the engine rate (x1000): 65536 when the rates are equal */
+static uint32_t pcm_step(void)
+{
+    return (uint32_t)(((uint64_t)s_pcm.rate * 65536000u + s_fs_mhz / 2u) / s_fs_mhz);
+}
+
 static void recalc_voices(void)
 {
     for (unsigned i = 0; i < AUD_NVOICE; i++) {
         voice_t *v = &s_v[i];
         uint8_t t = v->type;
         if (t == AUD_GEN_PCM) {
-            s_pcm.step = (uint32_t)((float)s_pcm.rate / s_fs * 65536.0f);
+            s_pcm.step = pcm_step();
         } else if (t == AUD_GEN_SINE || t == AUD_GEN_SQUARE) {
             v->step = (uint32_t)(v->f_hz / s_fs * 4294967296.0f);
         } else if (t == AUD_GEN_CHIRP) {
@@ -680,23 +700,26 @@ void audio_clock_changed(void)
 /* ------------------------------------------------------------------ PCM stream (media.play) */
 
 /* ring: power-of-two size, rate_hz = PCM sample rate. Call before audio_engine_start(). */
-void audio_pcm_start(uint8_t *ring, uint32_t size, uint32_t rate_hz, float db)
+void audio_pcm_start(uint8_t *ring, uint32_t size, uint32_t rate_hz, float db, unsigned bits)
 {
     audio_init();
     s_v[0].type = AUD_GEN_OFF;
     s_pcm.buf = ring;
     s_pcm.mask = size - 1u;
     s_pcm.rate = rate_hz;
+    s_pcm.bytes = (bits == 16u) ? 2u : 1u;
+    s_pcm.paused = false;
     s_pcm.head = s_pcm.tail = s_pcm.under = 0;
     s_pcm.phase = 65535u;       /* first output sample pulls byte 0 */
     s_pcm.prev = s_pcm.cur = 0;
-    s_pcm.step = (uint32_t)((float)rate_hz / s_fs * 65536.0f);
+    s_pcm.step = pcm_step();   /* recomputed by audio_engine_start() once the real engine rate is known */
     s_v[0].gain = db_to_q15(db);
     s_v[0].type = AUD_GEN_PCM;
 }
 
 uint32_t audio_pcm_free(void) { return s_pcm.mask + 1u - (s_pcm.head - s_pcm.tail); }
 uint32_t audio_pcm_under(void) { return s_pcm.under; }
+void audio_pcm_pause(bool p) { s_pcm.paused = p; }
 
 void audio_pcm_put(const uint8_t *src, uint32_t n)
 {

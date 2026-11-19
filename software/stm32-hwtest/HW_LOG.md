@@ -7101,3 +7101,103 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-19 15:41:57 — Scope: amp dip, full sequence (manual note)
 
 - 50 ms/div captures (whole power.ampdip sequence): no step at amp enable; the 1 kHz tone (-12 dBFS, ~100 ms, starting ~250 ms after AMP_SD rises) lowers the lower envelope of +V and VBAT by ~50 mV; device shows dip 75-79 mV. Narrow +-100 mV spikes at internal transitions. Correction to the earlier note: the 20 ms/div captures ended before the tone. F6 conclusion unchanged (no reset risk without the meter burden).
+
+### 2026-11-19 15:55:04 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: FAIL (exit code 2)
+
+### 2026-11-19 15:55:12 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 15:56:10 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-19 15:56:25 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.830
+- Output: Time elapsed during verifying operation: 00:00:01.953
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 15:56:26 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (282028 bytes), expected id: {'fw': 'e075357+dirty', 'build': 1795087844}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=e075357+dirty build=1795087844, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=15.25s, dfu_to_app=0.70s, total=16.64s
+
+### 2026-11-19 15:56:57 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-19 15:57:13 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.843
+- Output: Time elapsed during verifying operation: 00:00:01.955
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 15:57:13 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (282028 bytes), expected id: {'fw': 'a388dd4+dirty', 'build': 1795093014}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=a388dd4+dirty build=1795093014, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=15.27s, dfu_to_app=0.69s, total=16.63s
+
+### 2026-11-19 16:04:03 — S12 progress bar verified (manual note)
+
+- User: after the native-order fix (loads.c fb_idx) the S12 progress bar on the left is intact.
+
+### 2026-11-19 16:12:49 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: FAIL (exit code 2)
+
+### 2026-11-19 16:12:50 — hwtest.py media [auto]
+
+- Command: `hwtest.py media upload tools/build/bbb.bin`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-19 16:12:50 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "media info"`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-19 16:14:17 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none

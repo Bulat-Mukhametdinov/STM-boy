@@ -8,11 +8,14 @@
                native column-major order (fb[x * 128 + y]), audio_bytes_per_frame u8 mono PCM
 
    media.play: the demo's present pipeline (DMA2 S3 / 48 MHz SPI1, per-frame palette) while the NEXT frame is fetched by
-   W25Q DMA (24 MHz SPI3). Audio = engine B (PCM stream voice, 31.25 kHz, 9 bit carrier) fed from a ring one frame
-   ahead; the video is paced by the audio clock (DMA position), so A/V stays in sync; frames that are late by more
-   than two periods are skipped. Output peak is limited to -9 dBFS (clip guard + normalised data).
-   Arena (on top of gamepipe.h): palette 1 at 45568 (512), audio DMA buffer 46080 (2048), PCM ring 49152 (4096),
-   audio temp 53248 (2048). `media write`: capture ring 0 (8192), page 8192 (256), verify buffer 12288 (4096). */
+   W25Q DMA (24 MHz SPI3). Audio = engine B (PCM stream voice, 10 bit carrier 93.75 kHz, RCR+1 = 5 -> 18750 Hz = the
+   container rate, played 1:1, 16 -> 10 bit with TPDF dither) fed from a ring two frames ahead; the video is paced by
+   the audio clock (DMA position), so A/V stays in sync; frames that are late by more than two periods are skipped.
+   CENTER pauses: master fades to -90 dB, the PCM voice holds its read position, the engine keeps running at
+   mid-scale (amp stays on: no pop), the paused time is removed from the audio clock. Output peak is limited to
+   -9 dBFS (clip guard + data ceiling -9.3 dBFS).
+   Arena (on top of gamepipe.h): palette 1 at 45568 (512), audio DMA buffer 46080 (2048), PCM ring 49152 (8192),
+   audio temp 57344 (3072). `media write`: capture ring 0 (8192), page 8192 (256), verify buffer 12288 (4096). */
 
 #include "suites.h"
 #include "audio.h"
@@ -41,7 +44,7 @@
 
 typedef struct {
     uint32_t magic, version, w, h, fps, frames, audio_rate, audio_bits;
-    uint32_t frame_stride, apf, data_offset, total_len, data_crc, rsv0, rsv1, hdr_crc;
+    uint32_t frame_stride, apf, data_offset, total_len, data_crc, rsv0, rsv1, hdr_crc;   /* rsv0 = gain cdb */
 } mhdr_t;
 
 static uint32_t crc_upd(uint32_t crc, const uint8_t *p, uint32_t n)
@@ -63,9 +66,10 @@ static bool hdr_read(mhdr_t *h, const char **why)
     if (w25q_read(MEDIA_ADDR, h, sizeof(*h)) != W25Q_OK) { *why = "read failed"; return false; }
     if (h->magic != MEDIA_MAGIC) { *why = "no media (bad magic)"; return false; }
     if (h->hdr_crc != (crc_upd(0xFFFFFFFFu, (const uint8_t *)h, 60u) ^ 0xFFFFFFFFu)) { *why = "header crc"; return false; }
-    if (h->version != 1u || h->w != 160u || h->h != 128u || h->audio_bits != 8u || h->fps == 0u || h->fps > 60u ||
-        h->frames == 0u || h->apf == 0u || h->apf > 2048u || h->data_offset != 0x1000u ||
-        h->frame_stride != PAL_BYTES + PIX_BYTES + h->apf ||
+    if (h->version == 1u) { *why = "old container v1 (8-bit): rebuild with tools/make_media.py"; return false; }
+    if (h->version != 2u || h->w != 160u || h->h != 128u || h->audio_bits != 16u || h->fps == 0u || h->fps > 60u ||
+        h->frames == 0u || h->apf == 0u || h->apf > 1500u || h->data_offset != 0x1000u ||
+        h->frame_stride != PAL_BYTES + PIX_BYTES + 2u * h->apf ||
         h->data_offset + h->frames * h->frame_stride != h->total_len ||
         MEDIA_ADDR + h->total_len > W25Q_MEDIA_END) {
         *why = "unsupported header";
@@ -188,8 +192,8 @@ void media_cmd(int argc, char **argv)
 #define PAL1 ((uint16_t *)(void *)(g_arena + 45568u))
 #define AUDBUF (g_arena + 46080u)
 #define RING (g_arena + 49152u)
-#define RING_SZ 4096u
-#define ATMP (g_arena + 53248u)
+#define RING_SZ 8192u
+#define ATMP (g_arena + 57344u)
 
 static uint32_t s_rd_us, s_rd_bytes, s_rd_err;
 
@@ -220,8 +224,8 @@ static void fetch_video(const mhdr_t *h, uint32_t idx, uint16_t *pal, uint8_t *f
 
 static void fetch_audio(const mhdr_t *h, uint32_t idx)
 {
-    rd(frame_addr(h, idx) + PAL_BYTES + PIX_BYTES, ATMP, h->apf);
-    audio_pcm_put(ATMP, h->apf);
+    rd(frame_addr(h, idx) + PAL_BYTES + PIX_BYTES, ATMP, 2u * h->apf);
+    audio_pcm_put(ATMP, 2u * h->apf);
 }
 
 suite_verdict_t suite_media_play(int argc, char **argv)
@@ -251,15 +255,18 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     audio_stats_reset();
     int cur = 0;
     fetch_video(&h, 0, pal[0], gp_fb(0));
-    float gain_db = (float)(int32_t)h.rsv0 / 100.0f;   /* header audio_gain_cdb; never louder than -9 dB (peak data is full scale) */
-    if (gain_db > -9.0f) gain_db = -9.0f;
-    audio_pcm_start(RING, RING_SZ, h.audio_rate, gain_db);
+    float gain_db = (float)(int32_t)h.rsv0 / 100.0f;   /* header audio_gain_cdb (v2 data peaks at -9.3 dBFS: 0 dB); never > 0 */
+    if (gain_db > 0.0f) gain_db = 0.0f;
+    audio_pcm_start(RING, RING_SZ, h.audio_rate, gain_db, 16u);
     fetch_audio(&h, 0);
     if (h.frames > 1u) fetch_audio(&h, 1);
-    audio_pwm_start(2, false);      /* 187.5 kHz / 9 bit carrier -> 31.25 kHz engine rate with RCR 6 */
+    audio_pwm_start(3, false);      /* 93.75 kHz / 10 bit carrier; RCR+1 = 5 -> 18750 Hz = the container rate */
     audio_amp_on(0);                /* pop-free: PWM to mid with the amp off, 30 ms, then SD# */
-    bool eng = audio_engine_start(AUD_ENG_B, 31250u, AUD_DITHER_TPDF);
+    bool eng = audio_engine_start(AUD_ENG_B, h.audio_rate, AUD_DITHER_TPDF);   /* TPDF beats 1st-order shaped in-band */
     const uint32_t fs_mhz = audio_fs_mhz();
+    const bool rate_exact = fs_mhz == h.audio_rate * 1000u;   /* else the PCM voice interpolates (and A/V stays locked) */
+    uint64_t pause_acc = 0;   /* audio-clock time spent paused (us) */
+    bool paused = false;
 
     uint32_t F = 0, presented = 0, skipped = 0, late = 0, win_n = 0, fps10 = 0;
     uint32_t win_t0 = HAL_GetTick(), t_begin = HAL_GetTick(), max_late_us = 0;
@@ -272,7 +279,7 @@ suite_verdict_t suite_media_play(int argc, char **argv)
         target = target > lead_us ? target - lead_us : 0u;
         uint64_t ta;
         for (;;) {
-            ta = (uint64_t)audio_played() * 1000000000u / fs_mhz;
+            ta = (uint64_t)audio_played() * 1000000000u / fs_mhz - pause_acc;
             if (ta >= target) break;
             sys_service();
             if (abort_requested()) { v = SUITE_ABORT; done = true; break; }
@@ -324,6 +331,37 @@ suite_verdict_t suite_media_play(int argc, char **argv)
             if (!ev.pressed) continue;
             if (ev.button == BTN_A) overlay = !overlay;
             else if (ev.button == BTN_B) done = true;
+            else if (ev.button == BTN_CENTER && !done) {
+                /* pause: hold the shown frame, label it, fade the audio out, hold the PCM read position */
+                gp_wait();
+                int shown = cur ^ 1;   /* the frame just presented */
+                gp_box(gp_fb(shown), 52, 58, 6 * 6 + 8, 8 + 6, GP_IDX_BLACK);
+                gp_text(gp_fb(shown), 56, 61, "PAUSED", GP_IDX_WHITE, GP_IDX_BLACK);
+                gp_start_pal(gp_fb(shown), pal[shown]);
+                audio_set_master_db(-90.0f);
+                for (uint32_t t = time_us(); (uint32_t)(time_us() - t) < 25000u;) sys_service();
+                audio_pcm_pause(true);
+                audio_dither_set(AUD_DITHER_OFF);     /* silence = exactly mid-scale (no dither hiss) */
+                uint64_t t_p = (uint64_t)audio_played() * 1000000000u / fs_mhz;
+                paused = true;
+                while (paused && !done) {
+                    sys_service();
+                    if (abort_requested()) { v = SUITE_ABORT; done = true; break; }
+                    input_event_t e2;
+                    while (input_pop(&e2)) {
+                        if (!e2.pressed) continue;
+                        if (e2.button == BTN_CENTER) paused = false;
+                        else if (e2.button == BTN_B) done = true;
+                        else if (e2.button == BTN_A) overlay = !overlay;
+                    }
+                }
+                gp_wait();
+                audio_dither_set(AUD_DITHER_TPDF);
+                audio_pcm_pause(false);
+                audio_set_master_db(0.0f);
+                pause_acc += (uint64_t)audio_played() * 1000000000u / fs_mhz - t_p;
+                break;   /* remaining queued events are dropped */
+            }
         }
         if (auto_s && now - t_begin >= auto_s * 1000u) done = true;
     }
@@ -351,10 +389,10 @@ suite_verdict_t suite_media_play(int argc, char **argv)
                ",\"late\":%" PRIu32 ",\"fps\":%s,\"fps_nominal\":%" PRIu32 ",\"ms\":%" PRIu32 ",\"audio_underruns\":%" PRIu32
                ",\"audio_dma_uf\":%" PRIu32 ",\"audio_late\":%" PRIu32 ",\"audio_dma_err\":%" PRIu32 ",\"audio_clipped\":%"
                PRIu32 ",\"w25q_MBps\":%s,\"w25q_MBps_read\":%s,\"w25q_err\":%" PRIu32 ",\"lcd_dma_err\":%" PRIu32
-               ",\"max_late_ms\":%" PRIu32 ",\"audio_rate\":%" PRIu32 ",\"engine_hz\":%" PRIu32 "}",
+               ",\"max_late_ms\":%" PRIu32 ",\"audio_rate\":%" PRIu32 ",\"engine_hz\":%" PRIu32 ",\"rate_exact\":%s,\"bits\":16}",
                presented, skipped, late, fmt2(a, sizeof(a), fps100), h.fps, el_ms, under, uf, alate, aerr, clipped,
                fmt2(b, sizeof(b), el_ms ? (uint32_t)((uint64_t)s_rd_bytes * 100u / (el_ms * 1000u)) : 0u),
-               fmt2(c, sizeof(c), mbps100), s_rd_err, gp_err, max_late_us / 1000u, h.audio_rate, fs_mhz / 1000u);
+               fmt2(c, sizeof(c), mbps100), s_rd_err, gp_err, max_late_us / 1000u, h.audio_rate, fs_mhz / 1000u, rate_exact ? "true" : "false");
     ui_con_begin("media.play");
     ui_con_line(under || skipped || s_rd_err ? COLOR_YELLOW : COLOR_GREEN, "%s fps und %u skip %u",
                 fmt2(a, sizeof(a), fps100), (unsigned)under, (unsigned)skipped);

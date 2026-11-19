@@ -264,12 +264,14 @@ block when reached (erase retried if it "finishes" in < 1 ms, finding F4), progr
 (measured: 13.2 MB in ~94 s = 55 s erase + 35 s program + 6.5 s verify; flash-bound, not USB-bound).
 
 Container (little endian), built by `tools/make_media.py`: header sector 0x1000 B (64 B header, rest 0xFF), then frames.
-Header u32 fields: 0 magic 'SBMV' (0x564D4253), 4 version=1, 8 w=160, 12 h=128, 16 fps, 20 frames, 24 audio_rate (= fps x
-audio_bytes_per_frame), 28 audio_bits=8, 32 frame_stride (=512+20480+apf), 36 audio_bytes_per_frame, 40 data_offset=0x1000, 44 total_len,
-48 data_crc32 (zlib, over data_offset..total_len), 52 audio_gain_cdb (signed, centi-dB; player plays at min(gain, -9 dB)), 56 reserved,
+Header u32 fields: 0 magic 'SBMV' (0x564D4253), 4 version=2 (v1 = 8-bit audio, rejected: "old container v1"), 8 w=160, 12 h=128,
+16 fps, 20 frames, 24 audio_rate (= fps x audio_samples_per_frame; 18750 = engine B with the 10-bit carrier, RCR+1 = 5, played 1:1),
+28 audio_bits=16, 32 frame_stride (=512+20480+2*apf), 36 audio_samples_per_frame, 40 data_offset=0x1000, 44 total_len,
+48 data_crc32 (zlib, over data_offset..total_len), 52 audio_gain_cdb (signed, centi-dB; 0 for v2), 56 reserved,
 60 hdr_crc32 (zlib over bytes 0..59). Per frame: 512 B RGB565 LE palette (254 colours; 254 = black, 255 = white for the overlay),
-20480 B 8bpp pixels in native column-major order (px[x*128+y]), apf bytes unsigned 8-bit mono PCM (peak-normalised to full 8-bit
-scale, high-passed at 400 Hz; played with -9 dB gain so the peak is -9 dBFS; the output clip guard is also -9 dBFS).
+20480 B 8bpp pixels in native column-major order (px[x*128+y]), apf signed 16-bit LE mono samples (4th-order high-pass 380 Hz,
+compressed, look-ahead limited to a -9.3 dBFS peak; the firmware output guard is -9 dBFS; 16 -> 10 bit TPDF dither at play time).
+media.play keys: CENTER pause/resume (audio fades to mid-scale, amp stays on, frame held with "PAUSED"), A overlay, B exit.
 Attribution of the test clip: Big Buck Bunny (c) copyright 2008, Blender Foundation / www.bigbuckbunny.org, CC-BY 3.0
 (the file lives in tools/build/, git-ignored, never committed).
 

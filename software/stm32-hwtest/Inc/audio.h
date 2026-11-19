@@ -87,9 +87,10 @@ void audio_voice_noise(unsigned v, bool pink, float rms_db);             /* db =
 void audio_voice_chirp(unsigned v, float f0, float f1, float dur_s, float db);
 void audio_silence(void);                           /* all voices off */
 
-/* PCM stream voice 0 (media.play): u8 mono ring (power-of-two size) filled by the caller; engine B only. */
+/* PCM stream voice 0 (media.play): u8 or s16 mono ring (power-of-two size) filled by the caller; engine B only. */
 void audio_set_buffer(void *p);                     /* engine B DMA buffer (2 * AUD_HALF * 2 B), default g_arena */
-void audio_pcm_start(uint8_t *ring, uint32_t size, uint32_t rate_hz, float db);
+void audio_pcm_start(uint8_t *ring, uint32_t size, uint32_t rate_hz, float db, unsigned bits); /* bits 8 (u8) / 16 (s16 LE) */
+void audio_pcm_pause(bool p);                       /* hold the read position, output 0 (fade the master to -90 dB first) */
 void audio_pcm_put(const uint8_t *src, uint32_t n); /* caller checks audio_pcm_free() */
 uint32_t audio_pcm_free(void);
 uint32_t audio_pcm_under(void);                     /* ring-empty samples */
