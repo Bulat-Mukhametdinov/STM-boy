@@ -26,7 +26,7 @@ evidence are in `HW_LOG.md` and `tools/results/`.
 
 ## Confirmed Facts
 
-- BOARD MODIFICATION 2026-11-19: R16 removed, TPS63802 MODE pulled up to 3V3 -> forced PWM (datasheet: MODE
+- BOARD MODIFICATION 2026-11-19 (REVERTED the same day, R16 restored): R16 removed, TPS63802 MODE pulled up to 3V3 -> forced PWM (datasheet: MODE
   high = forced PWM, low = power save; must not float). 3V3 ripple at light load ~60-70 mV pp sawtooth
   (~95-100 kHz bursts) -> ~15 mV pp. Current measurements before this date were taken in power-save mode;
   re-measure idle (S2) and Stop currents. v0.2 idea: MODE on a GPIO (PFM idle, PWM while audio plays).

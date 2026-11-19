@@ -35,6 +35,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 #define MEDIA_ADDR 0x200000u
@@ -223,6 +224,42 @@ static void fetch_video(const mhdr_t *h, uint32_t idx, uint16_t *pal, uint8_t *f
 }
 
 #define ATMP2 (g_arena + 61440u)   /* verify buffer (free arena area 60416..73727) */
+
+/* Optional runtime high-pass (media.play hp=<Hz>): two cascaded 2nd-order Butterworth sections (4th order,
+   RBJ cookbook, Q = 0.5412 / 1.3066), applied to the 16-bit PCM before it enters the ring. Workaround for the
+   low-frequency crackle (F14); also the game-audio recommendation (~400-500 Hz). */
+typedef struct { float b0, b1, b2, a1, a2, z1, z2; } bq_t;
+static bq_t s_hp[2];
+static bool s_hp_on;
+
+static void bq_hp(bq_t *f, float fs, float fc, float q)
+{
+    float w = 6.2831853f * fc / fs, cw = cosf(w), al = sinf(w) / (2.0f * q), a0 = 1.0f + al;
+    f->b0 = (1.0f + cw) * 0.5f / a0;
+    f->b1 = -(1.0f + cw) / a0;
+    f->b2 = f->b0;
+    f->a1 = -2.0f * cw / a0;
+    f->a2 = (1.0f - al) / a0;
+    f->z1 = f->z2 = 0.0f;
+}
+
+static void hp_run(uint8_t *buf, uint32_t nbytes)
+{
+    int16_t *x = (int16_t *)(void *)buf;
+    for (uint32_t i = 0; i < nbytes / 2u; i++) {
+        float v = (float)x[i];
+        for (int k = 0; k < 2; k++) {   /* transposed direct form II */
+            bq_t *f = &s_hp[k];
+            float y = f->b0 * v + f->z1;
+            f->z1 = f->b1 * v - f->a1 * y + f->z2;
+            f->z2 = f->b2 * v - f->a2 * y;
+            v = y;
+        }
+        if (v > 32767.0f) v = 32767.0f;
+        if (v < -32768.0f) v = -32768.0f;
+        x[i] = (int16_t)v;
+    }
+}
 static bool s_verify;
 static uint32_t s_vchunks, s_vmis, s_vbytes;
 
@@ -237,6 +274,7 @@ static void fetch_audio(const mhdr_t *h, uint32_t idx)
         for (uint32_t i = 0; i < n; i++) bad += (ATMP[i] != ATMP2[i]);
         if (bad) { s_vmis++; s_vbytes += bad; }
     }
+    if (s_hp_on) hp_run(ATMP, n);
     audio_pcm_put(ATMP, n);
 }
 
@@ -248,13 +286,14 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     /* car: PWM carrier index (0 = 750k/7b, 1 = 375k/8b, 2 = 187.5k/9b, 3 = 93.75k/10b). 93.75 kHz leaks
        ~1.2 Vpp to the amp input through the 1st-order RC (scope 2026-11-19) -> whine; default 375 kHz
        (RCR+1 = 20 -> exactly 18750 Hz). att: extra attenuation in dB (overload test). */
-    uint32_t car = suite_arg_u32(argc, argv, "car", 1u);
+    uint32_t car = suite_arg_u32(argc, argv, "car", 2u);   /* interim default 187.5 kHz / 9 bit (2026-11-19 listening: quieter than 375k/8b, pause silent with PA8 hi-Z) */
     if (car > 3u) car = 1u;
     uint32_t att_db = suite_arg_u32(argc, argv, "att", 0u);
     bool pause_hiz = suite_arg_u32(argc, argv, "phiz", 1u) != 0u;   /* pause with PA8 floating (default) */
     bool vid = suite_arg_u32(argc, argv, "vid", 1u) != 0u;          /* vid=0: audio only (no W25Q video reads, no LCD DMA) */
     s_verify = suite_arg_u32(argc, argv, "verify", 0u) != 0u;
     uint32_t efs_arg = suite_arg_u32(argc, argv, "fs", 0u);   /* engine rate override: the PCM voice interpolates (imaging test) */
+    uint32_t hp_hz = suite_arg_u32(argc, argv, "hp", 1600u); /* runtime 4th-order high-pass, 0 = off; 1600 = crackle workaround for this speaker (F14) */
     s_vchunks = s_vmis = s_vbytes = 0;
     if (att_db > 40u) att_db = 40u;
     mhdr_t h;
@@ -282,6 +321,11 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     float gain_db = (float)(int32_t)h.rsv0 / 100.0f;   /* header audio_gain_cdb (v2 data peaks at -9.3 dBFS: 0 dB); never > 0 */
     if (gain_db > 0.0f) gain_db = 0.0f;
     gain_db -= (float)att_db;
+    s_hp_on = hp_hz >= 50u && hp_hz < h.audio_rate / 2u;
+    if (s_hp_on) {
+        bq_hp(&s_hp[0], (float)h.audio_rate, (float)hp_hz, 0.5412f);
+        bq_hp(&s_hp[1], (float)h.audio_rate, (float)hp_hz, 1.3066f);
+    }
     audio_pcm_start(RING, RING_SZ, h.audio_rate, gain_db, 16u);
     fetch_audio(&h, 0);
     if (h.frames > 1u) fetch_audio(&h, 1);

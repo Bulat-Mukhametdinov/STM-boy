@@ -7558,3 +7558,82 @@ git-ignored; .txt hexdumps next to them).
 - 3V3 at SWD pad: 60-70 mV pp sawtooth ~100 kHz (power save). User reworked R16 (MODE -> 3V3 via pull-up): sawtooth gone, ~15 mV pp; small 15-20 mV dips with loud audio; crackle changed character but persists.
 - Pure tones (-15 dBFS, 375 kHz carrier): 1 kHz crackles at 18750 and 46875 Hz update alike; 300 Hz loud transformer-like buzz; 3.15 kHz clean; speaker held in free air: 1 kHz still crackles -> speaker (voice coil rub, maybe from the clip-test overheating) or amp output stage; next: spare speaker at home.
 - Two USB drop-outs while the probe was on the SWD 3V3 pad (suspected touch of NRST/GND) - board recovered with POWER.
+
+### 2026-11-19 18:22:30 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: FAIL (exit code 2)
+
+### 2026-11-19 18:22:38 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 18:23:46 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.61 s
+- cmd: @OK dfu
+
+### 2026-11-19 18:24:01 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.901
+- Output: Time elapsed during verifying operation: 00:00:01.967
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 18:24:02 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (283828 bytes), expected id: {'fw': '3e0ea9a+dirty', 'build': 1795101401}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3e0ea9a+dirty build=1795101401, CDC enumerations=1
+- Timing: info_before=0.06s, app_to_dfu=0.61s, program=15.32s, dfu_to_app=0.71s, total=16.74s
+
+### 2026-11-19 18:24:10 — Board reverted to stock power-save mode (manual note)
+
+- User removed the MODE pull-up and restored R16 (MODE to GND) -> TPS63802 back in power-save mode as designed (v0.1). Flashed fw with media.play hp=<Hz> runtime 4th-order high-pass (crackle workaround test).
+
+### 2026-11-19 18:31:03 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-19 18:31:18 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.904
+- Output: Time elapsed during verifying operation: 00:00:01.967
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 18:31:19 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (283828 bytes), expected id: {'fw': '3e0ea9a+dirty', 'build': 1795102258}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=3e0ea9a+dirty build=1795102258, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=15.31s, dfu_to_app=0.71s, total=16.69s
+
+### 2026-11-19 18:31:59 — Crackle workaround + carrier listening (manual note)
+
+- media.play hp=1200: much better, rare micro-crackles; hp=1600: crackles gone (sound thin). Background noise remained on the 375 kHz/8-bit carrier (~12 dB more quantisation/dither noise than the 10-bit design). car=2 (187.5 kHz/9 bit) + hp=1600: noticeably quieter background, pause silent (PA8 hi-Z). Interim defaults set: car=2, hp=1600. Next: per-carrier-period noise-shaped PWM.
