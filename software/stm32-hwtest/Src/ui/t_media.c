@@ -222,10 +222,22 @@ static void fetch_video(const mhdr_t *h, uint32_t idx, uint16_t *pal, uint8_t *f
     rd(a + PAL_BYTES, fb, PIX_BYTES);
 }
 
+#define ATMP2 (g_arena + 61440u)   /* verify buffer (free arena area 60416..73727) */
+static bool s_verify;
+static uint32_t s_vchunks, s_vmis, s_vbytes;
+
 static void fetch_audio(const mhdr_t *h, uint32_t idx)
 {
-    rd(frame_addr(h, idx) + PAL_BYTES + PIX_BYTES, ATMP, 2u * h->apf);
-    audio_pcm_put(ATMP, 2u * h->apf);
+    uint32_t a = frame_addr(h, idx) + PAL_BYTES + PIX_BYTES, n = 2u * h->apf;
+    rd(a, ATMP, n);
+    if (s_verify) {   /* read the chunk twice: a W25Q/DMA read corruption shows up as a mismatch */
+        rd(a, ATMP2, n);
+        s_vchunks++;
+        uint32_t bad = 0;
+        for (uint32_t i = 0; i < n; i++) bad += (ATMP[i] != ATMP2[i]);
+        if (bad) { s_vmis++; s_vbytes += bad; }
+    }
+    audio_pcm_put(ATMP, n);
 }
 
 suite_verdict_t suite_media_play(int argc, char **argv)
@@ -233,6 +245,18 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     bool loop = suite_arg_u32(argc, argv, "loop", 1u) != 0u;
     uint32_t auto_s = suite_arg_u32(argc, argv, "auto", 0u);
     uint32_t lead_us = suite_arg_u32(argc, argv, "lead", 8000u);
+    /* car: PWM carrier index (0 = 750k/7b, 1 = 375k/8b, 2 = 187.5k/9b, 3 = 93.75k/10b). 93.75 kHz leaks
+       ~1.2 Vpp to the amp input through the 1st-order RC (scope 2026-11-19) -> whine; default 375 kHz
+       (RCR+1 = 20 -> exactly 18750 Hz). att: extra attenuation in dB (overload test). */
+    uint32_t car = suite_arg_u32(argc, argv, "car", 1u);
+    if (car > 3u) car = 1u;
+    uint32_t att_db = suite_arg_u32(argc, argv, "att", 0u);
+    bool pause_hiz = suite_arg_u32(argc, argv, "phiz", 1u) != 0u;   /* pause with PA8 floating (default) */
+    bool vid = suite_arg_u32(argc, argv, "vid", 1u) != 0u;          /* vid=0: audio only (no W25Q video reads, no LCD DMA) */
+    s_verify = suite_arg_u32(argc, argv, "verify", 0u) != 0u;
+    uint32_t efs_arg = suite_arg_u32(argc, argv, "fs", 0u);   /* engine rate override: the PCM voice interpolates (imaging test) */
+    s_vchunks = s_vmis = s_vbytes = 0;
+    if (att_db > 40u) att_db = 40u;
     mhdr_t h;
     const char *why;
     if (!hdr_read(&h, &why)) {
@@ -257,12 +281,13 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     fetch_video(&h, 0, pal[0], gp_fb(0));
     float gain_db = (float)(int32_t)h.rsv0 / 100.0f;   /* header audio_gain_cdb (v2 data peaks at -9.3 dBFS: 0 dB); never > 0 */
     if (gain_db > 0.0f) gain_db = 0.0f;
+    gain_db -= (float)att_db;
     audio_pcm_start(RING, RING_SZ, h.audio_rate, gain_db, 16u);
     fetch_audio(&h, 0);
     if (h.frames > 1u) fetch_audio(&h, 1);
-    audio_pwm_start(3, false);      /* 93.75 kHz / 10 bit carrier; RCR+1 = 5 -> 18750 Hz = the container rate */
+    audio_pwm_start(car, false);    /* default 375 kHz / 8 bit; RCR derived by the engine (18750 Hz exact for car 0..3) */
     audio_amp_on(0);                /* pop-free: PWM to mid with the amp off, 30 ms, then SD# */
-    bool eng = audio_engine_start(AUD_ENG_B, h.audio_rate, AUD_DITHER_TPDF);   /* TPDF beats 1st-order shaped in-band */
+    bool eng = audio_engine_start(AUD_ENG_B, efs_arg ? efs_arg : h.audio_rate, AUD_DITHER_TPDF);   /* TPDF beats 1st-order shaped in-band */
     const uint32_t fs_mhz = audio_fs_mhz();
     const bool rate_exact = fs_mhz == h.audio_rate * 1000u;   /* else the PCM voice interpolates (and A/V stays locked) */
     uint64_t pause_acc = 0;   /* audio-clock time spent paused (us) */
@@ -292,7 +317,7 @@ suite_verdict_t suite_media_play(int argc, char **argv)
             skipped++;            /* too late: drop this frame, catch up */
         } else {
             if (behind > period_us / 2u) late++;
-            gp_start_pal(gp_fb(cur), pal[cur]);
+            if (vid) gp_start_pal(gp_fb(cur), pal[cur]);
             presented++;
             win_n++;
         }
@@ -300,10 +325,10 @@ suite_verdict_t suite_media_play(int argc, char **argv)
         uint32_t nf = F + 1u;
         if (nf >= h.frames && !loop) { done = true; break; }
         int nxt = cur ^ 1;
-        fetch_video(&h, nf % h.frames, pal[nxt], gp_fb(nxt));
+        if (vid) fetch_video(&h, nf % h.frames, pal[nxt], gp_fb(nxt));
         uint32_t af = F + 2u;
         if (af < h.frames || loop) {
-            while (audio_pcm_free() < h.apf) {
+            while (audio_pcm_free() < 2u * h.apf) {   /* free space is in bytes; a frame of 16-bit audio = 2*apf */
                 sys_service();
                 if (abort_requested()) { v = SUITE_ABORT; done = true; break; }
             }
@@ -342,6 +367,8 @@ suite_verdict_t suite_media_play(int argc, char **argv)
                 for (uint32_t t = time_us(); (uint32_t)(time_us() - t) < 25000u;) sys_service();
                 audio_pcm_pause(true);
                 audio_dither_set(AUD_DITHER_OFF);     /* silence = exactly mid-scale (no dither hiss) */
+                for (uint32_t t = time_us(); (uint32_t)(time_us() - t) < 5000u;) sys_service();
+                if (pause_hiz) audio_pa8_float(true);  /* floating pin: no carrier / 3V3 noise into the amp */
                 uint64_t t_p = (uint64_t)audio_played() * 1000000000u / fs_mhz;
                 paused = true;
                 while (paused && !done) {
@@ -357,6 +384,10 @@ suite_verdict_t suite_media_play(int argc, char **argv)
                 }
                 gp_wait();
                 audio_dither_set(AUD_DITHER_TPDF);
+                if (pause_hiz) {
+                    audio_pa8_float(false);           /* back to the mid-scale PWM before unmuting */
+                    for (uint32_t t = time_us(); (uint32_t)(time_us() - t) < 5000u;) sys_service();
+                }
                 audio_pcm_pause(false);
                 audio_set_master_db(0.0f);
                 pause_acc += (uint64_t)audio_played() * 1000000000u / fs_mhz - t_p;
@@ -385,6 +416,9 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     char a[16], b[16], c[16];
     uint32_t fps100 = el_ms ? presented * 100000u / el_ms : 0u;
     uint32_t mbps100 = s_rd_us ? (uint32_t)((uint64_t)s_rd_bytes * 100u / s_rd_us) : 0u;
+    res_printf("{\"t\":\"media_diag\",\"suite\":\"media.play\",\"vid\":%s,\"verify\":%s,\"chunks\":%" PRIu32
+               ",\"mismatch_chunks\":%" PRIu32 ",\"mismatch_bytes\":%" PRIu32 ",\"att_db\":%" PRIu32 ",\"carrier\":%" PRIu32 "}",
+               vid ? "true" : "false", s_verify ? "true" : "false", s_vchunks, s_vmis, s_vbytes, att_db, car);
     res_printf("{\"t\":\"media_play\",\"suite\":\"media.play\",\"frames_presented\":%" PRIu32 ",\"skipped\":%" PRIu32
                ",\"late\":%" PRIu32 ",\"fps\":%s,\"fps_nominal\":%" PRIu32 ",\"ms\":%" PRIu32 ",\"audio_underruns\":%" PRIu32
                ",\"audio_dma_uf\":%" PRIu32 ",\"audio_late\":%" PRIu32 ",\"audio_dma_err\":%" PRIu32 ",\"audio_clipped\":%"

@@ -7201,3 +7201,360 @@ git-ignored; .txt hexdumps next to them).
 - CDC: none
 - DFU (CLI): none
 - DFU (PnP): none
+
+### 2026-11-19 16:36:24 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.64 s
+- cmd: @OK dfu
+
+### 2026-11-19 16:36:40 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.836
+- Output: Time elapsed during verifying operation: 00:00:01.966
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 16:36:40 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (282700 bytes), expected id: {'fw': 'a388dd4+dirty', 'build': 1795093893}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=a388dd4+dirty build=1795093893, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.64s, program=15.27s, dfu_to_app=0.71s, total=16.70s
+
+### 2026-11-19 16:38:54 — hwtest.py media [auto]
+
+- Command: `hwtest.py media upload tools/build/bbb.bin`
+- Result: OK (exit code 0)
+- media upload 143360/13629456 (1%) 0.12 MB/s
+- media upload 307200/13629456 (2%) 0.14 MB/s
+- media upload 466944/13629456 (3%) 0.15 MB/s
+- media upload 602112/13629456 (4%) 0.14 MB/s
+- media upload 778240/13629456 (6%) 0.14 MB/s
+- media upload 929792/13629456 (7%) 0.14 MB/s
+- media upload 1097728/13629456 (8%) 0.14 MB/s
+- media upload 1257472/13629456 (9%) 0.14 MB/s
+- media upload 1421312/13629456 (10%) 0.14 MB/s
+- media upload 1585152/13629456 (12%) 0.14 MB/s
+- media upload 1757184/13629456 (13%) 0.14 MB/s
+- media upload 1912832/13629456 (14%) 0.14 MB/s
+- media upload 2080768/13629456 (15%) 0.14 MB/s
+- media upload 2240512/13629456 (16%) 0.14 MB/s
+- media upload 2408448/13629456 (18%) 0.14 MB/s
+- media upload 2568192/13629456 (19%) 0.14 MB/s
+- media upload 2719744/13629456 (20%) 0.14 MB/s
+- media upload 2887680/13629456 (21%) 0.15 MB/s
+- media upload 3026944/13629456 (22%) 0.14 MB/s
+- media upload 3186688/13629456 (23%) 0.14 MB/s
+- media upload 3350528/13629456 (25%) 0.15 MB/s
+- media upload 3485696/13629456 (26%) 0.14 MB/s
+- media upload 3653632/13629456 (27%) 0.14 MB/s
+- media upload 3813376/13629456 (28%) 0.14 MB/s
+- media upload 3977216/13629456 (29%) 0.14 MB/s
+- media upload 4141056/13629456 (30%) 0.14 MB/s
+- media upload 4304896/13629456 (32%) 0.14 MB/s
+- media upload 4464640/13629456 (33%) 0.15 MB/s
+- media upload 4599808/13629456 (34%) 0.14 MB/s
+- media upload 4767744/13629456 (35%) 0.14 MB/s
+- media upload 4927488/13629456 (36%) 0.14 MB/s
+- media upload 5095424/13629456 (37%) 0.14 MB/s
+- media upload 5255168/13629456 (39%) 0.14 MB/s
+- media upload 5423104/13629456 (40%) 0.14 MB/s
+- media upload 5582848/13629456 (41%) 0.14 MB/s
+- media upload 5754880/13629456 (42%) 0.15 MB/s
+- media upload 5910528/13629456 (43%) 0.14 MB/s
+- media upload 6078464/13629456 (45%) 0.14 MB/s
+- media upload 6238208/13629456 (46%) 0.14 MB/s
+- media upload 6373376/13629456 (47%) 0.14 MB/s
+- media upload 6512640/13629456 (48%) 0.14 MB/s
+- media upload 6651904/13629456 (49%) 0.14 MB/s
+- media upload 6795264/13629456 (50%) 0.14 MB/s
+- media upload 6938624/13629456 (51%) 0.14 MB/s
+- media upload 7077888/13629456 (52%) 0.14 MB/s
+- media upload 7221248/13629456 (53%) 0.14 MB/s
+- media upload 7364608/13629456 (54%) 0.14 MB/s
+- media upload 7507968/13629456 (55%) 0.14 MB/s
+- media upload 7655424/13629456 (56%) 0.14 MB/s
+- media upload 7790592/13629456 (57%) 0.14 MB/s
+- media upload 7938048/13629456 (58%) 0.14 MB/s
+- media upload 8073216/13629456 (59%) 0.14 MB/s
+- media upload 8220672/13629456 (60%) 0.14 MB/s
+- media upload 8372224/13629456 (61%) 0.14 MB/s
+- media upload 8519680/13629456 (63%) 0.14 MB/s
+- media upload 8663040/13629456 (64%) 0.14 MB/s
+- media upload 8806400/13629456 (65%) 0.14 MB/s
+- media upload 8945664/13629456 (66%) 0.14 MB/s
+- media upload 9101312/13629456 (67%) 0.14 MB/s
+- media upload 9244672/13629456 (68%) 0.14 MB/s
+- media upload 9379840/13629456 (69%) 0.14 MB/s
+- media upload 9515008/13629456 (70%) 0.14 MB/s
+- media upload 9658368/13629456 (71%) 0.14 MB/s
+- media upload 9809920/13629456 (72%) 0.14 MB/s
+- media upload 9953280/13629456 (73%) 0.14 MB/s
+- media upload 10104832/13629456 (74%) 0.14 MB/s
+- media upload 10256384/13629456 (75%) 0.14 MB/s
+- media upload 10403840/13629456 (76%) 0.14 MB/s
+- media upload 10543104/13629456 (77%) 0.14 MB/s
+- media upload 10686464/13629456 (78%) 0.14 MB/s
+- media upload 10825728/13629456 (79%) 0.14 MB/s
+- media upload 10973184/13629456 (81%) 0.14 MB/s
+- media upload 11132928/13629456 (82%) 0.14 MB/s
+- media upload 11276288/13629456 (83%) 0.14 MB/s
+- media upload 11415552/13629456 (84%) 0.14 MB/s
+- media upload 11558912/13629456 (85%) 0.14 MB/s
+- media upload 11710464/13629456 (86%) 0.14 MB/s
+- media upload 11849728/13629456 (87%) 0.14 MB/s
+- media upload 12001280/13629456 (88%) 0.14 MB/s
+- media upload 12136448/13629456 (89%) 0.14 MB/s
+- media upload 12288000/13629456 (90%) 0.14 MB/s
+- media upload 12439552/13629456 (91%) 0.14 MB/s
+- media upload 12582912/13629456 (92%) 0.14 MB/s
+- media upload 12726272/13629456 (93%) 0.14 MB/s
+- media upload 12877824/13629456 (94%) 0.14 MB/s
+- media upload 13021184/13629456 (96%) 0.14 MB/s
+- media upload 13168640/13629456 (97%) 0.14 MB/s
+- media upload 13312000/13629456 (98%) 0.14 MB/s
+- media upload 13447168/13629456 (99%) 0.14 MB/s
+- media upload 13598720/13629456 (100%) 0.14 MB/s
+- media upload 13629456/13629456 (100%) 0.14 MB/s
+- media upload: {"ok": true, "bytes": 13629456, "host_crc": 627238532, "host_s": 97.21, "host_MBps": 0.14, "device": {"t": "media_write", "addr": "200000", "len": 13629456, "got": 13629456, "crc": 627238532, "rx_crc": 627238532, "ok": true, "err": "", "blocks_erased": 208, "rx_ms": 97263, "erase_ms": 56960, "program_ms": 36198, "verify_ms": 6710, "kBps": 140}}
+
+### 2026-11-19 16:38:55 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "media info" --timeout 15`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK media info lines=2
+- @R {"t": "media_info", "valid": true, "why": "ok", "magic": "564D4253", "version": 2, "w": 160, "h": 128, "fps": 15, "frames": 580, "audio_rate": 18750, "audio_bits": 16, "frame_stride": 23492, "audio_by
+
+### 2026-11-19 16:39:57 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-19 16:40:13 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.843
+- Output: Time elapsed during verifying operation: 00:00:01.971
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 16:40:13 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (282732 bytes), expected id: {'fw': '046941f+dirty', 'build': 1795095593}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=046941f+dirty build=1795095593, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=15.27s, dfu_to_app=0.72s, total=16.67s
+
+### 2026-11-19 16:55:31 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 17:04:13 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-19 17:04:28 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.857
+- Output: Time elapsed during verifying operation: 00:00:01.966
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 17:04:29 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (282780 bytes), expected id: {'fw': '046941f+dirty', 'build': 1795097049}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=046941f+dirty build=1795097049, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=15.27s, dfu_to_app=0.71s, total=16.65s
+
+### 2026-11-19 17:12:26 — Enter DFU from application (touch) [auto]
+
+- Command: `1200-baud touch on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.66 s
+- touch: exception (expected): Cannot configure port, something went wrong. Original message: OSError(22, 'A device which does not exist was specified.', None, 433)
+
+### 2026-11-19 17:12:41 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.842
+- Output: Time elapsed during verifying operation: 00:00:01.966
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 17:12:42 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (283004 bytes), expected id: {'fw': '046941f+dirty', 'build': 1795097536}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=046941f+dirty build=1795097536, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.66s, program=15.26s, dfu_to_app=0.70s, total=16.70s
+
+### 2026-11-19 17:15:00 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort --timeout 5`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=1
+
+### 2026-11-19 17:16:55 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-19 17:17:10 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.865
+- Output: Time elapsed during verifying operation: 00:00:01.967
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 17:17:11 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (283308 bytes), expected id: {'fw': '046941f+dirty', 'build': 1795097811}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=046941f+dirty build=1795097811, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=15.27s, dfu_to_app=0.71s, total=16.64s
+
+### 2026-11-19 17:17:32 — Run suite media.play (start) [auto]
+
+- Command: `run media.play verify=1 att=40 auto=20`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=046941f+dirty build=1795097811 busy=idle
+
+### 2026-11-19 17:17:52 — hwtest.py run [auto]
+
+- Command: `hwtest.py run media.play verify=1 att=40 auto=20 --answer-from-host --timeout 60`
+- Result: OK (exit code 0)
+- Suite media.play: PASS results=2 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-171732-media.play.json
+
+### 2026-11-19 17:30:49 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 17:31:54 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 17:42:41 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort --timeout 5`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=1
+
+### 2026-11-19 17:44:26 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 18:04:25 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 18:04:32 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort --timeout 5`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=1
+
+### 2026-11-19 18:04:33 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.64 s
+- cmd: @OK dfu
+
+### 2026-11-19 18:04:49 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.843
+- Output: Time elapsed during verifying operation: 00:00:01.968
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 18:04:49 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (283332 bytes), expected id: {'fw': '046941f+dirty', 'build': 1795100661}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=046941f+dirty build=1795100661, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.64s, program=15.27s, dfu_to_app=0.71s, total=16.70s
+
+### 2026-11-19 18:12:20 — Audio crackle investigation, lab (manual note)
+
+- Scope C24 during audio.hiss: 140/156/160/136 mV (a,b1,b2,b3), 252 (750k), 416 (375k), 740 (187k), 1368 mV (94k) pp. By ear: no hiss in b1/b3, hiss in b2 (PA8 high = 3V3) and c cases -> 3V3 noise path.
+- media.play now car=1 (375 kHz) default, pause floats PA8 -> pause whine gone (C24 100 mV pp). verify=1: 303 chunks, 0 mismatches; 0 underruns. att=3: same crackle; att=12: less/quieter. vid=0: crackle stays. fs=46875 (interpolated): same/worse.
+- 3V3 at SWD pad: 60-70 mV pp sawtooth ~100 kHz (power save). User reworked R16 (MODE -> 3V3 via pull-up): sawtooth gone, ~15 mV pp; small 15-20 mV dips with loud audio; crackle changed character but persists.
+- Pure tones (-15 dBFS, 375 kHz carrier): 1 kHz crackles at 18750 and 46875 Hz update alike; 300 Hz loud transformer-like buzz; 3.15 kHz clean; speaker held in free air: 1 kHz still crackles -> speaker (voice coil rub, maybe from the clip-test overheating) or amp output stage; next: spare speaker at home.
+- Two USB drop-outs while the probe was on the SWD 3V3 pad (suspected touch of NRST/GND) - board recovered with POWER.

@@ -397,6 +397,18 @@ void audio_pwm_stop(void)
     s_pwm_on = false;
 }
 
+/* Disconnect / reconnect the PA8 pin from TIM1 without stopping the timer or the engine. Used for a silent
+   pause: a 50 % PWM carries the carrier residue and the 3V3 rail noise (case H-b2/c) into the amp, a floating
+   pin (H-b3) is quiet; the coupling caps keep their charge, so no step. */
+void audio_pa8_float(bool on)
+{
+    if (on) {
+        gpio_config(AUDIO_PWM_PORT, AUDIO_PWM_PIN, GPIO_MODE_IN_, GPIO_PULL_NONE_, GPIO_SPEED_LOW_, 0);
+    } else if (s_pwm_on) {
+        gpio_config(AUDIO_PWM_PORT, AUDIO_PWM_PIN, GPIO_MODE_AF_, GPIO_PULL_NONE_, GPIO_SPEED_VHIGH_, 1);
+    }
+}
+
 void audio_pa8_mode(aud_pa8_t m)
 {
     audio_init();

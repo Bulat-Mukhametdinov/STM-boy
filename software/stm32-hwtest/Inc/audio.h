@@ -59,7 +59,8 @@ void audio_shutdown(void);                          /* engine off, PWM off, PA8 
 /* Carrier / pins */
 void audio_pwm_start(unsigned carrier, bool at_mid); /* TIM1 PWM on PA8 at 0 % or 50 % (may be re-called) */
 void audio_pwm_stop(void);                          /* TIM1 off, PA8 back to input (reset state) */
-void audio_pa8_mode(aud_pa8_t m);                   /* PWM off, PA8 static low/high/hi-Z */
+void audio_pa8_mode(aud_pa8_t m);
+void audio_pa8_float(bool on);                       /* PA8 hi-Z while TIM1/engine keep running (silent pause) */                   /* PWM off, PA8 static low/high/hi-Z */
 void audio_amp_raw(bool on);                        /* SD# pin only */
 bool audio_amp_is_on(void);
 bool audio_amp_on(uint32_t ramp_ms);                /* 0 = naive (50 % then SD#=1); else 0 % -> SD#=1 -> ramp */
