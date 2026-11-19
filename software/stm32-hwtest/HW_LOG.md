@@ -7896,3 +7896,43 @@ git-ignored; .txt hexdumps next to them).
 - Command: `hwtest.py info`
 - Result: OK (exit code 0)
 - COM10: fw=37e264b+dirty build=1795109882 clk=96000000 busy=idle reset=por uid=002800343435511331323538
+
+### 2026-11-19 21:00:36 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-19 21:00:51 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.959
+- Output: Time elapsed during verifying operation: 00:00:01.995
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 21:00:52 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (288304 bytes), expected id: {'fw': 'e186d69+dirty', 'build': 1795111212}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=e186d69+dirty build=1795111212, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=15.40s, dfu_to_app=0.72s, total=16.78s
+
+### 2026-11-19 21:01:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "audio spk"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK audio spk lines=2
+- @R {"t": "audio_spk", "trim_db_x10": -60, "ceil_db_x10": -140}
+
+### 2026-11-19 21:01:49 — Speaker protection in the audio driver (manual note)
+
+- New (last) FBS1810 speaker got slightly warm (~50 C by touch) after a few minutes of video at the old level; user finds the old level too loud. audio.c now applies a speaker trim -6 dB to every master setting and an absolute clip ceiling -14 dBFS (sine ~0.27 W) that no suite can exceed (audio.clip included); `audio spk [<trim> <ceil>]` tunes live (ceil max -10 = BTL clip point), not saved. Flashed via DFU (OK). Board reports trim -6.0, ceil -14.0.

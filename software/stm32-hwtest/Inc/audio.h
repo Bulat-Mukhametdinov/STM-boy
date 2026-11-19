@@ -87,7 +87,14 @@ uint32_t audio_half(void);                          /* DMA half-buffer length in
 /* Mixer */
 void audio_set_master_db(float db);                 /* <= 0, slewed ~3 ms */
 float audio_master_db(void);
-void audio_set_max_db(float db);                    /* output clip guard (peak), default -6 */
+void audio_set_max_db(float db);                    /* output clip guard (peak), default -6; never above the speaker ceiling */
+/* Speaker protection applied under every caller (see audio.c): master trim and absolute peak ceiling, dBFS. */
+#define AUD_SPK_TRIM_DB     (-6.0f)
+#define AUD_SPK_CEIL_DB     (-14.0f)   /* ~2.1 V pk on the speaker, sine ~0.27 W (FBS1810: 0.8 W rated) */
+#define AUD_SPK_CEIL_MAX_DB (-10.0f)   /* BTL clip point; `audio spk` cannot go above it */
+void audio_set_spk_limits(float trim_db, float ceil_db);
+float audio_spk_trim_db(void);
+float audio_spk_ceil_db(void);
 float audio_max_db(void);
 void audio_voice_off(unsigned v);
 void audio_voice_tone(unsigned v, aud_gen_t type, float f_hz, float db); /* SINE / SQUARE */

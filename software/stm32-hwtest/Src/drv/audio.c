@@ -42,6 +42,12 @@ static float s_master_db = -24.0f;
 static uint32_t s_gsh = 6;               /* smoothing shift */
 
 static float s_max_db = -6.0f;
+/* Speaker protection (2026-11-19, last FBS1810 speaker: 0.8 W rated / 1.0 W max; the PWM->speaker gain of
+   ~6.4 clips the BTL stage at ~-10 dBFS, a clipped 0 dBFS is ~1.4 W and destroyed the previous speaker).
+   Applied below every caller: master gain is trimmed by s_spk_trim_db and the clip guard can never be set
+   above s_spk_ceil_db (also not by audio.clip, which asks for 0 dBFS). `audio spk <trim> <ceil>` tunes it live. */
+static float s_spk_trim_db = AUD_SPK_TRIM_DB;
+static float s_spk_ceil_db = AUD_SPK_CEIL_DB;
 static int32_t s_lim = 16422;            /* 32767 * 10^(-6/20) */
 
 static unsigned s_carrier = 1;
@@ -749,7 +755,7 @@ void audio_set_master_db(float db)
 {
     if (db > 0.0f) db = 0.0f;
     s_master_db = db;
-    s_gtgt = db_to_q15(db) << 8;
+    s_gtgt = db_to_q15(db + s_spk_trim_db) << 8;
 }
 
 float audio_master_db(void) { return s_master_db; }
@@ -758,10 +764,26 @@ void audio_set_max_db(float db)
 {
     if (db > 0.0f) db = 0.0f;
     s_max_db = db;
+    if (db > s_spk_ceil_db) db = s_spk_ceil_db;
     s_lim = (int32_t)(32767.0f * powf(10.0f, db * 0.05f));
 }
 
 float audio_max_db(void) { return s_max_db; }
+
+void audio_set_spk_limits(float trim_db, float ceil_db)
+{
+    if (trim_db > 0.0f) trim_db = 0.0f;
+    if (trim_db < -40.0f) trim_db = -40.0f;
+    if (ceil_db > AUD_SPK_CEIL_MAX_DB) ceil_db = AUD_SPK_CEIL_MAX_DB;
+    if (ceil_db < -40.0f) ceil_db = -40.0f;
+    s_spk_trim_db = trim_db;
+    s_spk_ceil_db = ceil_db;
+    audio_set_master_db(s_master_db);   /* live: both engines pick up s_gtgt / s_lim on the next block */
+    audio_set_max_db(s_max_db);
+}
+
+float audio_spk_trim_db(void) { return s_spk_trim_db; }
+float audio_spk_ceil_db(void) { return s_spk_ceil_db; }
 
 void audio_voice_off(unsigned v)
 {

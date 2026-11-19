@@ -6,6 +6,7 @@
 #include "clock.h"
 #include "oc.h"
 #include "bench.h"
+#include "audio.h"
 #include "board.h"
 #include "clock.h"
 #include "crc.h"
@@ -448,6 +449,17 @@ static void dispatch(char *line, bool restricted)
             proto_ok("lcd div");
         } else {
             proto_err("lcd", "usage: lcd div <2|4|8|16|32>");
+        }
+    } else if (strcmp(c, "audio") == 0) {           /* audio spk [<trim_db> <ceil_db>]: speaker protection, live, not saved */
+        if (argc >= 4 && strcmp(argv[1], "spk") == 0) {
+            audio_set_spk_limits(strtof(argv[2], NULL), strtof(argv[3], NULL));
+        }
+        if (argc >= 2 && strcmp(argv[1], "spk") == 0) {
+            res_printf("{\"t\":\"audio_spk\",\"trim_db_x10\":%d,\"ceil_db_x10\":%d}",
+                       (int)(audio_spk_trim_db() * 10.0f), (int)(audio_spk_ceil_db() * 10.0f));
+            proto_ok("audio spk");
+        } else {
+            proto_err("audio", "usage: audio spk [<trim_db> <ceil_db>]");
         }
     } else if (strcmp(c, "battlog") == 0) {
         battlog_cmd(argc, argv, restricted);

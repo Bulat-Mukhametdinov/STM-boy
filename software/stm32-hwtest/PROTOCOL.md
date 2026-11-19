@@ -277,3 +277,8 @@ Attribution of the test clip: Big Buck Bunny (c) copyright 2008, Blender Foundat
 
 Demo colour depth: `demo` key Y cycles COLMOD 0x05 16 bit / 0x03 12 bit / 0x03 + 4x4 Bayer dither / 0x06 18 bit live (`col=0..3` arg);
 restored to 0x05 on exit; the overlay shows mode and present ms.
+
+
+### `audio spk [<trim_db> <ceil_db>]` (2026-11-19)
+
+Speaker protection, applied under every audio caller: master gain is trimmed by `trim_db` (default -6) and the output clip guard can never exceed `ceil_db` (default -14 dBFS, max -10 = BTL clip point). Live (both engines pick it up on the next block), not saved. Reply `@R {"t":"audio_spk","trim_db_x10":..,"ceil_db_x10":..}`. Note: suite `db=` levels are before the trim, so all levels since this change are 6 dB lower acoustically than earlier runs with the same `db=`.
