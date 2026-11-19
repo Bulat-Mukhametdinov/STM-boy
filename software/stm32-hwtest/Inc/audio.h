@@ -32,7 +32,7 @@ typedef enum { AUD_DITHER_OFF = 0, AUD_DITHER_TPDF, AUD_DITHER_SHAPED } aud_dith
 typedef enum { AUD_ENG_NONE = 0, AUD_ENG_A, AUD_ENG_B } aud_engine_t;
 typedef enum { AUD_PA8_LOW = 0, AUD_PA8_HIGH, AUD_PA8_HIZ } aud_pa8_t;
 typedef enum {
-    AUD_GEN_OFF = 0, AUD_GEN_SINE, AUD_GEN_SQUARE, AUD_GEN_WHITE, AUD_GEN_PINK, AUD_GEN_CHIRP
+    AUD_GEN_OFF = 0, AUD_GEN_SINE, AUD_GEN_SQUARE, AUD_GEN_WHITE, AUD_GEN_PINK, AUD_GEN_CHIRP, AUD_GEN_PCM
 } aud_gen_t;
 
 typedef struct {
@@ -86,6 +86,14 @@ void audio_voice_tone(unsigned v, aud_gen_t type, float f_hz, float db); /* SINE
 void audio_voice_noise(unsigned v, bool pink, float rms_db);             /* db = RMS dBFS */
 void audio_voice_chirp(unsigned v, float f0, float f1, float dur_s, float db);
 void audio_silence(void);                           /* all voices off */
+
+/* PCM stream voice 0 (media.play): u8 mono ring (power-of-two size) filled by the caller; engine B only. */
+void audio_set_buffer(void *p);                     /* engine B DMA buffer (2 * AUD_HALF * 2 B), default g_arena */
+void audio_pcm_start(uint8_t *ring, uint32_t size, uint32_t rate_hz, float db);
+void audio_pcm_put(const uint8_t *src, uint32_t n); /* caller checks audio_pcm_free() */
+uint32_t audio_pcm_free(void);
+uint32_t audio_pcm_under(void);                     /* ring-empty samples */
+uint32_t audio_played(void);                        /* engine B output samples played (audio clock) */
 
 /* Stats */
 void audio_stats_reset(void);

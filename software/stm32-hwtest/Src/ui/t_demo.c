@@ -11,7 +11,8 @@
 
    demo [auto=1] [t=<s per scene, auto>] [scene=0..2] [fps=<cap, 0 = unlimited>]
    Scenes: cubes (flat/Lambert triangles), raycaster (Wolfenstein style), raytracer (80x64, 2x).
-   Keys: LEFT/RIGHT scene (cube scene) or X/Y scene (all), A overlay on/off, CENTER fps cap
+   Keys: LEFT/RIGHT scene (cube scene) or X scene (all), Y colour depth (16b / 12b / 12b+Bayer dither / 18b,
+   live COLMOD switch, also col=0..3), A overlay on/off, CENTER fps cap
    0/60/30, B exit. Raycaster/raytracer: joystick walks/turns/looks. */
 
 #include "suites.h"
@@ -74,16 +75,98 @@ static const uint8_t *s_pfb;
 static volatile uint32_t s_pk, s_pdone;
 static bool s_pending;
 
-static inline void conv_chunk(uint32_t k, uint16_t *dst)
+/* Colour depth of the present (COLMOD): 0 = 16 bit 0x05, 1 = 12 bit 0x03, 2 = 12 bit + 4x4 Bayer dither (0x03),
+   3 = 18 bit 0x06. Modes 1..3 send bytes (SPI 8-bit frames); the palette is expanded to RGB888 once per present
+   into CT (1 KB at g_arena + GP_ARENA_USED, used by the demo only). Chunks: 8 columns (16/12 bit: 2048 / 1536 B),
+   18 bit: 4 columns (1536 B) so the 2 KB ping-pong buffers still fit. */
+#define CT ((uint32_t *)(void *)(g_arena + 61952u))
+static uint8_t s_cm;
+static const uint16_t *s_ppal = (const uint16_t *)(const void *)(g_arena + 2u * NPX);   /* palette of the present */
+static uint32_t s_chcols = CH_COLS, s_nch = NCH, s_chn = CH_PX;   /* columns / chunks / DMA items per chunk */
+static bool s_w16 = true;
+static const uint8_t k_bay[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
+static const char *const k_cm_name[4] = {"16b 565", "12b 444", "12b+dither", "18b 666"};
+static const uint8_t k_cm_cmd[4] = {0x05, 0x03, 0x03, 0x06};
+
+static void cm_set_geom(uint8_t m)
 {
-    const uint32_t *sw = (const uint32_t *)(const void *)(s_pfb + k * CH_PX);
-    uint32_t *dw = (uint32_t *)(void *)dst;
-    const uint16_t *pal = PAL;
-    for (uint32_t i = 0; i < CH_PX / 4u; i++) {
-        uint32_t w = sw[i];
-        uint32_t p0 = pal[w & 255u], p1 = pal[(w >> 8) & 255u], p2 = pal[(w >> 16) & 255u], p3 = pal[w >> 24];
-        dw[2u * i] = p0 | (p1 << 16);
-        dw[2u * i + 1u] = p2 | (p3 << 16);
+    s_cm = m;
+    s_w16 = (m == 0);
+    s_chcols = (m == 3) ? 4u : CH_COLS;
+    s_nch = FW / s_chcols;
+    s_chn = (m == 0) ? CH_PX : (m == 3 ? s_chcols * FH * 3u : CH_PX * 3u / 2u);
+}
+
+static void ct_build(void)
+{
+    uint32_t mask = (s_cm == 3) ? 0x00FCFCFCu : 0x00FFFFFFu;
+    for (uint32_t i = 0; i < 256u; i++) {
+        uint32_t c = s_ppal[i];
+        uint32_t r = (c >> 8) & 0xF8u, g = (c >> 3) & 0xFCu, b = (c << 3) & 0xF8u;
+        r |= r >> 5;
+        g |= g >> 6;
+        b |= b >> 5;
+        CT[i] = (r | (g << 8) | (b << 16)) & mask;
+    }
+}
+
+static void conv_chunk(uint32_t k, void *dstv)
+{
+    if (s_cm == 0) {
+        const uint32_t *sw = (const uint32_t *)(const void *)(s_pfb + k * CH_PX);
+        uint32_t *dw = (uint32_t *)dstv;
+        const uint16_t *pal = s_ppal;
+        for (uint32_t i = 0; i < CH_PX / 4u; i++) {
+            uint32_t w = sw[i];
+            uint32_t p0 = pal[w & 255u], p1 = pal[(w >> 8) & 255u], p2 = pal[(w >> 16) & 255u], p3 = pal[w >> 24];
+            dw[2u * i] = p0 | (p1 << 16);
+            dw[2u * i + 1u] = p2 | (p3 << 16);
+        }
+        return;
+    }
+    const uint8_t *src = s_pfb + k * s_chcols * FH;
+    if (s_cm == 3) {
+        const uint32_t *sw = (const uint32_t *)(const void *)src;
+        uint32_t *dw = (uint32_t *)dstv;
+        for (uint32_t i = 0; i < s_chcols * FH / 4u; i++) {
+            uint32_t w = sw[i];
+            uint32_t a = CT[w & 255u], b = CT[(w >> 8) & 255u], c = CT[(w >> 16) & 255u], d = CT[w >> 24];
+            dw[3u * i] = a | (b << 24);
+            dw[3u * i + 1u] = (b >> 8) | (c << 16);
+            dw[3u * i + 2u] = (c >> 16) | (d << 8);
+        }
+        return;
+    }
+    uint8_t *d = (uint8_t *)dstv;
+    const uint32_t x0 = k * s_chcols;
+    for (uint32_t cx = 0; cx < s_chcols; cx++) {
+        const uint8_t *col = src + cx * FH;
+        const uint8_t *bay = &k_bay[((x0 + cx) & 3u)];
+        for (uint32_t y = 0; y < FH; y += 2u) {
+            uint32_t a = CT[col[y]], b = CT[col[y + 1u]];
+            uint32_t r0, g0, b0, r1, g1, b1;
+            if (s_cm == 2) {
+                uint32_t o0 = bay[(y & 3u) * 4u], o1 = bay[((y + 1u) & 3u) * 4u];
+                r0 = ((a & 255u) + o0) >> 4;
+                g0 = (((a >> 8) & 255u) + o0) >> 4;
+                b0 = ((a >> 16) + o0) >> 4;
+                r1 = ((b & 255u) + o1) >> 4;
+                g1 = (((b >> 8) & 255u) + o1) >> 4;
+                b1 = ((b >> 16) + o1) >> 4;
+                if (r0 > 15u) r0 = 15u;
+                if (g0 > 15u) g0 = 15u;
+                if (b0 > 15u) b0 = 15u;
+                if (r1 > 15u) r1 = 15u;
+                if (g1 > 15u) g1 = 15u;
+                if (b1 > 15u) b1 = 15u;
+            } else {
+                r0 = (a & 255u) >> 4; g0 = (a >> 8 & 255u) >> 4; b0 = (a >> 16) >> 4;
+                r1 = (b & 255u) >> 4; g1 = (b >> 8 & 255u) >> 4; b1 = (b >> 16) >> 4;
+            }
+            *d++ = (uint8_t)((r0 << 4) | g0);
+            *d++ = (uint8_t)((b0 << 4) | r1);
+            *d++ = (uint8_t)((g1 << 4) | b1);
+        }
     }
 }
 
@@ -103,14 +186,14 @@ static void present_isr(void)
         DMA2->LIFCR = S3_ALL;
         uint32_t k = s_pk;
         s_pk = k + 1u;
-        if (k + 1u < NCH) {
+        if (k + 1u < s_nch) {
             uint32_t n = 0;
             while ((DMA2_Stream3->CR & DMA_SxCR_EN) && ++n < 1000u) {
             }
             DMA2_Stream3->M0AR = (uint32_t)(((k + 1u) & 1u) ? PP1 : PP0);
-            DMA2_Stream3->NDTR = CH_PX;
+            DMA2_Stream3->NDTR = s_chn;
             DMA2_Stream3->CR |= DMA_SxCR_EN;
-            if (k + 2u < NCH) {
+            if (k + 2u < s_nch) {
                 conv_chunk(k + 2u, (k & 1u) ? PP1 : PP0);
             }
         } else {
@@ -121,18 +204,22 @@ static void present_isr(void)
     }
 }
 
-static void present_start(const uint8_t *fb)
+static void present_start_pal(const uint8_t *fb, const uint16_t *pal)
 {
+    s_ppal = pal;
     s_pfb = fb;
     s_pk = 0;
     s_pdone = 0;
     lcd_stream_window(0, 0, FW - 1u, FH - 1u);   /* native: column-major stream follows */
-    spi1_dff(true);
+    spi1_dff(s_w16);
+    if (s_cm) ct_build();
     conv_chunk(0, PP0);
     conv_chunk(1, PP1);
-    dma3_start(PP0, CH_PX, true, true, true);
+    dma3_start(PP0, s_chn, s_w16, true, true);
     s_pending = true;
 }
+
+static void present_start(const uint8_t *fb) { present_start_pal(fb, PAL); }
 
 /* Sleeps (WFI) until the DMA chain is done; returns the cycles spent waiting. */
 static uint32_t present_wait(void)
@@ -663,9 +750,9 @@ static void emit_stats(const scene_t *sc, const stats_t *st, uint32_t cap)
     char a[16], b[16], c[16], d[16], e[16];
     res_printf("{\"t\":\"bench\",\"suite\":\"demo\",\"name\":\"%s\",\"fps\":%s,\"render_ms\":%s,\"present_ms\":%s,"
                "\"frame_ms\":%s,\"cpu_pct\":%s,\"frames\":%" PRIu32 ",\"sysclk_mhz\":%" PRIu32 ",\"fps_cap\":%" PRIu32
-               ",\"spi_mhz\":%" PRIu32 "}",
+               ",\"spi_mhz\":%" PRIu32 ",\"col\":\"%s\"}",
                sc->name, fmt2(a, sizeof(a), fps100), fmt2(b, sizeof(b), r100), fmt2(c, sizeof(c), w100),
-               fmt2(d, sizeof(d), f100), fmt2(e, sizeof(e), cpu100), st->frames, mhz, cap, lcd_spi_hz() / 1000000u);
+               fmt2(d, sizeof(d), f100), fmt2(e, sizeof(e), cpu100), st->frames, mhz, cap, lcd_spi_hz() / 1000000u, k_cm_name[s_cm]);
 }
 
 /* Clock list for CENTER+UP/DOWN: fixed profiles plus every frequency the OC sweep marked stable. */
@@ -686,7 +773,7 @@ suite_verdict_t suite_demo(int argc, char **argv)
 {
     bool aut = suite_arg_u32(argc, argv, "auto", 0u) != 0u;
     if (!aut && !suite_user_start("demo",
-                                  "Real-time demos. LEFT/RIGHT or X/Y scene, A overlay, CENTER fps cap, B exit. "
+                                  "Real-time demos. LEFT/RIGHT or X scene, Y colour depth, A overlay, CENTER fps cap, B exit. "
                                   "A=start B=skip",
                                   argc, argv)) {
         return SUITE_ABORT;
@@ -708,6 +795,8 @@ suite_verdict_t suite_demo(int argc, char **argv)
     NVIC_SetPriority(DMA2_Stream3_IRQn, 2);
     NVIC_EnableIRQ(DMA2_Stream3_IRQn);
     s_pending = false;
+    cm_set_geom((uint8_t)(suite_arg_u32(argc, argv, "col", 0u) & 3u));
+    if (s_cm) lcd_colmod(k_cm_cmd[s_cm]);
     input_flush();
 
     suite_verdict_t v = SUITE_PASS;
@@ -725,8 +814,8 @@ suite_verdict_t suite_demo(int argc, char **argv)
     if (cap_fps != 0u && cap_fps != 60u && cap_fps != 30u) cap_modes[0] = cap_fps;   /* custom value as mode 0 */
     stats_t st = {0}, win = {0};
     uint32_t scene_t0 = 0, run_t0 = HAL_GetTick(), win_t0 = 0;
-    char l1[32], l2[32], l3[40], l4[32];
-    l1[0] = l2[0] = l3[0] = l4[0] = '\0';
+    char l1[32], l2[32], l3[40], l4[32], l5[32];
+    l1[0] = l2[0] = l3[0] = l4[0] = l5[0] = '\0';
     uint32_t frame_t0 = time_cycles();
     uint32_t us_t0 = time_us();
 
@@ -756,13 +845,13 @@ suite_verdict_t suite_demo(int argc, char **argv)
         if (overlay) {
             /* dark box (2 px margin) behind the text so it reads on any scene */
             int bw = 0;
-            const char *const ls[4] = {l1, l2, l3, l4};
-            for (int i = 0; i < 4; i++) {
+            const char *const ls[5] = {l1, l2, l3, l4, l5};
+            for (int i = 0; i < 5; i++) {
                 int w = (int)strlen(ls[i]) * 6;
                 if (w > bw) bw = w;
             }
-            fb_box(fb, 0, 0, bw + 4, 4 * 8 + 3, IDX_BLACK);
-            for (int i = 0; i < 4; i++) {
+            fb_box(fb, 0, 0, bw + 4, 5 * 8 + 3, IDX_BLACK);
+            for (int i = 0; i < 5; i++) {
                 fb_text(fb, 2, 2 + 8 * i, ls[i], IDX_WHITE, IDX_BLACK);
             }
         }
@@ -803,7 +892,8 @@ suite_verdict_t suite_demo(int argc, char **argv)
                      cap ? (cap == 60u ? " cap60" : (cap == 30u ? " cap30" : " cap")) : "");
             snprintf(l3, sizeof(l3), "R%u.%u P%u.%ums", (unsigned)(r10 / 10u), (unsigned)(r10 % 10u),
                      (unsigned)(w10 / 10u), (unsigned)(w10 % 10u));
-            snprintf(l4, sizeof(l4), "CPU %u%%", (unsigned)cpu);
+            snprintf(l4, sizeof(l4), "CPU %u%% Y=colour", (unsigned)cpu);
+            snprintf(l5, sizeof(l5), "%s P%u.%ums", k_cm_name[s_cm], (unsigned)(w10 / 10u), (unsigned)(w10 % 10u));
             memset(&win, 0, sizeof(win));
             win_t0 = now;
         }
@@ -846,7 +936,11 @@ suite_verdict_t suite_demo(int argc, char **argv)
             case BTN_LEFT:   if (scene == 0) ns = (scene + N_SCENES - 1) % N_SCENES; break;
             case BTN_RIGHT:  if (scene == 0) ns = (scene + 1) % N_SCENES; break;
             case BTN_X:      ns = (scene + 1) % N_SCENES; break;
-            case BTN_Y:      ns = (scene + N_SCENES - 1) % N_SCENES; break;
+            case BTN_Y:
+                present_wait();
+                cm_set_geom((uint8_t)((s_cm + 1u) & 3u));
+                lcd_colmod(k_cm_cmd[s_cm]);
+                break;
             case BTN_A:      overlay = !overlay; break;
             case BTN_B:      done = true; break;
             default: break;
@@ -862,6 +956,8 @@ suite_verdict_t suite_demo(int argc, char **argv)
     }
 
     present_wait();
+    lcd_colmod(0x05);
+    cm_set_geom(0);
     NVIC_DisableIRQ(DMA2_Stream3_IRQn);
     g_dma3_hook = NULL;
     lcd_set_frame16(f16_0);
@@ -896,6 +992,7 @@ void gp_open(void)
     NVIC_SetPriority(DMA2_Stream3_IRQn, 2);
     NVIC_EnableIRQ(DMA2_Stream3_IRQn);
     s_pending = false;
+    cm_set_geom(0);
     s_gp.open = true;
 }
 
@@ -916,6 +1013,7 @@ void gp_close(void)
 uint8_t *gp_fb(int i) { return FBUF(i & 1); }
 uint16_t *gp_pal(void) { return PAL; }
 void gp_start(const uint8_t *fb) { present_start(fb); }
+void gp_start_pal(const uint8_t *fb, const uint16_t *pal) { present_start_pal(fb, pal); }
 uint32_t gp_wait(void) { return present_wait(); }
 void gp_text(uint8_t *fb, int x, int y, const char *s, uint8_t fg, uint8_t bg) { fb_text(fb, x, y, s, fg, bg); }
 void gp_box(uint8_t *fb, int x, int y, int w, int h, uint8_t c) { fb_box(fb, x, y, w, h, c); }

@@ -38,4 +38,9 @@ extern volatile bool g_usb_dtr_rise;
 extern volatile uint32_t g_usb_rx_bytes;
 extern volatile bool g_usb_rx_sink;
 
+/* Raw capture ring for `media write` (see usbd_cdc_if.c): begin / pop / end. Thread context. */
+void usb_cap_begin(uint8_t *buf, uint32_t size);
+uint32_t usb_cap_pop(uint8_t *dst, uint32_t max);
+void usb_cap_end(void);
+
 #endif

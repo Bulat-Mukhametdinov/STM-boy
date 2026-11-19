@@ -1517,6 +1517,73 @@ def usbbench_run(dev: Device, nbytes: int = 262144, directions: tuple = ("tx", "
     return out
 
 
+def media_upload(dev: Device, path: str, addr: int = 0x200000, chunk: int = 4096, timeout: float = 600.0) -> dict:
+    """Upload a media container (tools/make_media.py) to the W25Q media region with `media write`.
+    Raw bytes follow the '@OK media ready' handshake; the device flow-controls via USB NAKs. Verified by CRC-32."""
+    data = Path(path).read_bytes()
+    n = len(data)
+    crc = zlib.crc32(data) & 0xFFFFFFFF
+    dev.send(f"media write {addr:x} {n}")
+    ready = False
+    end = time.monotonic() + 10.0
+    while time.monotonic() < end and not ready:
+        m = dev.read_msg(0.2)
+        if m is None:
+            continue
+        if m.kind == "OK" and "media ready" in m.text:
+            ready = True
+        elif m.kind == "ERR":
+            return {"ok": False, "why": m.text}
+    if not ready:
+        return {"ok": False, "why": "not ready"}
+    dev.port.write_timeout = 60
+    t0 = time.monotonic()
+    sent = 0
+    last = t0
+    while sent < n:
+        k = min(chunk, n - sent)
+        dev.port.write(data[sent:sent + k])
+        sent += k
+        now = time.monotonic()
+        if now - last >= 1.0 or sent == n:
+            last = now
+            note(f"media upload {sent}/{n} ({100.0 * sent / n:.0f}%) {sent / 1e6 / (now - t0):.2f} MB/s")
+            OUT.say(f"media upload {100.0 * sent / n:5.1f}%  {sent / 1e6 / (now - t0):.2f} MB/s")
+    host_s = time.monotonic() - t0
+    res = None
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        m = dev.read_msg(0.5)
+        if m is None:
+            continue
+        if m.kind == "R" and isinstance(m.obj, dict) and m.obj.get("t") == "media_write":
+            res = m.obj
+        if m.kind in ("OK", "ERR") and "media ready" not in m.text:
+            break
+    ok = bool(res and res.get("ok") and res.get("crc") == crc)
+    return {"ok": ok, "bytes": n, "host_crc": crc, "host_s": round(host_s, 2),
+            "host_MBps": round(n / 1e6 / host_s, 3) if host_s > 0 else 0.0, "device": res}
+
+
+def cmd_media(args: argparse.Namespace) -> int:
+    cdc = resolve_cdc(target_port(args), target_serial(args))
+    with connect(cdc, timeout=args.open_timeout) as dev:
+        if args.action == "info":
+            tx = dev.transact("media info", timeout=10.0)
+            OUT.emit({"ok": tx.status == "ok", "results": tx.results})
+            for r in tx.results:
+                OUT.say(json.dumps(r))
+            return EXIT_OK if tx.status == "ok" else EXIT_FAIL
+        if not args.file:
+            OUT.say("media upload needs a file (tools/make_media.py output)")
+            return EXIT_FAIL
+        r = media_upload(dev, args.file, int(args.addr, 16), timeout=args.timeout)
+    note(f"media upload: {json.dumps(r)}")
+    OUT.say(f"media upload: {json.dumps(r)}")
+    OUT.emit(r)
+    return EXIT_OK if r.get("ok") else EXIT_FAIL
+
+
 def cmd_usbbench(args: argparse.Namespace) -> int:
     cdc = resolve_cdc(target_port(args), target_serial(args))
     dirs = ("tx", "rx") if args.direction == "both" else (args.direction,)
@@ -2143,7 +2210,7 @@ def cmd_lock_status(args: argparse.Namespace) -> int:
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
-HW_COMMANDS = {"info", "cmd", "monitor", "run", "dfu", "flash", "dfu-test", "usbbench", "battlog"}
+HW_COMMANDS = {"info", "cmd", "monitor", "run", "dfu", "flash", "dfu-test", "usbbench", "battlog", "media"}
 LOGGED_COMMANDS = HW_COMMANDS | {"ports"}
 
 
@@ -2184,6 +2251,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--direction", choices=("tx", "rx", "both"), default="both")
     s.add_argument("--timeout", type=float, default=30.0)
     s.set_defaults(func=cmd_usbbench)
+
+    s = sub.add_parser("media", parents=[common], help="media container: `media info`, `media upload file.bin` (see PROTOCOL.md)")
+    s.add_argument("action", choices=("upload", "info"))
+    s.add_argument("file", nargs="?", help="container .bin from tools/make_media.py")
+    s.add_argument("--addr", default="200000", help="flash address (hex, 64 KB aligned, in 200000..EFFFFF)")
+    s.add_argument("--timeout", type=float, default=600.0)
+    s.set_defaults(func=cmd_media)
 
     s = sub.add_parser("battlog", parents=[common], help="battery logger: dump the log (-> .bin + .csv)")
     s.add_argument("action", choices=("dump",))

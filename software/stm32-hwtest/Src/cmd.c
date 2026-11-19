@@ -151,6 +151,7 @@ static void cmd_help(void)
              "  hwcal init [force]  write defaults (force: overwrite foreign data / existing record)\r\n"
              "  hwcal save [force]  write the RAM calibration to the W25Q (refuses foreign data w/o force)\r\n"
              "  usbbench rx|tx <bytes>  CDC throughput (host: hwtest.py usbbench)\r\n"
+             "  media info|write <addr_hex> <len>  media container (hwtest.py media upload)\r\n"
              "  w25q id        JEDEC + unique id of the external flash\r\n"
              "  w25q read <addr_hex> <len>   binary dump (@B), len <= 65536\r\n"
              "  w25q crc <addr_hex> <len>    zlib CRC-32 of a range (any length)\r\n"
@@ -462,6 +463,8 @@ static void dispatch(char *line, bool restricted)
         cmd_w25q(argc, argv);
     } else if (strcmp(c, "usbbench") == 0) {
         usbbench_cmd(argc, argv);
+    } else if (strcmp(c, "media") == 0) {
+        media_cmd(argc, argv);
     } else if (strcmp(c, "hwcal") == 0) {
         cmd_hwcal(argc, argv);
     } else if (strcmp(c, "run") == 0) {

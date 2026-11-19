@@ -4,11 +4,13 @@
    160x128 gradient frame is pushed in native (column-major) order by SPI1 TX DMA (DMA2 S3) at 48 MHz, 8-bit frames;
    the frame time is measured, the mode is labelled on screen. [U]: A next mode, B exit. auto=1: t=<s> per mode.
 
-   input.latency [U]: black screen; every EXTI button edge (TIM2 timestamp at ISR entry) immediately fills the whole
-   screen white through DMA. Odd presses stage the window first (CASET/RASET/RAMWR sent while idle), even presses
-   send it in the reaction path ("cold"). Arena: 0..61439 frame, 61440..63999 label mask. */
+   input.latency [U] [marker=1]: black screen; every EXTI press edge (TIM2 timestamp at ISR entry) immediately toggles
+   the whole screen black->white / white->black through DMA (window staged while idle, re-armed right after each
+   present, edges queue so nothing is lost). Scope marker: PA8 HIGH for 2 ms at the edge (PA8 = MCU side of R24 3.3k).
+   Arena (colmod): 0..61439 frame, 61440..63999 label mask. */
 
 #include "suites.h"
+#include "audio.h"
 #include "bench.h"
 #include "clock.h"
 #include "cmd.h"
@@ -240,8 +242,6 @@ suite_verdict_t suite_display_colmod(int argc, char **argv)
 
 /* ================================================================ input.latency */
 
-static const uint16_t k_white = 0xFFFFu;
-
 static uint32_t med_u32(uint32_t *a, uint32_t n)
 {
     for (uint32_t i = 1; i < n; i++) {
@@ -269,17 +269,20 @@ static void lat_emit(const char *mode, uint32_t *a_start, uint32_t *a_done, uint
                mode, n, smin, smed, smax, dmin, dmed, dmax);
 }
 
+/* Scope marker: PA8 (audio pin; amp SD# is LOW and the PWM is off, so it is a plain push-pull GPIO) goes HIGH for
+   2 ms at the moment the edge is processed. Probe point: PA8 = MCU side of R24 (3.3k). */
 suite_verdict_t suite_input_latency(int argc, char **argv)
 {
     if (!suite_user_start("input.latency",
-                          "Button->pixel latency: screen is black; press any button (10x). Film the screen + the "
-                          "button at 240 fps. A=start B=skip",
+                          "Button->pixel latency: screen toggles black/white on every press (no dead time). Film the "
+                          "screen + the button at 240 fps. A=start B=skip",
                           argc, argv)) {
         return SUITE_ABORT;
     }
     uint32_t n_press = suite_arg_u32(argc, argv, "n", 10u);
     if (n_press > 32u) n_press = 32u;
     uint32_t to_ms = suite_arg_u32(argc, argv, "step", 30u) * 1000u;
+    bool marker = suite_arg_u32(argc, argv, "marker", 1u) != 0u;
 
     const uint16_t div0 = lcd_cfg.spi_div;
     const uint32_t speed0 = lcd_gpio_speed();
@@ -290,33 +293,33 @@ suite_verdict_t suite_input_latency(int argc, char **argv)
     lcd_set_frame16(false);
 
     static const char *const ans[] = {"press buttons", NULL};
-    char txt[64];
-    snprintf(txt, sizeof(txt), "Press any button %u times (screen turns white on each press)", (unsigned)n_press);
+    char txt[80];
+    snprintf(txt, sizeof(txt), "Press any button %u times (screen toggles black/white on each press)", (unsigned)n_press);
     ui_prompt_emit("input_latency", txt, ans, to_ms * n_press);
 
-    uint32_t st_pre[32], dn_pre[32], st_cold[32], dn_cold[32];
-    uint32_t n_pre = 0, n_cold = 0, done_n = 0;
+    static const uint16_t k_col[2] = {0xFFFFu, 0x0000u};   /* target colour of press parity 0 / 1 */
+    static const char *const k_tr[2] = {"black_to_white", "white_to_black"};
+    uint32_t st[2][32], dn[2][32], nt[2] = {0, 0}, done_n = 0;
     const char *end = "done";
     suite_verdict_t v = SUITE_PASS;
     input_exti_enable(true);
     lcd_fill_rect(0, 0, FW, FH, COLOR_BLACK);
+    input_edge_t e;
+    while (input_edge_pop(&e)) {
+    }
+    lcd_stream_window(0, 0, FW - 1u, FH - 1u);   /* window staged while idle */
+    spi1_dff(true);
+    uint32_t last_t = 0;
+    bool have_last = false;
 
     for (uint32_t i = 0; i < n_press; i++) {
-        bool cold = (i & 1u) != 0u;
-        lcd_fill_rect(0, 0, FW, FH, COLOR_BLACK);
-        lcd_fill_rect(0, 0, 4, 4, COLOR_DARKGRAY);   /* armed marker */
-        input_edge_t e;
-        while (input_edge_pop(&e)) {
-        }
-        if (!cold) {
-            lcd_stream_window(0, 0, FW - 1u, FH - 1u);   /* window staged while idle */
-            spi1_dff(true);
-        }
+        uint32_t par = i & 1u;
         uint32_t t_wait0 = HAL_GetTick(), last_svc = time_us();
         bool got = false;
         for (;;) {
             if (input_edge_pop(&e)) {
-                if (e.pressed && e.btn != BTN_POWER) {
+                /* releases are ignored; presses closer than 5 ms to the last accepted one are contact bounce */
+                if (e.pressed && e.btn != BTN_POWER && (!have_last || (uint32_t)(e.t_us - last_t) > 5000u)) {
                     got = true;
                     break;
                 }
@@ -330,51 +333,51 @@ suite_verdict_t suite_input_latency(int argc, char **argv)
             }
         }
         if (!got) {
-            if (!cold) lcd_end();
+            lcd_end();
             break;
         }
         uint32_t t_edge = e.t_us;
-        if (cold) {
-            lcd_stream_window(0, 0, FW - 1u, FH - 1u);
-            spi1_dff(true);
-        }
-        dma3_start(&k_white, NPX, true, false, false);
+        last_t = t_edge;
+        have_last = true;
+        uint32_t t_mark = time_us();
+        if (marker) audio_pa8_mode(AUD_PA8_HIGH);
+        dma3_start(&k_col[par], NPX, true, false, false);
         uint32_t t_dma = time_us();
+        if (marker) {
+            while ((uint32_t)(time_us() - t_mark) < 2000u) {
+            }
+            audio_pa8_mode(AUD_PA8_HIZ);   /* restore: PA8 back to its reset (input) state */
+        }
         dma3_finish();
         uint32_t t_done = time_us();
         lcd_end();
+        lcd_stream_window(0, 0, FW - 1u, FH - 1u);   /* re-arm at once for the next edge (edges are queued) */
+        spi1_dff(true);
         uint32_t l_dma = t_dma - t_edge, l_done = t_done - t_edge;
-        if (cold) { st_cold[n_cold] = l_dma; dn_cold[n_cold++] = l_done; }
-        else { st_pre[n_pre] = l_dma; dn_pre[n_pre++] = l_done; }
+        st[par][nt[par]] = l_dma;
+        dn[par][nt[par]++] = l_done;
         done_n++;
         res_printf("{\"t\":\"latency\",\"suite\":\"input.latency\",\"i\":%" PRIu32 ",\"btn\":\"%s\",\"mode\":\"%s\","
                    "\"edge_to_dma_us\":%" PRIu32 ",\"edge_to_done_us\":%" PRIu32 ",\"dma_us\":%" PRIu32 "}",
-                   i + 1u, input_name((button_t)e.btn), cold ? "cold" : "staged", l_dma, l_done, t_done - t_dma);
-        /* marker: press counter (after the measurement) */
-        gfx_textf(4, 4, COLOR_BLACK, COLOR_WHITE, 2, "%u/%u", (unsigned)(i + 1u), (unsigned)n_press);
-        uint32_t t0 = HAL_GetTick();
-        while ((uint32_t)(HAL_GetTick() - t0) < 500u) {
-            sys_service();
-        }
-        t0 = HAL_GetTick();
-        while (input_held() != 0u && (uint32_t)(HAL_GetTick() - t0) < 5000u) {
-            sys_service();
-        }
+                   i + 1u, input_name((button_t)e.btn), k_tr[par], l_dma, l_done, t_done - t_dma);
     }
+    lcd_end();
     input_exti_enable(false);
     ui_answer_emit("input_latency", end);
 
     uint32_t all_s[32], all_d[32], n = 0;
-    for (uint32_t i = 0; i < n_pre; i++) { all_s[n] = st_pre[i]; all_d[n++] = dn_pre[i]; }
-    for (uint32_t i = 0; i < n_cold; i++) { all_s[n] = st_cold[i]; all_d[n++] = dn_cold[i]; }
-    lat_emit("staged", st_pre, dn_pre, n_pre);
-    lat_emit("cold", st_cold, dn_cold, n_cold);
+    for (uint32_t k = 0; k < 2u; k++) {
+        for (uint32_t i = 0; i < nt[k]; i++) { all_s[n] = st[k][i]; all_d[n++] = dn[k][i]; }
+    }
+    lat_emit(k_tr[0], st[0], dn[0], nt[0]);
+    lat_emit(k_tr[1], st[1], dn[1], nt[1]);
     lat_emit("all", all_s, all_d, n);
-    res_printf("{\"t\":\"latency_note\",\"suite\":\"input.latency\",\"presses\":%" PRIu32 ",\"note\":\"firmware side only: "
-               "total = this + panel refresh phase (up to one panel period, ~16 ms at 60 Hz) + LC response; film the "
-               "screen and the button with a 240 fps phone; edge = EXTI ISR entry (TIM2 1 us), dma = DMA2 S3 enabled, "
-               "done = last pixel clocked out\"}",
-               done_n);
+    res_printf("{\"t\":\"latency_note\",\"suite\":\"input.latency\",\"presses\":%" PRIu32 ",\"marker\":%s,\"note\":\"firmware "
+               "side only: total = this + panel refresh phase (up to one panel period, ~16 ms at 60 Hz) + LC response; "
+               "film the screen and the button with a 240 fps phone; edge = EXTI ISR entry (TIM2 1 us), dma = DMA2 S3 "
+               "enabled, done = last pixel clocked out. Scope marker: PA8 = MCU side of R24 (3.3k) goes HIGH for 2 ms "
+               "when the edge is processed (marker=0 disables)\"}",
+               done_n, marker ? "true" : "false");
 
     lcd_set_frame16(f16_0);
     lcd_set_gpio_speed(speed0);

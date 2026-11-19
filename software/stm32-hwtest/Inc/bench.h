@@ -103,5 +103,7 @@ suite_verdict_t suite_flash_check(int argc, char **argv);
 
 /* USB bench command (cmd.c): usbbench rx|tx <bytes> */
 void usbbench_cmd(int argc, char **argv);
+/* media container commands (t_media.c): media info | media write <addr_hex> <len> */
+void media_cmd(int argc, char **argv);
 
 #endif

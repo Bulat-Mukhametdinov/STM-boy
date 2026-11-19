@@ -17,6 +17,7 @@ void gp_close(void);                /* waits for the last present, restores the 
 uint8_t *gp_fb(int i);              /* i = 0/1: 160x128 column-major framebuffer fb[x * 128 + y] */
 uint16_t *gp_pal(void);             /* 256 RGB565 entries */
 void gp_start(const uint8_t *fb);   /* convert + stream fb in the background (previous present must be finished) */
+void gp_start_pal(const uint8_t *fb, const uint16_t *pal);   /* same with a caller-owned palette (double-buffered video) */
 uint32_t gp_wait(void);             /* WFI until the present is done; returns the cycles spent waiting */
 void gp_text(uint8_t *fb, int x, int y, const char *s, uint8_t fg, uint8_t bg);
 void gp_box(uint8_t *fb, int x, int y, int w, int h, uint8_t c);

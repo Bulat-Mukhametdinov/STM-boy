@@ -80,5 +80,6 @@ suite_verdict_t suite_audio_matrix(int argc, char **argv);
 suite_verdict_t suite_audio_clip(int argc, char **argv);
 suite_verdict_t suite_audio_pop(int argc, char **argv);
 suite_verdict_t suite_audio_cpu(int argc, char **argv);
+suite_verdict_t suite_media_play(int argc, char **argv);
 
 #endif

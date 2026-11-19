@@ -62,7 +62,19 @@ static struct {
 } q;
 
 extern uint8_t g_arena[];   /* main.c scratch: free while an audio suite runs (suites are exclusive) */
-#define s_buf ((uint16_t *)(void *)g_arena)
+static uint16_t *s_bufp = (uint16_t *)(void *)g_arena;   /* engine B DMA ring: 2 * AUD_HALF * 2 B */
+#define s_buf s_bufp
+void audio_set_buffer(void *p) { s_bufp = p ? (uint16_t *)p : (uint16_t *)(void *)g_arena; }
+
+/* PCM stream voice (media.play): unsigned 8-bit mono ring filled by the main loop, linear interpolation to the engine
+   rate. head/tail are monotonic byte counters; an empty ring plays silence and counts an underrun. */
+static struct {
+    const uint8_t *buf;
+    uint32_t mask, rate, step;      /* step: Q16 PCM samples per output sample */
+    volatile uint32_t head, tail, under;
+    uint32_t phase;
+    int32_t prev, cur;
+} s_pcm;
 
 #define PINK_SCALE 10890.0f
 
@@ -123,6 +135,23 @@ static inline int32_t voice_sample(voice_t *v)
         }
         v->step = (uint32_t)v->stepf;
         break;
+    case AUD_GEN_PCM: {
+        uint32_t ph = s_pcm.phase + s_pcm.step;
+        if (ph >= 65536u) {
+            ph -= 65536u;
+            s_pcm.prev = s_pcm.cur;
+            if (s_pcm.tail != s_pcm.head) {
+                s_pcm.cur = ((int32_t)s_pcm.buf[s_pcm.tail & s_pcm.mask] - 128) << 8;
+                s_pcm.tail++;
+            } else {
+                s_pcm.cur = 0;
+                s_pcm.under++;
+            }
+        }
+        s_pcm.phase = ph;
+        s = s_pcm.prev + (((s_pcm.cur - s_pcm.prev) * (int32_t)ph) >> 16);
+        break;
+    }
     default:
         return 0;
     }
@@ -434,7 +463,9 @@ static void recalc_voices(void)
     for (unsigned i = 0; i < AUD_NVOICE; i++) {
         voice_t *v = &s_v[i];
         uint8_t t = v->type;
-        if (t == AUD_GEN_SINE || t == AUD_GEN_SQUARE) {
+        if (t == AUD_GEN_PCM) {
+            s_pcm.step = (uint32_t)((float)s_pcm.rate / s_fs * 65536.0f);
+        } else if (t == AUD_GEN_SINE || t == AUD_GEN_SQUARE) {
             v->step = (uint32_t)(v->f_hz / s_fs * 4294967296.0f);
         } else if (t == AUD_GEN_CHIRP) {
             float n = v->dur_s * s_fs;
@@ -644,4 +675,45 @@ void audio_clock_changed(void)
     aud_dither_t d = (aud_dither_t)q.mode;
     audio_engine_stop();
     (void)audio_engine_start(e, fs, d);
+}
+
+/* ------------------------------------------------------------------ PCM stream (media.play) */
+
+/* ring: power-of-two size, rate_hz = PCM sample rate. Call before audio_engine_start(). */
+void audio_pcm_start(uint8_t *ring, uint32_t size, uint32_t rate_hz, float db)
+{
+    audio_init();
+    s_v[0].type = AUD_GEN_OFF;
+    s_pcm.buf = ring;
+    s_pcm.mask = size - 1u;
+    s_pcm.rate = rate_hz;
+    s_pcm.head = s_pcm.tail = s_pcm.under = 0;
+    s_pcm.phase = 65535u;       /* first output sample pulls byte 0 */
+    s_pcm.prev = s_pcm.cur = 0;
+    s_pcm.step = (uint32_t)((float)rate_hz / s_fs * 65536.0f);
+    s_v[0].gain = db_to_q15(db);
+    s_v[0].type = AUD_GEN_PCM;
+}
+
+uint32_t audio_pcm_free(void) { return s_pcm.mask + 1u - (s_pcm.head - s_pcm.tail); }
+uint32_t audio_pcm_under(void) { return s_pcm.under; }
+
+void audio_pcm_put(const uint8_t *src, uint32_t n)
+{
+    uint32_t h = s_pcm.head;
+    for (uint32_t i = 0; i < n; i++) {
+        ((uint8_t *)(uintptr_t)s_pcm.buf)[(h + i) & s_pcm.mask] = src[i];
+    }
+    __DMB();
+    s_pcm.head = h + n;
+}
+
+/* Output samples played so far by engine B (DMA position, resolution one carrier period x RCR). */
+uint32_t audio_played(void)
+{
+    __disable_irq();
+    uint32_t tc = g_aud_stats.dma_tc, nd = DMA2_Stream5->NDTR;
+    bool pend = (DMA2->HISR & S5_TC) != 0u;
+    __enable_irq();
+    return (tc + (pend ? 1u : 0u)) * 2u * AUD_HALF + (2u * AUD_HALF - nd);
 }

@@ -6654,3 +6654,368 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-19 11:20:45 — audio.pop by ear (manual note)
 
 - User: 'naive' (amp enabled after PWM at mid) has no pop; all ramped variants (PWM ramp with amp on) pop. Idle hiss audible while the amp is on, stops when it turns off. Pop-free sequence made the default (audio_amp_on precharge 30 ms), HWCAL amp_ramp_ms=0 saved (seq 7).
+
+### 2026-11-19 11:39:57 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.63 s
+- cmd: @OK dfu
+
+### 2026-11-19 11:40:12 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.785
+- Output: Time elapsed during verifying operation: 00:00:01.953
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 11:40:13 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (281836 bytes), expected id: {'fw': '4d8ac13+dirty', 'build': 1795077587}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=4d8ac13+dirty build=1795077587, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.63s, program=15.22s, dfu_to_app=0.71s, total=16.69s
+
+### 2026-11-19 11:42:51 — hwtest.py media [auto]
+
+- Command: `hwtest.py media upload tools/build/bbb.bin`
+- Result: OK (exit code 0)
+- media upload 348160/13239496 (3%) 0.34 MB/s
+- media upload 688128/13239496 (5%) 0.34 MB/s
+- media upload 1028096/13239496 (8%) 0.34 MB/s
+- media upload 1363968/13239496 (10%) 0.34 MB/s
+- media upload 1703936/13239496 (13%) 0.34 MB/s
+- media upload 2043904/13239496 (15%) 0.34 MB/s
+- media upload 2383872/13239496 (18%) 0.34 MB/s
+- media upload 2723840/13239496 (21%) 0.34 MB/s
+- media upload 3059712/13239496 (23%) 0.34 MB/s
+- media upload 3399680/13239496 (26%) 0.34 MB/s
+- media upload 3739648/13239496 (28%) 0.34 MB/s
+- media upload 4079616/13239496 (31%) 0.34 MB/s
+- media upload 4419584/13239496 (33%) 0.34 MB/s
+- media upload 4759552/13239496 (36%) 0.34 MB/s
+- media upload 5099520/13239496 (39%) 0.34 MB/s
+- media upload 5439488/13239496 (41%) 0.34 MB/s
+- media upload 5779456/13239496 (44%) 0.34 MB/s
+- media upload 6119424/13239496 (46%) 0.34 MB/s
+- media upload 6459392/13239496 (49%) 0.34 MB/s
+- media upload 6799360/13239496 (51%) 0.34 MB/s
+- media upload 7139328/13239496 (54%) 0.34 MB/s
+- media upload 7479296/13239496 (56%) 0.34 MB/s
+- media upload 7819264/13239496 (59%) 0.34 MB/s
+- media upload 8159232/13239496 (62%) 0.34 MB/s
+- media upload 8499200/13239496 (64%) 0.34 MB/s
+- media upload 8839168/13239496 (67%) 0.34 MB/s
+- media upload 9179136/13239496 (69%) 0.34 MB/s
+- media upload 9519104/13239496 (72%) 0.34 MB/s
+- media upload 9859072/13239496 (74%) 0.34 MB/s
+- media upload 10199040/13239496 (77%) 0.34 MB/s
+- media upload 10539008/13239496 (80%) 0.34 MB/s
+- media upload 10878976/13239496 (82%) 0.34 MB/s
+- media upload 11218944/13239496 (85%) 0.34 MB/s
+- media upload 11558912/13239496 (87%) 0.34 MB/s
+- media upload 11898880/13239496 (90%) 0.34 MB/s
+- media upload 12238848/13239496 (92%) 0.34 MB/s
+- media upload 12578816/13239496 (95%) 0.34 MB/s
+- media upload 12918784/13239496 (98%) 0.34 MB/s
+- media upload 13239496/13239496 (100%) 0.34 MB/s
+- media upload: {"ok": true, "bytes": 13239496, "host_crc": 3945181159, "host_s": 39.33, "host_MBps": 0.337, "device": {"t": "media_write", "addr": "200000", "len": 13239496, "got": 13239496, "crc": 3945181159, "rx_crc": 3945181159, "ok": true, "err": "", "blocks_erased": 203, "rx_ms": 39388, "erase_ms": 2, "program_ms": 35402, "verify_ms": 6518, "kBps": 336}}
+
+### 2026-11-19 11:43:10 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-19 11:43:25 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.3 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.844
+- Output: Time elapsed during verifying operation: 00:00:01.954
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 11:43:26 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (281916 bytes), expected id: {'fw': '4d8ac13+dirty', 'build': 1795077786}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=4d8ac13+dirty build=1795077786, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.62s, program=15.26s, dfu_to_app=0.70s, total=16.67s
+
+### 2026-11-19 11:43:33 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "media info"`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK media info lines=2
+- @R {"t": "media_info", "valid": true, "why": "ok", "magic": "564D4253", "version": 1, "w": 160, "h": 128, "fps": 15, "frames": 600, "audio_rate": 16005, "audio_bits": 8, "frame_stride": 22059, "audio_byt
+
+### 2026-11-19 11:43:34 — Run suite media.play (start) [auto]
+
+- Command: `run media.play auto=10`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4d8ac13+dirty build=1795077786 busy=idle
+
+### 2026-11-19 11:43:40 — hwtest.py run [auto]
+
+- Command: `hwtest.py run media.play auto=10 --timeout 60`
+- Result: OK (exit code 0)
+- Suite media.play: PASS results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-114334-media.play.json
+
+### 2026-11-19 11:43:58 — Run suite media.play (start) [auto]
+
+- Command: `run media.play auto=20`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4d8ac13+dirty build=1795077786 busy=idle
+
+### 2026-11-19 11:44:01 — hwtest.py run [auto]
+
+- Command: `hwtest.py run media.play auto=20 --timeout 60`
+- Result: OK (exit code 0)
+- Suite media.play: PASS results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-114358-media.play.json
+
+### 2026-11-19 11:44:28 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.62 s
+- cmd: @OK dfu
+
+### 2026-11-19 11:44:44 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: ERROR (exit code 2)
+- Error: NoDevice: no STM-boy CDC port (0483:5740) found
+
+### 2026-11-19 11:45:08 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.831
+- Output: Time elapsed during verifying operation: 00:00:01.955
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 11:45:08 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (281924 bytes), expected id: {'fw': '4d8ac13+dirty', 'build': 1795077889}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=4d8ac13+dirty build=1795077889, CDC enumerations=1
+- Timing: program=15.22s, dfu_to_app=0.73s, total=16.11s
+
+### 2026-11-19 11:46:57 — hwtest.py media [auto]
+
+- Command: `hwtest.py media upload tools/build/bbb.bin`
+- Result: OK (exit code 0)
+- media upload 143360/13239496 (1%) 0.12 MB/s
+- media upload 307200/13239496 (2%) 0.14 MB/s
+- media upload 471040/13239496 (4%) 0.14 MB/s
+- media upload 643072/13239496 (5%) 0.14 MB/s
+- media upload 798720/13239496 (6%) 0.14 MB/s
+- media upload 958464/13239496 (7%) 0.14 MB/s
+- media upload 1126400/13239496 (9%) 0.14 MB/s
+- media upload 1294336/13239496 (10%) 0.15 MB/s
+- media upload 1454080/13239496 (11%) 0.14 MB/s
+- media upload 1626112/13239496 (12%) 0.15 MB/s
+- media upload 1781760/13239496 (13%) 0.14 MB/s
+- media upload 1949696/13239496 (15%) 0.15 MB/s
+- media upload 2109440/13239496 (16%) 0.14 MB/s
+- media upload 2277376/13239496 (17%) 0.15 MB/s
+- media upload 2437120/13239496 (18%) 0.14 MB/s
+- media upload 2609152/13239496 (20%) 0.15 MB/s
+- media upload 2764800/13239496 (21%) 0.14 MB/s
+- media upload 2940928/13239496 (22%) 0.15 MB/s
+- media upload 3092480/13239496 (23%) 0.14 MB/s
+- media upload 3256320/13239496 (25%) 0.15 MB/s
+- media upload 3420160/13239496 (26%) 0.14 MB/s
+- media upload 3579904/13239496 (27%) 0.15 MB/s
+- media upload 3747840/13239496 (28%) 0.14 MB/s
+- media upload 3923968/13239496 (30%) 0.15 MB/s
+- media upload 4075520/13239496 (31%) 0.15 MB/s
+- media upload 4243456/13239496 (32%) 0.15 MB/s
+- media upload 4403200/13239496 (33%) 0.15 MB/s
+- media upload 4567040/13239496 (34%) 0.15 MB/s
+- media upload 4730880/13239496 (36%) 0.15 MB/s
+- media upload 4890624/13239496 (37%) 0.15 MB/s
+- media upload 5058560/13239496 (38%) 0.15 MB/s
+- media upload 5226496/13239496 (39%) 0.15 MB/s
+- media upload 5386240/13239496 (41%) 0.15 MB/s
+- media upload 5558272/13239496 (42%) 0.15 MB/s
+- media upload 5713920/13239496 (43%) 0.15 MB/s
+- media upload 5881856/13239496 (44%) 0.15 MB/s
+- media upload 6041600/13239496 (46%) 0.15 MB/s
+- media upload 6209536/13239496 (47%) 0.15 MB/s
+- media upload 6361088/13239496 (48%) 0.15 MB/s
+- media upload 6500352/13239496 (49%) 0.14 MB/s
+- media upload 6643712/13239496 (50%) 0.14 MB/s
+- media upload 6791168/13239496 (51%) 0.14 MB/s
+- media upload 6942720/13239496 (52%) 0.15 MB/s
+- media upload 7090176/13239496 (54%) 0.14 MB/s
+- media upload 7241728/13239496 (55%) 0.14 MB/s
+- media upload 7385088/13239496 (56%) 0.14 MB/s
+- media upload 7528448/13239496 (57%) 0.14 MB/s
+- media upload 7680000/13239496 (58%) 0.14 MB/s
+- media upload 7827456/13239496 (59%) 0.14 MB/s
+- media upload 7979008/13239496 (60%) 0.14 MB/s
+- media upload 8126464/13239496 (61%) 0.14 MB/s
+- media upload 8269824/13239496 (62%) 0.14 MB/s
+- media upload 8417280/13239496 (64%) 0.14 MB/s
+- media upload 8568832/13239496 (65%) 0.14 MB/s
+- media upload 8724480/13239496 (66%) 0.14 MB/s
+- media upload 8859648/13239496 (67%) 0.14 MB/s
+- media upload 9007104/13239496 (68%) 0.14 MB/s
+- media upload 9158656/13239496 (69%) 0.14 MB/s
+- media upload 9297920/13239496 (70%) 0.14 MB/s
+- media upload 9449472/13239496 (71%) 0.14 MB/s
+- media upload 9588736/13239496 (72%) 0.14 MB/s
+- media upload 9740288/13239496 (74%) 0.14 MB/s
+- media upload 9887744/13239496 (75%) 0.14 MB/s
+- media upload 10035200/13239496 (76%) 0.14 MB/s
+- media upload 10170368/13239496 (77%) 0.14 MB/s
+- media upload 10317824/13239496 (78%) 0.14 MB/s
+- media upload 10465280/13239496 (79%) 0.14 MB/s
+- media upload 10604544/13239496 (80%) 0.14 MB/s
+- media upload 10752000/13239496 (81%) 0.14 MB/s
+- media upload 10891264/13239496 (82%) 0.14 MB/s
+- media upload 11046912/13239496 (83%) 0.14 MB/s
+- media upload 11194368/13239496 (85%) 0.14 MB/s
+- media upload 11345920/13239496 (86%) 0.14 MB/s
+- media upload 11481088/13239496 (87%) 0.14 MB/s
+- media upload 11620352/13239496 (88%) 0.14 MB/s
+- media upload 11771904/13239496 (89%) 0.14 MB/s
+- media upload 11919360/13239496 (90%) 0.14 MB/s
+- media upload 12070912/13239496 (91%) 0.14 MB/s
+- media upload 12226560/13239496 (92%) 0.14 MB/s
+- media upload 12374016/13239496 (93%) 0.14 MB/s
+- media upload 12517376/13239496 (95%) 0.14 MB/s
+- media upload 12660736/13239496 (96%) 0.14 MB/s
+- media upload 12812288/13239496 (97%) 0.14 MB/s
+- media upload 12972032/13239496 (98%) 0.14 MB/s
+- media upload 13115392/13239496 (99%) 0.14 MB/s
+- media upload 13239496/13239496 (100%) 0.14 MB/s
+- media upload: {"ok": true, "bytes": 13239496, "host_crc": 3945181159, "host_s": 93.72, "host_MBps": 0.141, "device": {"t": "media_write", "addr": "200000", "len": 13239496, "got": 13239496, "crc": 3945181159, "rx_crc": 3945181159, "ok": true, "err": "", "blocks_erased": 203, "rx_ms": 94070, "erase_ms": 54723, "program_ms": 35364, "verify_ms": 6518, "kBps": 140}}
+
+### 2026-11-19 11:46:59 — Run suite demo (start) [auto]
+
+- Command: `run demo auto=1 t=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4d8ac13+dirty build=1795077889 busy=idle
+
+### 2026-11-19 11:47:05 — hwtest.py run [auto]
+
+- Command: `hwtest.py run demo auto=1 t=2 --timeout 60`
+- Result: OK (exit code 0)
+- Suite demo: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-114659-demo.json
+
+### 2026-11-19 11:47:06 — Run suite demo (start) [auto]
+
+- Command: `run demo auto=1 t=2 scene=0 col=2`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4d8ac13+dirty build=1795077889 busy=idle
+
+### 2026-11-19 11:47:08 — hwtest.py run [auto]
+
+- Command: `hwtest.py run demo auto=1 t=2 scene=0 col=2 --timeout 60`
+- Result: OK (exit code 0)
+- Suite demo: PASS results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-114706-demo.json
+
+### 2026-11-19 11:47:08 — Run suite demo (start) [auto]
+
+- Command: `run demo auto=1 t=2 scene=0 col=3`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4d8ac13+dirty build=1795077889 busy=idle
+
+### 2026-11-19 11:47:11 — hwtest.py run [auto]
+
+- Command: `hwtest.py run demo auto=1 t=2 scene=0 col=3 --timeout 60`
+- Result: OK (exit code 0)
+- Suite demo: PASS results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-114708-demo.json
+
+### 2026-11-19 11:47:11 — Run suite display.colmod (start) [auto]
+
+- Command: `run display.colmod auto=1 t=1`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4d8ac13+dirty build=1795077889 busy=idle
+
+### 2026-11-19 11:47:15 — hwtest.py run [auto]
+
+- Command: `hwtest.py run display.colmod auto=1 t=1 --timeout 60`
+- Result: OK (exit code 0)
+- Suite display.colmod: PASS results=3 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-114711-display.colmod.json
+
+### 2026-11-19 11:47:53 — Run suite input.latency (start) [auto]
+
+- Command: `run input.latency`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4d8ac13+dirty build=1795077889 busy=idle
+
+### 2026-11-19 11:48:53 — hwtest.py run [auto]
+
+- Command: `hwtest.py run input.latency --timeout 8`
+- Result: FAIL (exit code 2)
+- Suite input.latency: ABORT results=1 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-114753-input.latency.json
+
+### 2026-11-19 11:48:54 — hwtest.py info [auto]
+
+- Command: `hwtest.py info`
+- Result: OK (exit code 0)
+- COM10: fw=4d8ac13+dirty build=1795077889 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-19 11:51:08 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-19 11:51:23 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.2 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.837
+- Output: Time elapsed during verifying operation: 00:00:01.954
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 11:51:24 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (281924 bytes), expected id: {'fw': '4d8ac13+dirty', 'build': 1795078228}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=4d8ac13+dirty build=1795078228, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=15.24s, dfu_to_app=0.71s, total=16.62s
+
+- 2026-11-19 (manual) media: W25Q 64K erase (0xD8) was silently skipped on the first upload (erase 2 ms total, F4 again); retry-on-<1ms fixed it (203 real erases = 55 s). Upload 13.2 MB ~94 s. media.play NOT run on hardware (user hold). Two earlier trial runs ended after 3-6 s with auto=10/20 and no key pressed (suspected spurious B edge); auto mode now ignores keys.

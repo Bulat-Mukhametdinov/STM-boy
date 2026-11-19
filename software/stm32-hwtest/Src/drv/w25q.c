@@ -169,9 +169,38 @@ w25q_status_t w25q_read(uint32_t addr, void *buf, size_t len)
 
 /* Driver-level write guard: nothing below the hwtest area (RetroPort ROM pack,
    settings, ...) may ever be programmed or erased by this firmware. */
+static bool s_media_open;   /* set only inside the media API below */
+
 static bool write_ok(uint32_t addr, size_t len)
 {
+    if (s_media_open) {
+        return addr >= W25Q_MEDIA_BASE && addr < W25Q_MEDIA_END && len <= (W25Q_MEDIA_END - addr);
+    }
     return addr >= W25Q_HWTEST_BASE && range_ok(addr, len);
+}
+
+/* Media region 0x200000-0xEFFFFF (container for media.play, see PROTOCOL.md): writable only through these two calls.
+   Everything else keeps the generic guard; the RetroPort ROM pack (0x100000-0x133670) is never reachable. */
+w25q_status_t w25q_media_erase_block(uint32_t addr)   /* 64 KB aligned, BUSY-polled */
+{
+    s_media_open = true;
+    w25q_status_t st = W25Q_ERR_TIMEOUT;
+    for (int attempt = 0; attempt < 3; attempt++) {   /* F4: an erase that "finishes" in < 1 ms was not executed */
+        uint32_t us = 0;
+        st = w25q_erase_cmd(0xD8u, addr, &us);
+        if (st != W25Q_OK || us >= 1000u) break;
+        st = W25Q_ERR_TIMEOUT;
+    }
+    s_media_open = false;
+    return st;
+}
+
+w25q_status_t w25q_media_program(uint32_t addr, const void *buf, size_t len)
+{
+    s_media_open = true;
+    w25q_status_t st = w25q_program(addr, buf, len);
+    s_media_open = false;
+    return st;
 }
 
 w25q_status_t w25q_program(uint32_t addr, const void *buf, size_t len)

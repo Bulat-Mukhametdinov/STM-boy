@@ -20,6 +20,8 @@
 #define W25Q_SCRATCH_END      0xFE0000u
 #define W25Q_OCLOG_BASE       0xFE0000u  /* overclock / bus-limit journal: 0xFE0000-0xFEFFFF */
 #define W25Q_OCLOG_END        0xFF0000u
+#define W25Q_MEDIA_BASE       0x200000u  /* media container region 0x200000-0xEFFFFF, writable only via the media API */
+#define W25Q_MEDIA_END        0xF00000u
 #define W25Q_HWCAL_ADDR       0xFFF000u  /* one 4 KB sector, A/B halves */
 
 typedef enum {
@@ -41,6 +43,8 @@ w25q_status_t w25q_program(uint32_t addr, const void *buf, size_t len); /* any l
 w25q_status_t w25q_erase_sector(uint32_t addr);                          /* 4 KB aligned */
 w25q_status_t w25q_power_down(void);
 w25q_status_t w25q_release_power_down(void);
+w25q_status_t w25q_media_erase_block(uint32_t addr);               /* 64 KB aligned, inside the media region */
+w25q_status_t w25q_media_program(uint32_t addr, const void *buf, size_t len);
 const char *w25q_status_str(w25q_status_t s);
 
 /* P3/P5 extensions. Writes (program/erase) are refused below W25Q_HWTEST_BASE. */

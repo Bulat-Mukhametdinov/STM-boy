@@ -133,9 +133,67 @@ static void line_complete(void)
 volatile uint32_t g_usb_rx_bytes;
 volatile bool g_usb_rx_sink;
 
+/* Raw capture (media write): the ISR copies packets into a caller-owned power-of-two ring and only re-arms the OUT
+   endpoint while >= one packet of room is left (the host then gets NAKs = flow control); usb_cap_pop() re-arms. */
+static uint8_t *s_cap_buf;
+static uint32_t s_cap_mask;
+static volatile uint32_t s_cap_head, s_cap_tail;
+static volatile bool s_cap_on, s_cap_stalled;
+
+void usb_cap_begin(uint8_t *buf, uint32_t size)
+{
+    __disable_irq();
+    s_cap_buf = buf;
+    s_cap_mask = size - 1u;
+    s_cap_head = s_cap_tail = 0;
+    s_cap_stalled = false;
+    s_cap_on = true;
+    __enable_irq();
+}
+
+void usb_cap_end(void)
+{
+    __disable_irq();
+    s_cap_on = false;
+    if (s_cap_stalled) {
+        s_cap_stalled = false;
+        USBD_CDC_SetRxBuffer(&hUsbDeviceFS, s_rx_pkt);
+        USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+    }
+    __enable_irq();
+}
+
+uint32_t usb_cap_pop(uint8_t *dst, uint32_t max)
+{
+    uint32_t h = s_cap_head, t = s_cap_tail, n = h - t;
+    if (n > max) n = max;
+    for (uint32_t i = 0; i < n; i++) dst[i] = s_cap_buf[(t + i) & s_cap_mask];
+    __disable_irq();
+    s_cap_tail = t + n;
+    if (s_cap_stalled && (s_cap_mask + 1u) - (s_cap_head - s_cap_tail) >= CDC_DATA_FS_MAX_PACKET_SIZE) {
+        s_cap_stalled = false;
+        USBD_CDC_SetRxBuffer(&hUsbDeviceFS, s_rx_pkt);
+        USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+    }
+    __enable_irq();
+    return n;
+}
+
 static int8_t CDC_Receive_FS(uint8_t *buf, uint32_t *len)
 {
     g_usb_rx_bytes += *len;
+    if (s_cap_on) {
+        uint32_t h = s_cap_head;
+        for (uint32_t i = 0; i < *len; i++) s_cap_buf[(h + i) & s_cap_mask] = buf[i];
+        s_cap_head = h + *len;
+        if ((s_cap_mask + 1u) - (s_cap_head - s_cap_tail) >= CDC_DATA_FS_MAX_PACKET_SIZE) {
+            USBD_CDC_SetRxBuffer(&hUsbDeviceFS, s_rx_pkt);
+            USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+        } else {
+            s_cap_stalled = true;
+        }
+        return USBD_OK;
+    }
     if (g_usb_rx_sink) { /* usbbench rx: count and discard */
         USBD_CDC_SetRxBuffer(&hUsbDeviceFS, s_rx_pkt);
         USBD_CDC_ReceivePacket(&hUsbDeviceFS);

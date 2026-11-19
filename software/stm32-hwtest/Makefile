@@ -84,6 +84,7 @@ SRC_OWN := \
   Src/ui/t_stress.c \
   Src/ui/t_lcdx.c \
   Src/ui/t_video.c \
+  Src/ui/t_media.c \
   Src/ui/t_sleep.c \
   Src/ui/t_flash.c \
   Src/ui/t_w25q.c \
