@@ -7092,3 +7092,8 @@ git-ignored; .txt hexdumps next to them).
 
 - demo raytracer (compute-bound), BL 100 %, COLMOD 16-bit, on battery, meter 200 mA range: 48 MHz 50.9 mA 20.3 fps; 72: 57.3 / 30.4; 84: 60.6 / 35.9; 96: 63.3 / 40.7; 120: 66.8 / 51.0; 144: 69.3 / 61.0.
 - Linear fit: 0.191 mA/MHz + 43.5 mA (static part dominated by the backlight). fps scales exactly with SYSCLK. Charge per frame falls with frequency (2.51 -> 1.14 mA*s/frame): for compute-bound work higher clock is MORE energy-efficient (fixed backlight/system power amortised).
+
+### 2026-11-19 15:31:29 — Scope: amp-enable dip on battery (manual note)
+
+- OWON XDS3202A, battery only (no meter, no USB), CH1 AC 50 mV/div 20 MHz BW on C14 (+V) and in a second run on C15 (VBAT), CH2 DC on R23 (AMP_SD) as trigger (rising, 1.5 V), 20 ms/div and 10 us/div. power.ampdip started from the device menu.
+- Result: no visible step/dip at amp enable or during the 1 kHz tone on either rail (< ~15 mV vs +-40 mV noise band) -> F6 closed (was the meter burden). Periodic ~50-65 mV negative pulses every ~17 us on both rails before and after amp enable = TPS63802 power-save bursts -> explains F10. Photos in tools/results/.../scope-20261119-ampdip/.

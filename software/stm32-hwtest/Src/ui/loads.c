@@ -98,14 +98,22 @@ static void frame_finish(void)
     }
 }
 
+/* Frame-buffer index of landscape pixel (x, y): frames are streamed with lcd_stream_window(), which
+   expects column-major data in native scan mode and row-major otherwise. */
+static uint32_t fb_idx(uint32_t x, uint32_t y)
+{
+    return lcd_native() ? x * lcd_height() + y : y * lcd_width() + x;
+}
+
 void load_progress(uint32_t px, uint32_t of)
 {
     uint32_t w = lcd_width();
     uint32_t fill = of ? (px * w) / of : 0;
     for (uint32_t y = 0; y < 6u; y++) {
         for (uint32_t x = 0; x < w; x++) {
-            FB[(y * w + x) * 2u] = (x < fill) ? 0xE0 : 0x08;
-            FB[(y * w + x) * 2u + 1u] = (x < fill) ? 0x07 : 0x42;
+            uint32_t i = fb_idx(x, y);
+            FB[i * 2u] = (x < fill) ? 0xE0 : 0x08;
+            FB[i * 2u + 1u] = (x < fill) ? 0x07 : 0x42;
         }
     }
 }
@@ -119,7 +127,7 @@ void load_fb_text(int16_t y, const char *str, uint16_t fg)
     }
     for (uint32_t r = 0; r < 8u; r++) {
         for (uint32_t x = 0; x < w; x++) {
-            px[((uint32_t)y + r) * w + x] = 0;
+            px[fb_idx(x, (uint32_t)y + r)] = 0;
         }
     }
     uint32_t cx = 2;
@@ -128,7 +136,7 @@ void load_fb_text(int16_t y, const char *str, uint16_t fg)
         for (uint32_t c = 0; c < 5u; c++) {
             for (uint32_t r = 0; r < 7u; r++) {
                 if ((g[c] >> r) & 1u) {
-                    px[((uint32_t)y + r) * w + cx + c] = fg;
+                    px[fb_idx(cx + c, (uint32_t)y + r)] = fg;
                 }
             }
         }
