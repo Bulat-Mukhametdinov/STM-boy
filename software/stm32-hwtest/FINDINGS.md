@@ -18,9 +18,16 @@ evidence are in `HW_LOG.md` and `tools/results/`.
 | F9 | CLOSED: the battlog DID record chg=1 (302 records, t=50519..53499); the analyzer just failed to detect the CC phase. Note: battlog t_s does not advance during Stop (time base excludes the 4:42 Stop gap). | re-check of battlog-20261117-080333.csv | fix battlog_analyze.py CC detection; add RTC time across Stop |
 | F10 | Battery/VDDA/temperature ADC readings get much noisier during long low-load rests (S2, BL off): spikes on Vbat, VDDA and die temp together. Likely TPS63802 auto power-save (MODE=GND) -> burst-mode ripple on 3V3/VDDA; BAT_STAT node has no filter cap. | battlog-20261117-080333 overview.png (18:20, 20:30, 21:50-22:10) | Gauge: stronger averaging at low load; v0.2: cap on BAT_STAT, consider forced-PWM MODE or VDDA filtering |
 | F11 | RESOLVED (recommendation): landscape MADCTL 0xA0 writes perpendicular to the native portrait scan -> diagonal tear; at 60 fps vs panel 60.25 Hz the seam drifts right->left every ~4 s (beat, unfixable without TE). Native-order transfer (MADCTL 0x80 = MY, MV=0, frame stored column-major / rotated 90 deg) makes the tear practically invisible at any fps/panel-rate combination (user). Remaining blur = TN pixel response. Rotation cost ~1.3 ms/frame (~2.2 ms incl. 8bpp->565). | display.tear, user 2026-11-17 | Engine: render/convert in native order, MADCTL 0x80 |
+| F12 | Audio: analog chain (PAM8302A on 3V3) saturates at about -8 dBFS digital (1 kHz level stops rising from -8 to 0 dBFS); 200 Hz is inaudible below -10 dBFS and above that only distortion/rattle appears. During the clip test (0 dBFS, 200 Hz) the speaker got very hot. | audio.clip + phyphox 2026-11-19 | Limit digital output to -9 dBFS, high-pass ~400-500 Hz in the mixer, no sustained loud LF tones; measure speaker impedance/rating |
 | F5 | Button B release bounce up to 17.6 ms (others < 4 ms). | `input.bounce` | Use >= 20 ms release debounce; check switch |
 
 ## Confirmed Facts
+
+- Speaker (2026-11-19, iPhone mic at 10 cm, phyphox, fan background -55 dB): usable band ~800 Hz - 10 kHz
+  (stepped sine, rel. to 1-8 kHz median: 800 Hz -16, 1 kHz -9, 1.25 kHz +3, 1.6 kHz +7, 2.5 kHz -13 (not
+  confirmed by chirp), 3.15 kHz +6, 6-8 kHz -2, 10 kHz -5, 12.5 kHz -11 dB); below ~500 Hz under the fan noise
+  (>= 25 dB down). Idle hiss at 2 cm hidden by the fan (all cases within +-1 dB; 94/187 kHz carriers +2/+1 dB);
+  user hears hiss -> repeat in a quiet room with a spectrum.
 
 - Block C (2026-11-18, 96 MHz): game-like load (raycaster 60 fps + 4-voice audio DMA + W25Q DMA
   streaming + ADC) for 60 s and a 3-min soak: 0 audio underruns, 0 DMA errors, 0 CRC errors, CPU ~31 %.

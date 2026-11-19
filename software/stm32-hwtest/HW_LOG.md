@@ -6486,3 +6486,70 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-18 22:01:45 — W25Q erase fix (manual note)
 
 - Block C agent found `w25q_erase_sector()` returning OK in ~11 us without erasing (likely the F4 root symptom). It now uses `w25q_erase_cmd(0x20)` and retries if the erase completes in < 1 ms. Verified: `hwcal save` x3 (seq 4 B, 5 A after a sector erase, 6 B) all OK.
+
+### 2026-11-19 10:30:53 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: FAIL (exit code 2)
+
+### 2026-11-19 10:30:54 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd gauge --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK gauge lines=2
+- @R {"t": "gauge", "mode": "NO_BATT", "level": 0, "valid": true, "flags": 4, "soc": 0.0, "vcomp_mv": 2087, "vbat_mv": 4199, "load_ma": 38, "load_state": 7, "vbus": true, "chg": false, "drops": 0, "rises":
+
+### 2026-11-19 10:31:01 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: FAIL (exit code 2)
+
+### 2026-11-19 10:31:10 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: FAIL (exit code 2)
+
+### 2026-11-19 10:31:23 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=1
+
+### 2026-11-19 10:31:24 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028428 busy=idle
+
+### 2026-11-19 10:31:26 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: FAIL (exit code 1)
+- Suite power.info: FAIL results=1 pass=0 fail=1
+- Failed: power.info/info
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-103124-power.info.json
+
+### 2026-11-19 10:31:37 — Run suite stress.game (start) [auto]
+
+- Command: `run stress.game s=20 fps=0`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028428 busy=idle
+
+### 2026-11-19 10:31:57 — hwtest.py run [auto]
+
+- Command: `hwtest.py run stress.game s=20 fps=0 --timeout 90`
+- Result: FAIL (exit code 1)
+- Suite stress.game: FAIL results=3 pass=0 fail=1
+- Failed: stress.game/summary
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-103137-stress.game.json
+
+### 2026-11-19 10:54:42 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd abort --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK abort lines=1
+
+### 2026-11-19 11:11:07 — Audio session with phone (manual note)
+
+- phyphox Audio Amplitude (iPhone), speaker connected, battery connected, fan noise ~-55 dB. audio.sweep -> fr.csv/fr.png; audio.chirp -> chirp_fr.csv/fr_combined.png; audio.hiss (2 cm) -> hiss masked by fan; audio.clip -> saturation at ~-8 dBFS, 200 Hz rattle; speaker got very hot at the end (0 dBFS 200 Hz). Files in tools/results/.../audio-20261119-sweep/.
+- No-battery check (earlier today): presence no_batt, Vbat reading floats 0..4.2 V, stress.game on USB only at 139 fps with 0 audio underruns / 0 DMA / 0 CRC errors (fail only from adc_bad).
