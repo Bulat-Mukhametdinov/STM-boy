@@ -4,7 +4,7 @@ Single entry point for anyone writing game firmware for the STM-boy v0.1
 board. It collects every hardware fact and proven recipe found with the
 `stm32-hwtest` firmware so nothing has to be re-discovered.
 
-> Status: first draft, 2026-11-18. Sections that depend on work that has not
+> Status: first draft, updated 2026-11-19. Sections that depend on work that has not
 > been done yet are marked "Not measured yet" or "Pending". Raw evidence lives
 > in [software/stm32-hwtest/HW_LOG.md](../software/stm32-hwtest/HW_LOG.md) and
 > `software/stm32-hwtest/tools/results/<uid>/*.json`; the running findings list
@@ -192,6 +192,21 @@ at ~28 C. Amplifier off during the sweep.
 > Warning: anything above 100 MHz is outside the datasheet. When results exist
 > they will be marked "not for release".
 
+#### Dynamic Frequency Guidance (DERIVED from the sweep and block C)
+
+| Situation | SYSCLK | Why |
+| --- | --- | --- |
+| Menus, pause, idle screens, low battery | 48-84 MHz | Scale **down**: CPU load is low there; the display still reaches 72-126 fps |
+| Normal gameplay | 96 MHz | Display optimum (SPI1 48 MHz, 146 fps), inside the specification |
+| Compute-bound scene (e.g. ray tracer) | 96-144 MHz | Optional out-of-spec "turbo"; USB needs 96, 120 or 144 |
+
+- The display gets **slower** above 96 MHz (APB2/SPI1 divided: 76 fps at 100,
+  91 at 120, 109 at 144 MHz), so turbo only pays when the scene is compute
+  bound and renders well below the present time.
+- A switch costs about 1 ms plus a USB stop/start and re-enumeration (about
+  350 ms, see section 11); switch on scene changes, never per frame.
+- Never make the game depend on turbo: it is chip-specific and out of spec.
+
 ## 4. Peripheral Allocation
 
 The allocation below is what `stm32-hwtest` actually uses (verified in source,
@@ -201,14 +216,20 @@ priorities are listed here.
 
 ### DMA
 
-| Stream / channel | Peripheral | Use | NVIC priority |
-| --- | --- | --- | --- |
-| DMA2 S3, Ch3 | SPI1_TX | LCD frames (chunk ping-pong) | 2 |
-| DMA2 S5, Ch6 | TIM1_UP | Audio sample stream into `TIM1->CCR1` (engine B) | 5 |
-| DMA1 S0, Ch0 | SPI3_RX | W25Q reads | none (polled completion) |
-| DMA1 S5, Ch0 | SPI3_TX | W25Q clock-out of dummy bytes during reads | none |
-| DMA2 S4, Ch0 | ADC1 | VBAT / VREFINT scan (480-cycle samples) | none |
-| DMA2 S7 | memory to memory | benchmark only; never beats LDM/STM copy | - |
+| Stream / channel | Peripheral | Use | NVIC priority | DMA stream priority |
+| --- | --- | --- | --- | --- |
+| DMA2 S3, Ch3 | SPI1_TX | LCD frames (chunk ping-pong) | 2 | high |
+| DMA2 S5, Ch6 | TIM1_UP | Audio sample stream into `TIM1->CCR1` (engine B) | 5 | very high |
+| DMA1 S0, Ch0 | SPI3_RX | W25Q reads | none (polled completion) | high |
+| DMA1 S5, Ch0 | SPI3_TX | W25Q clock-out of dummy bytes during reads | none | medium |
+| DMA2 S4, Ch0 | ADC1 | VBAT / VREFINT scan (480-cycle samples) | none | medium |
+| DMA2 S7 | memory to memory | benchmark only; never beats LDM/STM copy | - | - |
+
+The DMA stream priorities are the ones actually used (MEASURED 2026-11-18,
+block C: no underrun, DMA error or CRC error under full game-like load). NVIC
+priority is the interrupt priority; the stream priority arbitrates the DMA
+bus. The LCD stream reports the FIFO error flag (FEIF) about 19 times per frame
+in direct mode: benign, not a failure.
 
 Free: DMA1 S1-S4, S6-S7, DMA2 S0-S2, S6.
 
@@ -311,10 +332,15 @@ HWCAL contents ([hwcal.h](../software/stm32-hwtest/Inc/hwcal.h)): header
 gauge state, `i_state_ma[18]` and `ocv_mv[21]`. Load picks the valid half with
 the highest `seq`; saves ping-pong between halves.
 
-> Warning: F4. `hwcal save` sometimes fails with `erase_verify` (SR1 = 02, WEL
-> still set) on the 4 KB erase of `0xFFF000`. It recurred twice in a row on
-> 2026-11-17. A standalone `w25q erase4k FFF000 force` followed by the save
-> works. Root cause not found; retry the erase once in any save routine.
+> Warning: F4 (MITIGATED 2026-11-18). `hwcal save` sometimes failed with
+> `erase_verify` (SR1 = 02, WEL still set) on the 4 KB erase of `0xFFF000`
+> (twice in a row on 2026-11-17; a 4 KB erase at `0xFE0000` was also rejected,
+> while the 64 KB erase `0xD8` worked). The driver function
+> `w25q_erase_sector()` returned OK in about 11 us without erasing. It now goes
+> through `w25q_erase_cmd(0x20)` (55-65 ms, waits for BUSY) and retries when
+> the erase finishes in under 1 ms; three consecutive `hwcal save` including a
+> sector erase passed. The root cause of the rejected `0x20` command is still
+> unknown: check that the erase really took 50+ ms, and retry once.
 
 ## 6. Display Recipe
 
@@ -328,7 +354,7 @@ inside it with fixed slack.
 | --- | --- | --- | --- | --- |
 | Landscape ("raw") | `0xA0` (MY + MV) | 1 | 2 | 160x128 |
 | Portrait | `0x00` | 2 | 1 | 128x160 |
-| Landscape in **native scan order** (recommended) | `0x80` (MY, MV = 0) | row +1 | col +2 | 160x128 logical |
+| Landscape in **native scan order** (default in the test firmware) | `0x80` (MY, MV = 0) | row +1 | col +2 | 160x128 logical |
 
 The older bring-up values (column start 3, row start 1) were wrong: they lost
 the right column and the top row. Other facts: RGB order (BGR bit = 0),
@@ -382,7 +408,7 @@ Window setup (CASET + RASET + RAMWR) costs about 43 us at 48 MHz. Small
 direct rectangles are expensive (8x8 about 0.94 ms, 32x32 about 11 ms at 48 MHz),
 so never draw directly to the panel.
 
-### Native Scan Order (recommendation, F11, MEASURED by eye 2026-11-17)
+### Native Scan Order (default since 2026-11-17, F11, MEASURED by eye)
 
 The panel scans in portrait order. A landscape frame written with `MADCTL 0xA0`
 (MV = 1) is written perpendicular to the panel scan and tears diagonally; at
@@ -398,6 +424,12 @@ every 4 s (a beat that cannot be fixed without a TE pin). The recipe:
 - Result: the tear is practically invisible at 30 fps, 60 fps and uncapped, at
   every panel refresh preset. Remaining blur is TN pixel response (ghosting or
   a double image of fast moving bars).
+- Since 2026-11-17 this is the default for the whole test-firmware UI
+  (`lcd.c` native mode, physical MADCTL `0x80` = logical value with MV cleared):
+  the API stays landscape and the driver maps and transposes the coordinates
+  (landscape x to `RASET` row +1, y to `CASET` column +2). Only the calibration
+  and benchmark suites (`display.cal/orient/spi/tear`, `bench.lcd/gfx`) switch
+  back to raw mode.
 - Cost of rotating at present time: 1.31 ms per 160x128 RGB565 frame, 2.15 ms
   for 8bpp to RGB565 with rotation. Rendering directly in native order avoids it.
 
@@ -433,6 +465,17 @@ panel beside a 125-px scrolling area). The area stays fixed outside `VSA`.
 (An earlier run drifted from 78 to 61 fps because newlib `sinf` becomes slow for
 large arguments; reduce phases in integer arithmetic.)
 
+Measured rates (SPI 48 MHz): 60 steps/s costs 86-89 us per step; unlimited, the
+hardware scroll reaches 11,090 steps/s (8,032 steps/s in the earlier run that
+generated more per step, 114 us). Software redraw: 12.6-12.9 ms per frame.
+
+Judder: a scroll step becomes visible only at the next panel refresh. Steps at
+a rate different from the panel refresh rate beat against it, so a step is
+repeated or skipped periodically; the runs used 60 steps/s against a panel at
+60.25 Hz (preset 0) and 80.6 Hz (preset 2, init default), and the user saw
+the judder with the mismatched pair. Step at the panel rate (set `FRMCTR1` to
+match) or accept the beat; without a TE pin the phase cannot be locked.
+
 ### Present Pipeline (8bpp + Palette)
 
 Recommended game path (`bench.gfx`, `demo`, MEASURED):
@@ -444,6 +487,24 @@ Recommended game path (`bench.gfx`, `demo`, MEASURED):
 3. Conversion cost 124k cycles per frame (3.9 % of a 30 fps frame, 7.8 % at
    60 fps); `convert_unrolled4` is 5 cycles/px against 8 for the plain loop.
 4. Present time: 7.00 ms pipelined, 7.96 ms unpipelined at 48 MHz.
+
+### Colour Depth (`COLMOD 0x3A`, MEASURED 2026-11-18, `display.colmod`)
+
+| COLMOD | Format | Bytes per frame | Full frame at 48 MHz | Max fps |
+| --- | --- | --- | --- | --- |
+| `03` | 12-bit RGB444 | 30,720 | 5.12 ms | 195 |
+| `05` | 16-bit RGB565 (default) | 40,960 | 6.83 ms | 146 |
+| `06` | 18-bit RGB666 | 61,440 | 10.24 ms | 98 |
+
+User verdict (by eye, test gradients): 12-bit shows clearly visible banding on
+dark-to-light (grey and RGB) gradients, less on hue gradients; 16-bit and
+18-bit are almost indistinguishable.
+
+Recommendation (DERIVED): **16-bit by default**. The present cost is not the
+bottleneck at 60 fps (6.83 ms of a 16.7 ms frame), 18-bit costs 50 % more bus
+time for no visible gain, and 12-bit is justified only if more than 146 fps is
+needed. Final decision pending a live A/B in real scenes, with ordered dither
+for 12-bit.
 
 ### Demo Results (MEASURED 2026-11-17, `demo`, SYSCLK 96 MHz, SPI 48 MHz)
 
@@ -461,9 +522,10 @@ of the difference was not investigated. Treat render times as +/- 10 %.
 
 ### Rules
 
-- **Always render to a framebuffer.** Drawing piecemeal directly to the panel
-  (clear region, redraw at 12 MHz polled) shows sweeping stripes; the
-  stm32-hwtest menu showed a black stripe until it moved to a frame buffer.
+- **Always render full frames to RAM and present them via DMA.** Drawing
+  piecemeal directly to the panel (clear region, redraw at 12 MHz polled) shows
+  sweeping stripes; the stm32-hwtest menu removed its redraw stripes by moving
+  to a frame buffer.
 - Use DMA at 48 MHz and present once per frame.
 - Landscape at 160x128 logical, native scan order underneath.
 - TN ghosting is a panel property; avoid one-pixel-wide fast detail.
@@ -530,6 +592,29 @@ least for release. The auto-derived 5 ms value (`max(2 x p95, 5 ms)` over all
 buttons) is not safe for B. 20 ms is also what HWCAL stores (`debounce_ms`).
 Check the B switch in the next revision.
 
+### Input Latency
+
+Firmware side (`input.latency`: EXTI edge timestamp from the 1 us TIM2 time
+base to the start of the LCD DMA that fills the screen): the suite reports
+`edge_to_dma_us`, `edge_to_done_us` and `dma_us` per press, for a staged window
+(address window set in advance) and a cold one (window set in the reaction
+path). The 2026-11-18 run aborted (no button press within the prompt
+timeout). **Result: Not measured yet.**
+
+End-to-end procedure (button to light, planned):
+
+1. Sensor: a photodiode, or an ordinary LED used as a light sensor in
+   photovoltaic mode (a red LED responds to white light) with a 10-100 k load
+   resistor in parallel. Put it on the screen and shield it from room light and
+   100 Hz mains flicker.
+2. Scope CH1: a marker for the firmware reaction, either PA8 (at R24, MCU side)
+   or SPI1 SCK at PA5 (first clock of the frame). CH2: the sensor. Trigger on
+   CH1, 5-10 ms/div.
+3. Measure from the CH1 edge to the 50 % point of the optical transition.
+4. Expected (DERIVED, not measured): firmware reaction in tens of us, plus up to
+   one panel period (13-17 ms at 60-75 Hz; the refresh is not synchronised),
+   plus the TN liquid-crystal response of several ms.
+
 ## 9. Audio
 
 ### Chain
@@ -563,7 +648,7 @@ TIM1 up-counting, ARR = 2^bits - 1, timer clock 96 MHz:
 | B | TIM1 repetition counter paces update events; TIM1_UP -> DMA2 S5 Ch6 circular buffer into `CCR1`; half/complete interrupt refills 512-sample halves | carrier / (RCR+1); 46.875 kHz at 375k/8b, RCR+1 = 8 | One interrupt per 512 samples (about 10.9 ms) |
 
 The synth mixer in `audio.c` has 4 voices, master gain with slew, a clip guard
-(default -6 dBFS peak, master -24 dBFS), and a quantiser to the carrier
+(default -6 dBFS peak, master -24 dBFS; real peaks must stay <= -9 dBFS, see below), and a quantiser to the carrier
 resolution with optional TPDF dither or first-order noise shaping.
 
 ### CPU Cost (MEASURED 2026-11-13, `audio.cpu`, SYSCLK 96 MHz)
@@ -587,14 +672,77 @@ checks the integer timer arithmetic, not the crystal): engine A 22.04869 kHz
 (expected 22.04869), engine B 46.87498 and 46.87503 kHz (expected 46.875, last
 two runs); one earlier engine B run read 46.95614 kHz (+0.17 %), not reproduced.
 
+### Speaker, Level And Frequency Response (MEASURED 2026-11-19)
+
+Speaker: 8 ohm, 0.5 W (datasheet). Session: iPhone microphone at 10 cm,
+phyphox Audio Amplitude, fan background about -55 dB (relative scale of the
+app). Values are relative, not calibrated SPL.
+
+Stepped sine (the reference), relative to the median of 1-8 kHz:
+
+| Freq | Level | Freq | Level |
+| --- | --- | --- | --- |
+| 400 Hz and below | in noise (>= 25 dB down) | 3.15 kHz | +6 dB |
+| 500 Hz | in noise (2.7 dB above background) | 4 kHz | +3 dB |
+| 630 Hz | -22 dB | 5 kHz | -7 dB |
+| 800 Hz | -16 dB | 6.3 kHz | -2 dB |
+| 1 kHz | -9 dB | 8 kHz | -2 dB |
+| 1.25 kHz | +3 dB | 10 kHz | -5 dB |
+| 1.6 kHz | +7 dB | 12.5 kHz | -11 dB |
+| 2 kHz | +2 dB | 2.5 kHz | -13 dB (not confirmed by chirp) |
+
+- **Usable band about 800 Hz to 10 kHz.** Below 500 Hz nothing rises above the
+  background; the peak is at 1.25-3.15 kHz.
+- The chirp (`chirp_fr.csv`, plot `fr_combined.png`) is only a cross-check: the
+  phone samples the amplitude at about 10 Hz, so the chirp frequency axis is
+  misaligned. Do not use it for dips (the 2.5 kHz dip is suspect); the stepped
+  sine is the reference.
+- Saturation: the 1 kHz level stops rising between -8 and 0 dBFS digital; 200
+  Hz is inaudible below -10 dBFS and above that only distortion and rattle
+  appear.
+- Power: clean maximum about 0.5 W at -8 dBFS; 0 dBFS (clipped) is about 1.3 W
+  into 8 ohm. During the 0 dBFS 200 Hz clip test the speaker got **very hot**
+  (F12).
+
+Rules for game audio (DERIVED):
+
+- Digital output peak **<= -9 dBFS**; sustained tones **<= -12 dBFS**.
+- High-pass at 400-500 Hz in the mixer; emulate bass with harmonics.
+- Never feed a full-scale or sustained low-frequency tone (section 15
+  recommends a hardware limit).
+
+Amplifier enable (MEASURED by ear, 2026-11-19, `audio.pop`):
+
+| Variant | Result |
+| --- | --- |
+| PWM already at mid-scale, then SD# high ("naive") | no audible pop |
+| PWM ramp 0 to 50 % with the amplifier already on, 20 / 50 / 100 ms | thump at every ramp length |
+
+Pop-free recipe (default in `audio_amp_on`; HWCAL `amp_ramp_ms = 0`):
+
+1. Set the PWM to mid-scale (50 % duty) with the amplifier off.
+2. Wait 30 ms (10k x 1 uF input network).
+3. Set SD# (PB2) high.
+4. Off: SD# low first, then stop the PWM.
+
+Idle hiss: the user hears hiss while the amplifier is on and idle; it stops
+when the amplifier is off. The phone at 2 cm could not show it (all cases within
++-1 dB; 94 / 187 kHz carriers +2 / +1 dB): it is masked by the fan noise.
+Pending: repeat in a quiet room with a spectrum.
+
+Measurement procedure: record with phyphox (Audio Amplitude) while the
+`audio.sweep`, `audio.chirp`, `audio.hiss` or `audio.clip` suite plays, export
+the CSV, then run `tools/phyphox_sweep.py` (stepped sine) or
+`tools/phyphox_chirp.py` (chirp) to get `fr.csv`, `fr.md` and `fr.png`.
+Results: `tools/results/<uid>/audio-20261119-sweep/`.
+
 ### Not Measured Yet
 
-Phone-microphone measurements (frequency response, hiss floor per amplifier and
-carrier state, THD, dither benefit, click on amplifier enable/disable, maximum
-clean level) have not been done. Only electrical statistics exist. The recipes
-for amplifier gating (`audio_amp_on(ramp_ms)`: 0 % duty, then SD# high, then
-ramp) are implemented but not judged by ear or by phone yet. The PAM8302A
-shutdown pin reads TIED_LOW instead of a weak 100k pull-down (F2).
+THD, dither benefit and the quiet-room hiss spectrum per carrier state. SPL is
+not calibrated.
+
+> Warning: the PAM8302A shutdown pin reads TIED_LOW instead of a weak 100k
+> pull-down (F2).
 
 > Warning: F6. Enabling the amplifier browned out the ATtiny (supplied from
 > +V) when the battery path had extra series resistance (about 7 ohm of the
@@ -639,8 +787,10 @@ continuously.
 Patterns 0x55, 0xAA, address and LFSR over 64 KB: 0 mismatches. The hwtest
 driver refuses program/erase below `0xF00000`.
 
-> Warning: F4 erase quirk (see section 5): a 4 KB erase of `0xFFF000` can finish
-> with WEL still set and the following verify fails. Retry the erase.
+> Warning: F4 erase quirk (mitigated, see section 5): a 4 KB erase can be
+> rejected and finish in microseconds. Use the checked erase (waits for BUSY,
+> retries if it took under 1 ms) and verify; use the 64 KB erase where
+> possible.
 
 ## 11. Power And Battery
 
@@ -704,6 +854,37 @@ still open in the bring-up log).
 Runtime estimates: `1.15 Wh / 124 mW` gives about 9 h for the game mix (DERIVED,
 HW_LOG 2026-11-16). The battery analysis tool computed longer values, see the
 caveat below.
+
+### No-Battery Operation (MEASURED 2026-11-19)
+
+With the cell disconnected and USB attached the board runs the full test load
+cleanly (`stress.game` on USB only: 139 fps, 0 audio underruns, 0 DMA errors,
+0 CRC errors; the suite failed only on its ADC sanity check). The battery ADC
+input floats between 0 and 4.2 V and the gauge reports mode `NO_BATT`.
+Firmware must not trust Vbat when the gauge says `NO_BATT`.
+
+### Sleep And Wake Timings (MEASURED 2026-11-18, `power.sleep`, 96 MHz)
+
+| Item | Value |
+| --- | --- |
+| `DISPOFF` / `DISPON` / `SLPIN` / `SLPOUT` command | 2 us each (SPI) |
+| LCD sleep-in wait / sleep-out incl. 120 ms wait | 5 ms / 132 ms |
+| Backlight off / on (PWM) | instant |
+| Stop entry | 3 us |
+| Stop wake: HSE + PLL back at 96 MHz | about 14.5k cycles at HSI = **0.9 ms** |
+| USB re-enumeration after `usb_stop`/`usb_start` | about 350 ms (stale CONFIGURED after a plain `DevConnect`) |
+| WFI wake (Sleep mode) | 28 cycles median = 0.29 us |
+
+`DISPOFF` keeps GRAM and the backlight on (blank panel). Current per sleep
+state needs a meter (see the per-state table above).
+
+### Amplifier Enable Dip (MEASURED 2026-11-18, `power.ampdip`)
+
+On USB power (VBUS present) amplifier enable, a 1 kHz -12 dBFS tone and
+amplifier off cause at most **14 mV** dip (PWM with amp off 8 mV, amp on idle
+13 mV, tone 14 mV, amp off 8 mV) against about +-6 mV noise at 24 kS/s. The ADC
+reads about 0.1 V for the first 45 ms after start (artefact; pre-roll used).
+**Pending: repeat on battery only** (F6).
 
 ### Discharge Curve And OCV (MEASURED 2026-11-16 to 2026-11-17, `battlog`)
 
@@ -863,6 +1044,19 @@ Prefer integer or float Q-formats, LUT or polynomial trig, and `smmul`.
 Full generated tables are produced from the JSON results by
 [tools/gen_budget.py](../software/stm32-hwtest/tools/gen_budget.py).
 
+### Block C Results (MEASURED 2026-11-18, 96 MHz, VBUS present)
+
+| Test | Result |
+| --- | --- |
+| `stress.game` 60 s at 60 fps | raycaster, 4-voice audio DMA, W25Q DMA streaming and ADC together: 3601 frames, 0 missed, frame avg 5.1 ms / max 7.2 ms, **CPU about 31 %**, audio 2585/2585 blocks, 0 late/underrun, 0 TE/DME, 0 CRC errors in 3601 chunks |
+| `stress.game` unlimited | 138.8 fps, still clean (2026-11-19 repeat: 138.9 fps, frame max 8.7 ms, CPU 87 %) |
+| `soak` 3 min | clean; die 29.4 C, Vbat 4.18 V |
+| `stream.video` 8bpp from W25Q | **140 fps** at SPI3 24 MHz (2.87 MB/s streamed, 2.99 MB/s alone); 71.7 fps at 12 MHz; 1bpp 133 fps (present-limited) |
+| `display.colmod` | see section 6 |
+| Sleep, wake, amplifier dip | see section 11 |
+
+The DMA priorities used in these runs are in the table in section 4.
+
 ## 13. Platform Layer Contract Proposal
 
 DESIGN, proposal for `stm32-core`. Not implemented as one API yet; every item is
@@ -924,20 +1118,22 @@ frequency attempt is detected after reset from the journal.
 
 ### Findings
 
-Source: [FINDINGS.md](../software/stm32-hwtest/FINDINGS.md). The list has no F10.
+Source: [FINDINGS.md](../software/stm32-hwtest/FINDINGS.md).
 
 | ID | Finding | Status |
 | --- | --- | --- |
-| F1 | ATtiny13 power-off hold about 4 s instead of 0.5 s (Timer0 prescaler mismatch /64 vs /8) | Closed 2026-11-18, fixed and reflashed |
+| F1 | ATtiny13 power-off hold about 4 s instead of 0.5 s (Timer0 prescaler mismatch /64 vs /8) | **Closed** 2026-11-18: fixed, reflashed, user verified POWER |
 | F2 | PB2 AMP_SD reads TIED_LOW instead of a weak 100k pull-down; much stronger than 100k | Open: measure the net to GND with the board off |
-| F3 | Backlight duty read 47.4 % for 50 % | Closed 2026-11-16: scope 1.000 kHz / 49.99 %, firmware artefact |
-| F4 | `hwcal save` erase of `0xFFF000` sometimes ineffective (SR1 = 02) | Open; workaround: standalone erase4k, retry |
+| F3 | Backlight duty read 47.4 % for 50 % | **Closed** 2026-11-16: scope 1.000 kHz / 49.99 %, firmware artefact |
+| F4 | 4 KB erase (`0x20`) sometimes silently rejected (SR1 = 02, WEL stuck); `w25q_erase_sector()` returned in 11 us | **Mitigated** 2026-11-18: checked erase with retry; root cause unknown |
 | F5 | Button B release bounce up to 17.6 ms | Use 20 ms release debounce; check the switch |
-| F6 | Amplifier enable browns out the ATtiny with extra series resistance in the battery path | Open: retest at low charge without a meter |
+| F6 | Amplifier enable browns out the ATtiny with extra series resistance in the battery path | Open: USB-powered `power.ampdip` shows only 14 mV; repeat on battery at low charge without a meter |
 | F7 | RTC wake flag clear stopped the RTC (Stop never woke) | Fixed in firmware |
 | F8 | Board back-feeds about 1.9-2.5 V onto +5V; USB-C sources check vSafe0V and refuse VBUS | Open (workaround: A-C cable) |
-| F9 | Battery log charge flag appeared absent | Closed: log was fine, analyzer bug; the logger time base excludes Stop |
-| F11 | Landscape raw MADCTL tears diagonally | Resolved: native order `0x80` |
+| F9 | Battery log charge flag appeared absent | **Closed**: log was fine, analyzer bug; the logger time base excludes Stop |
+| F10 | Vbat, VDDA and die temperature ADC readings get much noisier during long low-load rests (BL off): spikes on all three together | Open: likely TPS63802 power-save (MODE = GND) burst ripple on 3V3/VDDA; BAT_STAT has no filter cap. Gauge: stronger averaging at low load |
+| F11 | Landscape raw MADCTL tears diagonally | **Resolved**: native order `0x80` (default in the test UI) |
+| F12 | Audio chain saturates at about -8 dBFS; 0 dBFS (about 1.3 W into a 0.5 W speaker) made the speaker very hot | New: digital peak <= -9 dBFS, high-pass 400-500 Hz; hardware limit proposed for v0.2 |
 
 Other known hardware faults from [bring-up-log-v0.1.md](bring-up-log-v0.1.md):
 USB ESD part D2 dead (removed and bridged, so no ESD protection on D+/D-);
@@ -952,8 +1148,11 @@ high without USB (internal pull-down workaround).
 | Restore USB ESD protection (USBLC6-2P6 footprint/part check) | Part was dead; none fitted now |
 | 22-33 ohm series resistors on SCK and MOSI near the MCU | 48 MHz edge ringing and EMI margin |
 | TE and MISO from the LCD to the MCU | Tear-free sync and LCD readback; free pins exist |
-| Filter capacitor on BAT_STAT (ADC input) | Source impedance of the divider with 480-cycle sampling; noise 68 mV p-p window |
-| Second-order audio filter and amplifier soft-start | Hiss and click control; F6 |
+| Filter capacitor on BAT_STAT (ADC input) | Source impedance of the divider with 480-cycle sampling; noise 68 mV p-p window; F10 |
+| Second-order audio filter | Hiss control |
+| Amplifier soft-start and bulk capacitor | F6 (the pop-free firmware sequence covers clicks, not the supply dip) |
+| Hardware volume limit or input attenuator before the PAM8302A | F12: a firmware bug must not be able to overdrive the 0.5 W speaker (clipped 0 dBFS is about 1.3 W) |
+| Filtering of VDDA and BAT_STAT (ferrite/RC); consider forced-PWM mode on the TPS63802 | F10 low-load ADC noise |
 | Bulk capacitor on +V or ATtiny brown-out detection | F6 |
 | SWO test point (PB3 is SPI3_SCK today) and UART pads | Debug without USB |
 | Current-sense option in the battery lead | No ammeter needed for power work |
@@ -971,3 +1170,6 @@ high without USB (internal pull-down workaround).
 | Test arena RAM "17.7 KB static" (README) vs about 50 KB (current build) | README vs `nm` 2026-11-18 | Current build used |
 | Hardware overview "includes USB ESD protection" | hardware-overview.md vs bring-up log | ESD part is dead / removed on this board |
 | F1 "hold-time check pending" | FINDINGS row text vs HW_LOG 2026-11-18 | Closed, user verified |
+| 2.5 kHz speaker dip -13 dB | stepped sine vs chirp (2026-11-19) | Listed with "not confirmed"; chirp axis is misaligned (10 Hz phone sampling) |
+| Hardware scroll step 86-89 us vs 114 us | `display.vscroll` runs 2026-11-17 | 87 us (later run) used; 114 us run generated more per step |
+| Audio TX "ramp" recipe (`audio_amp_on(ramp_ms)` ramps after SD#) vs pop-free default | earlier draft vs HW_LOG 2026-11-19 | By-ear test: ramp with amp on pops; precharge then SD# is the default |
