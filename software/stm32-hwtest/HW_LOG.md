@@ -6553,3 +6553,104 @@ git-ignored; .txt hexdumps next to them).
 
 - phyphox Audio Amplitude (iPhone), speaker connected, battery connected, fan noise ~-55 dB. audio.sweep -> fr.csv/fr.png; audio.chirp -> chirp_fr.csv/fr_combined.png; audio.hiss (2 cm) -> hiss masked by fan; audio.clip -> saturation at ~-8 dBFS, 200 Hz rattle; speaker got very hot at the end (0 dBFS 200 Hz). Files in tools/results/.../audio-20261119-sweep/.
 - No-battery check (earlier today): presence no_batt, Vbat reading floats 0..4.2 V, stress.game on USB only at 139 fps with 0 audio underruns / 0 DMA / 0 CRC errors (fail only from adc_bad).
+
+### 2026-11-19 11:13:28 — Run suite audio.pop (start) [auto]
+
+- Command: `run audio.pop t=300`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=9c91e4f+dirty build=1795028428 busy=idle
+
+### 2026-11-19 11:18:02 — hwtest.py run [auto]
+
+- Command: `hwtest.py run audio.pop t=300 --prompt-timeout 600`
+- Result: OK (exit code 0)
+- Suite audio.pop: PASS results=54 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261119-111328-audio.pop.json
+
+### 2026-11-19 11:18:40 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.95 s
+- cmd: @OK dfu
+
+### 2026-11-19 11:18:55 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.1 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.684
+- Output: Time elapsed during verifying operation: 00:00:01.903
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 11:18:56 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273696 bytes), expected id: {'fw': '581fd99+dirty', 'build': 1795076310}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=581fd99+dirty build=1795076310, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.95s, program=15.15s, dfu_to_app=0.71s, total=16.88s
+
+### 2026-11-19 11:19:01 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal get" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal get lines=2
+- @R {"t": "hwcal", "status": "valid", "seq": 6, "slot": "B", "version": 1, "madctl_land": 160, "xoff_land": 1, "yoff_land": 2, "madctl_port": 0, "xoff_port": 2, "yoff_port": 1, "bgr": 0, "invert": 0, "gam
+
+### 2026-11-19 11:19:08 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal set amp_ramp_ms=0" --timeout 10`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR hwcal unknown field lines=1
+
+### 2026-11-19 11:19:27 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-19 11:19:42 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.0 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.660
+- Output: Time elapsed during verifying operation: 00:00:01.898
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 11:19:43 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (273712 bytes), expected id: {'fw': '581fd99+dirty', 'build': 1795076363}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=581fd99+dirty build=1795076363, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=15.02s, dfu_to_app=0.71s, total=16.40s
+
+### 2026-11-19 11:20:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal set amp_ramp_ms=0" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal set lines=1
+
+### 2026-11-19 11:20:20 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "hwcal save" --timeout 15`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK hwcal save lines=2
+- @R {"t": "hwcal_save", "seq": 7, "slot": "A"}
+
+### 2026-11-19 11:20:45 — audio.pop by ear (manual note)
+
+- User: 'naive' (amp enabled after PWM at mid) has no pop; all ramped variants (PWM ramp with amp on) pop. Idle hiss audible while the amp is on, stops when it turns off. Pop-free sequence made the default (audio_amp_on precharge 30 ms), HWCAL amp_ramp_ms=0 saved (seq 7).

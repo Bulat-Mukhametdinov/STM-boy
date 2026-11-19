@@ -1,0 +1,575 @@
+{
+  "kind": "run",
+  "suite": "audio.pop",
+  "command": "run audio.pop t=300",
+  "status": "pass",
+  "exit_code": 0,
+  "done": "@DONE audio.pop pass",
+  "error": "",
+  "host_time_start": "2026-11-19T11:13:28+03:00",
+  "host_time_end": "2026-11-19T11:18:01+03:00",
+  "duration_s": 273.287,
+  "host": {
+    "node": "DESKTOP-EBEUOQQ",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.7",
+    "tool": "hwtest.py"
+  },
+  "port": "COM10",
+  "info": {
+    "t": "info",
+    "uid": "002800343435511331323538",
+    "serial": "315A356C3435",
+    "fw": "9c91e4f+dirty",
+    "build": 1795028428,
+    "clk": 96000000,
+    "opt": "-O2",
+    "busy": "idle",
+    "hwcal": true,
+    "reset": "sft",
+    "flash_kb": 512,
+    "drops": 0,
+    "rx_drops": 0,
+    "boot": "warm",
+    "boot_count": 3,
+    "csr": "14000000",
+    "clock": "ok",
+    "hwcal_state": "valid",
+    "w25q": true,
+    "uptime_ms": 3024451,
+    "vbus": true,
+    "chg": false,
+    "faults": 536879624,
+    "fault": {
+      "pc": "28002186",
+      "lr": "08003ECF",
+      "cfsr": "00000100",
+      "hfsr": "40000000"
+    }
+  },
+  "results": [
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P01",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 400,
+      "n": 1,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P01",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P01",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P02",
+      "l1": "RAMP 20 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 4202,
+      "n": 2,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P02",
+      "ev": "on",
+      "ramp_ms": 20
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P02",
+      "ev": "off",
+      "ramp_ms": 20
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P03",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 8004,
+      "n": 3,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P03",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P03",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P04",
+      "l1": "RAMP 50 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 11806,
+      "n": 4,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P04",
+      "ev": "on",
+      "ramp_ms": 50
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P04",
+      "ev": "off",
+      "ramp_ms": 50
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P05",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 15608,
+      "n": 5,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P05",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P05",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P06",
+      "l1": "RAMP 100 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 19410,
+      "n": 6,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P06",
+      "ev": "on",
+      "ramp_ms": 100
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P06",
+      "ev": "off",
+      "ramp_ms": 100
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P07",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 23212,
+      "n": 7,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P07",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P07",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P08",
+      "l1": "RAMP 20 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 27014,
+      "n": 8,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P08",
+      "ev": "on",
+      "ramp_ms": 20
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P08",
+      "ev": "off",
+      "ramp_ms": 20
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P09",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 30816,
+      "n": 9,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P09",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P09",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P10",
+      "l1": "RAMP 50 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 34618,
+      "n": 10,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P10",
+      "ev": "on",
+      "ramp_ms": 50
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P10",
+      "ev": "off",
+      "ramp_ms": 50
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P11",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 38420,
+      "n": 11,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P11",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P11",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P12",
+      "l1": "RAMP 100 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 42222,
+      "n": 12,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P12",
+      "ev": "on",
+      "ramp_ms": 100
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P12",
+      "ev": "off",
+      "ramp_ms": 100
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P13",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 46024,
+      "n": 13,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P13",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P13",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P14",
+      "l1": "RAMP 20 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 49826,
+      "n": 14,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P14",
+      "ev": "on",
+      "ramp_ms": 20
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P14",
+      "ev": "off",
+      "ramp_ms": 20
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P15",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 53628,
+      "n": 15,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P15",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P15",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P16",
+      "l1": "RAMP 50 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 57430,
+      "n": 16,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P16",
+      "ev": "on",
+      "ramp_ms": 50
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P16",
+      "ev": "off",
+      "ramp_ms": 50
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P17",
+      "l1": "NAIVE",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 61232,
+      "n": 17,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P17",
+      "ev": "on",
+      "ramp_ms": 0
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P17",
+      "ev": "off",
+      "ramp_ms": 0
+    },
+    {
+      "t": "step",
+      "suite": "audio.pop",
+      "id": "P18",
+      "l1": "RAMP 100 ms",
+      "l2": "on 1.5 s, off 1.5 s",
+      "f_hz": null,
+      "db": null,
+      "dur_ms": 3400,
+      "t_ms": 65034,
+      "n": 18,
+      "of": 18
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P18",
+      "ev": "on",
+      "ramp_ms": 100
+    },
+    {
+      "t": "mark",
+      "suite": "audio.pop",
+      "id": "P18",
+      "ev": "off",
+      "ramp_ms": 100
+    }
+  ],
+  "prompts": [
+    {
+      "t": "prompt",
+      "id": "audio_pop_start",
+      "text": "audio.pop: 18 amp on/off cycles (naive vs 20/50/100 ms ramp), ~70 s. Listen for pops. A=start",
+      "answers": [
+        "A=start",
+        "B=skip"
+      ],
+      "timeout_ms": 300000
+    },
+    {
+      "t": "prompt",
+      "id": "audio_pop_best",
+      "text": "Quietest on/off sequence (fewest pops)?",
+      "answers": [
+        "UP/DN=choose",
+        "A=pick",
+        "B=skip"
+      ],
+      "timeout_ms": 300000
+    }
+  ],
+  "answers": [
+    {
+      "t": "answer",
+      "id": "audio_pop_start",
+      "answer": "ok"
+    },
+    {
+      "t": "answer",
+      "id": "audio_pop_best",
+      "answer": "skip"
+    }
+  ],
+  "binaries": [],
+  "log": []
+}

@@ -23,6 +23,12 @@ evidence are in `HW_LOG.md` and `tools/results/`.
 
 ## Confirmed Facts
 
+- Amp pop (2026-11-19, by ear): enabling the PAM8302A AFTER the PWM is already at mid-scale ("naive")
+  gives no audible pop; ramping the PWM 0 -> 50 % with the amp already on gives a thump at every ramp
+  length (20/50/100 ms). Recipe now default: PWM to mid with amp off, wait 30 ms (10k x 1 uF), SD# high;
+  off: SD# low first, then PWM. HWCAL amp_ramp_ms = 0. Speaker 8 ohm 0.5 W (datasheet): clean max
+  ~0.5 W at -8 dBFS; 0 dBFS clipped ~1.3 W -> overheating.
+
 - Speaker (2026-11-19, iPhone mic at 10 cm, phyphox, fan background -55 dB): usable band ~800 Hz - 10 kHz
   (stepped sine, rel. to 1-8 kHz median: 800 Hz -16, 1 kHz -9, 1.25 kHz +3, 1.6 kHz +7, 2.5 kHz -13 (not
   confirmed by chirp), 3.15 kHz +6, 6-8 kHz -2, 10 kHz -5, 12.5 kHz -11 dB); below ~500 Hz under the fan noise

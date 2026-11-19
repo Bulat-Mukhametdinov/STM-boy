@@ -93,7 +93,7 @@ void hwcal_defaults(hwcal_t *c)
     c->debounce_ms = 20;
     c->bl_pwm_hz = 1000;
     c->bl_min_level = 0;
-    c->amp_ramp_ms = 20;
+    c->amp_ramp_ms = 0;     /* 0 = precharge PWM to mid with amp off, then enable (no pop, 2026-11-19) */
     c->rint_mohm = 330;
     c->vbat_gain_q16 = 65536u;
     c->vbat_offset_mv = 0;

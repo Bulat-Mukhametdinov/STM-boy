@@ -383,7 +383,13 @@ void audio_amp_raw(bool on)
 bool audio_amp_on(uint32_t ramp_ms)
 {
     if (ramp_ms == 0u) {
-        if (s_pwm_on) TIM1->CCR1 = audio_mid();
+        /* Pop-free recipe (user listening test 2026-11-19): bring PWM to mid-scale with the amp
+           OFF, let the 10k x 1uF input coupling settle (tau 10 ms), then enable the amp; its own
+           soft-start handles the rest. Ramping PWM with the amp already on was audible (thump). */
+        if (s_pwm_on && TIM1->CCR1 != audio_mid()) {
+            TIM1->CCR1 = audio_mid();
+            wait_force(30);
+        }
         audio_amp_raw(true);
         return true;
     }

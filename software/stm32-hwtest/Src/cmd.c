@@ -203,6 +203,7 @@ static bool hwcal_set_field(const char *key, uint32_t v)
         {"bgr", offsetof(hwcal_t, bgr), 1},                 {"invert", offsetof(hwcal_t, invert), 1},
         {"gamma_id", offsetof(hwcal_t, gamma_id), 1},       {"spi1_div_ok", offsetof(hwcal_t, spi1_div_ok), 1},
         {"spi1_div_max", offsetof(hwcal_t, spi1_div_max), 1}, {"debounce_ms", offsetof(hwcal_t, debounce_ms), 1},
+        {"amp_ramp_ms", offsetof(hwcal_t, amp_ramp_ms), sizeof(((hwcal_t *)0)->amp_ramp_ms)},
         {"bl_pwm_hz", offsetof(hwcal_t, bl_pwm_hz), 2},     {"bl_min_level", offsetof(hwcal_t, bl_min_level), 2},
         {"rint_mohm", offsetof(hwcal_t, rint_mohm), 2},     {"i_chg_ma", offsetof(hwcal_t, i_chg_ma), 2},
     };
