@@ -7097,3 +7097,7 @@ git-ignored; .txt hexdumps next to them).
 
 - OWON XDS3202A, battery only (no meter, no USB), CH1 AC 50 mV/div 20 MHz BW on C14 (+V) and in a second run on C15 (VBAT), CH2 DC on R23 (AMP_SD) as trigger (rising, 1.5 V), 20 ms/div and 10 us/div. power.ampdip started from the device menu.
 - Result: no visible step/dip at amp enable or during the 1 kHz tone on either rail (< ~15 mV vs +-40 mV noise band) -> F6 closed (was the meter burden). Periodic ~50-65 mV negative pulses every ~17 us on both rails before and after amp enable = TPS63802 power-save bursts -> explains F10. Photos in tools/results/.../scope-20261119-ampdip/.
+
+### 2026-11-19 15:41:57 — Scope: amp dip, full sequence (manual note)
+
+- 50 ms/div captures (whole power.ampdip sequence): no step at amp enable; the 1 kHz tone (-12 dBFS, ~100 ms, starting ~250 ms after AMP_SD rises) lowers the lower envelope of +V and VBAT by ~50 mV; device shows dip 75-79 mV. Narrow +-100 mV spikes at internal transitions. Correction to the earlier note: the 20 ms/div captures ended before the tone. F6 conclusion unchanged (no reset risk without the meter burden).
