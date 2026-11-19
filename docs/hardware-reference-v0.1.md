@@ -691,7 +691,15 @@ two runs); one earlier engine B run read 46.95614 kHz (+0.17 %), not reproduced.
 
 ### Speaker, Level And Frequency Response (MEASURED 2026-11-19)
 
-Speaker: 8 ohm, 0.5 W (datasheet). Session: iPhone microphone at 10 cm,
+**Crackle (F14) was a damaged speaker**, not the electronics: a new speaker of the
+same type plays the video without crackle and without any extra high-pass. Do not
+desolder the speaker's own leads (the tinsel leads to the voice coil are easily
+damaged by heat or glue); splice the connector cable to the native leads and
+strain-relieve them. Gain: PWM-to-speaker gain is about 6.4 (PAM8302A
+150k/(10k + Rin), Rin = R25 10k + R24 3.3k), so the BTL stage clips at about
+-10 dBFS by design; keep digital peaks <= -10 dBFS until R25/R26 are raised.
+
+Speaker: FBS1810 (18x10 mm), 8 ohm, 0.8 W rated / 1.0 W max, f0 100 Hz, 77 dB at 1 W / 0.1 m (datasheet DOC061610363). Session: iPhone microphone at 10 cm,
 phyphox Audio Amplitude, fan background about -55 dB (relative scale of the
 app). Values are relative, not calibrated SPL.
 
@@ -1150,7 +1158,7 @@ Source: [FINDINGS.md](../software/stm32-hwtest/FINDINGS.md).
 | F9 | Battery log charge flag appeared absent | **Closed**: log was fine, analyzer bug; the logger time base excludes Stop |
 | F10 | Vbat, VDDA and die temperature ADC readings get much noisier during long low-load rests (BL off): spikes on all three together | Open: likely TPS63802 power-save (MODE = GND) burst ripple on 3V3/VDDA; BAT_STAT has no filter cap. Gauge: stronger averaging at low load |
 | F11 | Landscape raw MADCTL tears diagonally | **Resolved**: native order `0x80` (default in the test UI) |
-| F12 | Audio chain saturates at about -8 dBFS; 0 dBFS (about 1.3 W into a 0.5 W speaker) made the speaker very hot | New: digital peak <= -9 dBFS, high-pass 400-500 Hz; hardware limit proposed for v0.2 |
+| F12 | Audio chain saturates at about -8 dBFS; 0 dBFS (about 1.3 W into a 0.8 W rated / 1.0 W max speaker) made the speaker very hot | New: digital peak <= -9 dBFS, high-pass 400-500 Hz; hardware limit proposed for v0.2 |
 
 Other known hardware faults from [bring-up-log-v0.1.md](bring-up-log-v0.1.md):
 USB ESD part D2 dead (removed and bridged, so no ESD protection on D+/D-);
@@ -1168,7 +1176,7 @@ high without USB (internal pull-down workaround).
 | Filter capacitor on BAT_STAT (ADC input) | Source impedance of the divider with 480-cycle sampling; noise 68 mV p-p window; F10 |
 | Second-order audio filter | Hiss control |
 | Amplifier soft-start and bulk capacitor | F6 (the pop-free firmware sequence covers clicks, not the supply dip) |
-| Hardware volume limit or input attenuator before the PAM8302A | F12: a firmware bug must not be able to overdrive the 0.5 W speaker (clipped 0 dBFS is about 1.3 W) |
+| Hardware volume limit or input attenuator before the PAM8302A | F12: a firmware bug must not be able to overdrive the 0.8 W (1.0 W max) speaker (clipped 0 dBFS is about 1.3-1.4 W). Proposed: R25=R26 ~68k (gain 6.4 -> ~1.85, 0 dBFS lands at the amp clip point, ~0.55 W max) and C25=C26 ~4.7 nF (~400 Hz hardware high-pass, both legs matched) |
 | Filtering of VDDA and BAT_STAT (ferrite/RC); consider forced-PWM mode on the TPS63802 | F10 low-load ADC noise |
 | Bulk capacitor on +V or ATtiny brown-out detection | F6 |
 | SWO test point (PB3 is SPI3_SCK today) and UART pads | Debug without USB |

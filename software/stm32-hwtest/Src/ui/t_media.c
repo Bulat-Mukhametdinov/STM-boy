@@ -305,7 +305,7 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     bool vid = suite_arg_u32(argc, argv, "vid", 1u) != 0u;          /* vid=0: audio only (no W25Q video reads, no LCD DMA) */
     s_verify = suite_arg_u32(argc, argv, "verify", 0u) != 0u;
     uint32_t efs_arg = suite_arg_u32(argc, argv, "fs", 0u);   /* engine rate override: the PCM voice interpolates (imaging test) */
-    uint32_t hp_hz = suite_arg_u32(argc, argv, "hp", 1600u); /* runtime 4th-order high-pass, 0 = off; 1600 = crackle workaround for this speaker (F14) */
+    uint32_t hp_hz = suite_arg_u32(argc, argv, "hp", 0u);    /* runtime 4th-order high-pass, 0 = off (media already high-passed at 380 Hz; F14 crackle was a damaged speaker) */
     s_vchunks = s_vmis = s_vbytes = 0;
     if (att_db > 40u) att_db = 40u;
     mhdr_t h;

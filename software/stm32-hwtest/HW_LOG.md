@@ -7766,3 +7766,36 @@ git-ignored; .txt hexdumps next to them).
 - Command: `hwtest.py info`
 - Result: OK (exit code 0)
 - COM10: fw=f5789a4+dirty build=1795103629 clk=96000000 busy=idle reset=sft uid=002800343435511331323538
+
+### 2026-11-19 20:36:11 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-19 20:38:02 — F14 resolved: damaged speaker (manual note)
+
+- User: old speaker on laptop headphone jack: bbb_audio_board_sim.wav clean, BigBuckBunny mp4 (full range) crackles; new speaker (same type, native leads spliced to a 30-40 cm cable with the Molex connector) clean on the mp4.
+- New speaker on the board: media.play hp=0 (NS engine default) -> no crackle; sound 'workable'. Old speaker likely damaged by the lead rework (desoldering native leads, glue) and/or the 0 dBFS clip test. hp default set back to 0.
+- Noise-shaped engine (commit 37e264b) on the board with new speaker: no new whine reported.
+
+### 2026-11-19 20:38:19 — Enter DFU from application (touch) [auto]
+
+- Command: `1200-baud touch on COM10 (sn=315A356C3435)`
+- Result: FAIL no DFU device within 10 s
+- touch: exception (expected): could not open port 'COM10': PermissionError(13, 'Access is denied.', None, 5)
+
+### 2026-11-19 20:39:20 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: FAIL (exit code 2)
+
+### 2026-11-19 20:39:41 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
