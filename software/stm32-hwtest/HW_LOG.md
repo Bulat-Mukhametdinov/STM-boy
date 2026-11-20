@@ -8041,3 +8041,36 @@ git-ignored; .txt hexdumps next to them).
 - Listening: media.play eq=1 preferred over eq=0 ('more balanced'), hiss still audible. media.play att clamp raised to 90 (idle engine runs).
 - audio.hiss + media.play att=90 auto=15 eng=ns / eng=b; table: tools/results/002800343435511331323538/audio-20261120-hiss/hiss.md. Above amp-off: b1 PA8 low +0.3, b2 PA8 high +12.0, b3 hi-Z -2.9, PWM 50% 750k +7.7 / 375k +11.0 / 187k +18.8 / 94k +14.0, NS idle (375k) +9.8, engine B idle (187k/9b TPDF) +24.7.
 - Conclusions: amp self-noise inaudible; the remaining hiss with NS equals static 375k PWM and 'PA8 high' -> 3V3 rail noise riding on the PWM high level (not quantisation). NS is 15 dB quieter than engine B on the real board (sim said 47 dB: limited by the 3V3 floor). Cheapest fix: lower the analog gain (R25=R26 ~68k: 6.4 -> 1.85, -10.8 dB) and use the freed digital headroom -> 3V3 hiss -11 dB at the same loudness; plus optionally TPS63802 forced PWM while audio plays (ripple 60-70 -> 15 mV measured 2026-11-19).
+
+### 2026-11-20 08:30:39 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog status" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog status lines=2
+- @R {"t": "battlog_status", "running": false, "dry": false, "phase": "-", "t_s": 0, "records": 0, "hdr": true, "ended": true, "flash_records": 9702, "dry_records": 0, "write_errors": 0, "vbat_mv": 0, "est
+
+### 2026-11-20 08:30:40 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=238fe31+dirty build=1795150707 busy=idle
+
+### 2026-11-20 08:30:42 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261120-083040-power.info.json
+
+### 2026-11-20 08:31:51 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog start new=1 ls=12" --timeout 15`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=3
+- @R {"t": "battlog", "event": "start", "dry": false, "resume": false, "load_s": 540, "rest_s": 60, "records": 0}
+- @R {"t": "bl", "n": 1, "t_s": 5, "vbat": 4193, "vcomp": 4193, "st": 12, "fl": 3, "ok": true}
+- @R {"t": "bl", "n": 2, "t_s": 10, "vbat": 4196, "vcomp": 4196, "st": 12, "fl": 3, "ok": true}
+
+### 2026-11-20 08:32:13 — Battery cycle #2 started (manual note)
+
+- Previous flash log (9702 records) verified saved as battlog-20261117-080333.csv before overwrite. `battlog start new=1 ls=12` with USB still connected (CC/CV top-off, power.info: 4182 mV, CHG active); first records 4193-4196 mV, fl=3 (CHG|VBUS). Plan: unplug USB when CHG ends (host watcher), discharge at S12 (expected ~9.3 h like cycle #1), then charge from empty on an A-C cable (F8) to settle F13. Board state differs from cycle #1 only by the new speaker (amp off during S12) and the restored R16.
