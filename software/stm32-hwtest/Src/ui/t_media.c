@@ -329,7 +329,7 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     uint32_t eq_g = suite_arg_u32(argc, argv, "eqg", 12u);
     uint32_t eq_q = suite_arg_u32(argc, argv, "eqq", 30u);
     s_vchunks = s_vmis = s_vbytes = 0;
-    if (att_db > 40u) att_db = 40u;
+    if (att_db > 90u) att_db = 90u;   /* att=90: engine + dither/shaper run, signal inaudible (idle hiss measurement) */
     mhdr_t h;
     const char *why;
     if (!hdr_read(&h, &why)) {

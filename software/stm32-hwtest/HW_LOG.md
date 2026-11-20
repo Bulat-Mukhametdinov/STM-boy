@@ -8006,3 +8006,38 @@ git-ignored; .txt hexdumps next to them).
 - The 2026-11-19 22:19 run had the speaker loose on its leads (no baffle) -> not representative (acoustic short circuit below ~1.5 kHz, 6.3 kHz +21 dB). Re-run with the speaker assembled in the case: audio.sweep (fmin 200), phyphox Audio Amplitude 10 cm, background -71.5 dB -> tools/results/002800343435511331323538/audio-20261120-sweep-case/ (grid checked on the plot).
 - Rel. to 1-8 kHz median: 200-400 Hz -27, 500 -24, 630 -24, 800 -18, 1000 -10, 1250 -2, 1600 +4, 2000 -3, 2500 +2, 3150 0, 4000 +14 (peak), 5000 +3, 6300 0, 8000 -2, 10000 -6, 12500 -3. Usable ~1-12.5 kHz, flat within +-4 dB except the 4 kHz peak.
 - media.play speaker EQ (eq=1 default): 2nd-order HP 600 Hz + peaking -12 dB at 4 kHz Q 3 (args eqhp/eqf/eqg/eqq); predicted 1.25-8 kHz within +-4 dB. phyphox_sweep.py default period 3.62 -> 3.5 s.
+
+### 2026-11-20 07:58:31 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-20 07:58:46 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.986
+- Output: Time elapsed during verifying operation: 00:00:02.010
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-20 07:58:47 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (288896 bytes), expected id: {'fw': '238fe31+dirty', 'build': 1795150707}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=238fe31+dirty build=1795150707, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=15.48s, dfu_to_app=0.71s, total=16.86s
+
+### 2026-11-20 08:05:09 — Idle hiss decomposition, new speaker in case, phone 2 cm (manual note)
+
+- Listening: media.play eq=1 preferred over eq=0 ('more balanced'), hiss still audible. media.play att clamp raised to 90 (idle engine runs).
+- audio.hiss + media.play att=90 auto=15 eng=ns / eng=b; table: tools/results/002800343435511331323538/audio-20261120-hiss/hiss.md. Above amp-off: b1 PA8 low +0.3, b2 PA8 high +12.0, b3 hi-Z -2.9, PWM 50% 750k +7.7 / 375k +11.0 / 187k +18.8 / 94k +14.0, NS idle (375k) +9.8, engine B idle (187k/9b TPDF) +24.7.
+- Conclusions: amp self-noise inaudible; the remaining hiss with NS equals static 375k PWM and 'PA8 high' -> 3V3 rail noise riding on the PWM high level (not quantisation). NS is 15 dB quieter than engine B on the real board (sim said 47 dB: limited by the 3V3 floor). Cheapest fix: lower the analog gain (R25=R26 ~68k: 6.4 -> 1.85, -10.8 dB) and use the freed digital headroom -> 3V3 hiss -11 dB at the same loudness; plus optionally TPS63802 forced PWM while audio plays (ripple 60-70 -> 15 mV measured 2026-11-19).
