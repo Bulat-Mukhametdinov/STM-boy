@@ -235,8 +235,22 @@ static void fetch_video(const mhdr_t *h, uint32_t idx, uint16_t *pal, uint8_t *f
    RBJ cookbook, Q = 0.5412 / 1.3066), applied to the 16-bit PCM before it enters the ring. Workaround for the
    low-frequency crackle (F14); also the game-audio recommendation (~400-500 Hz). */
 typedef struct { float b0, b1, b2, a1, a2, z1, z2; } bq_t;
-static bq_t s_hp[2];
+static bq_t s_hp[4];          /* up to 4 cascaded sections: hp= (2) and the speaker EQ (eq=1: 2) */
+static unsigned s_nbq;
 static bool s_hp_on;
+
+/* RBJ peaking EQ (gain_db < 0 = cut) */
+static void bq_peak(bq_t *f, float fs, float fc, float q, float gain_db)
+{
+    float A = powf(10.0f, gain_db / 40.0f), w = 6.2831853f * fc / fs, cw = cosf(w), al = sinf(w) / (2.0f * q);
+    float a0 = 1.0f + al / A;
+    f->b0 = (1.0f + al * A) / a0;
+    f->b1 = -2.0f * cw / a0;
+    f->b2 = (1.0f - al * A) / a0;
+    f->a1 = -2.0f * cw / a0;
+    f->a2 = (1.0f - al / A) / a0;
+    f->z1 = f->z2 = 0.0f;
+}
 
 static void bq_hp(bq_t *f, float fs, float fc, float q)
 {
@@ -254,7 +268,7 @@ static void hp_run(uint8_t *buf, uint32_t nbytes)
     int16_t *x = (int16_t *)(void *)buf;
     for (uint32_t i = 0; i < nbytes / 2u; i++) {
         float v = (float)x[i];
-        for (int k = 0; k < 2; k++) {   /* transposed direct form II */
+        for (unsigned k = 0; k < s_nbq; k++) {   /* transposed direct form II */
             bq_t *f = &s_hp[k];
             float y = f->b0 * v + f->z1;
             f->z1 = f->b1 * v - f->a1 * y + f->z2;
@@ -306,6 +320,14 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     s_verify = suite_arg_u32(argc, argv, "verify", 0u) != 0u;
     uint32_t efs_arg = suite_arg_u32(argc, argv, "fs", 0u);   /* engine rate override: the PCM voice interpolates (imaging test) */
     uint32_t hp_hz = suite_arg_u32(argc, argv, "hp", 0u);    /* runtime 4th-order high-pass, 0 = off (media already high-passed at 380 Hz; F14 crackle was a damaged speaker) */
+    /* Speaker EQ from the in-case response of the FBS1810 (phyphox, 2026-11-20): below ~800 Hz the speaker gives
+       -17..-27 dB, so a 2nd-order high-pass at eqhp (default 600 Hz) stops wasting power/excursion there; a
+       peaking cut at eqf (default 4000 Hz, +14 dB peak) of eqg dB (default 12) with Q = eqq/10 (default 3). */
+    bool eq_on = suite_arg_u32(argc, argv, "eq", 1u) != 0u;
+    uint32_t eq_hp = suite_arg_u32(argc, argv, "eqhp", 600u);
+    uint32_t eq_f = suite_arg_u32(argc, argv, "eqf", 4000u);
+    uint32_t eq_g = suite_arg_u32(argc, argv, "eqg", 12u);
+    uint32_t eq_q = suite_arg_u32(argc, argv, "eqq", 30u);
     s_vchunks = s_vmis = s_vbytes = 0;
     if (att_db > 40u) att_db = 40u;
     mhdr_t h;
@@ -333,11 +355,17 @@ suite_verdict_t suite_media_play(int argc, char **argv)
     float gain_db = (float)(int32_t)h.rsv0 / 100.0f;   /* header audio_gain_cdb (v2 data peaks at -9.3 dBFS: 0 dB); never > 0 */
     if (gain_db > 0.0f) gain_db = 0.0f;
     gain_db -= (float)att_db;
-    s_hp_on = hp_hz >= 50u && hp_hz < h.audio_rate / 2u;
-    if (s_hp_on) {
-        bq_hp(&s_hp[0], (float)h.audio_rate, (float)hp_hz, 0.5412f);
-        bq_hp(&s_hp[1], (float)h.audio_rate, (float)hp_hz, 1.3066f);
+    s_nbq = 0;
+    if (hp_hz >= 50u && hp_hz < h.audio_rate / 2u) {
+        bq_hp(&s_hp[s_nbq++], (float)h.audio_rate, (float)hp_hz, 0.5412f);
+        bq_hp(&s_hp[s_nbq++], (float)h.audio_rate, (float)hp_hz, 1.3066f);
     }
+    if (eq_on) {
+        if (eq_hp >= 50u && eq_hp < h.audio_rate / 2u) bq_hp(&s_hp[s_nbq++], (float)h.audio_rate, (float)eq_hp, 0.7071f);
+        if (eq_g > 0u && eq_g <= 24u && eq_f >= 200u && eq_f < h.audio_rate / 2u && eq_q >= 3u)
+            bq_peak(&s_hp[s_nbq++], (float)h.audio_rate, (float)eq_f, (float)eq_q / 10.0f, -(float)eq_g);
+    }
+    s_hp_on = s_nbq > 0u;
     audio_pcm_start(RING, RING_SZ, h.audio_rate, gain_db, 16u);
     fetch_audio(&h, 0);
     if (h.frames > 1u) fetch_audio(&h, 1);

@@ -7936,3 +7936,73 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-19 21:01:49 — Speaker protection in the audio driver (manual note)
 
 - New (last) FBS1810 speaker got slightly warm (~50 C by touch) after a few minutes of video at the old level; user finds the old level too loud. audio.c now applies a speaker trim -6 dB to every master setting and an absolute clip ceiling -14 dBFS (sine ~0.27 W) that no suite can exceed (audio.clip included); `audio spk [<trim> <ceil>]` tunes live (ceil max -10 = BTL clip point), not saved. Flashed via DFU (OK). Board reports trim -6.0, ceil -14.0.
+
+### 2026-11-19 22:16:30 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-19 22:16:45 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.939
+- Output: Time elapsed during verifying operation: 00:00:01.996
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-19 22:16:46 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (288424 bytes), expected id: {'fw': '907b160+dirty', 'build': 1795115785}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=907b160+dirty build=1795115785, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=15.37s, dfu_to_app=0.71s, total=16.76s
+
+### 2026-11-19 22:22:53 — Frequency response, NEW speaker, home at night (manual note)
+
+- audio.sweep (new fmin=200: 50-160 Hz silent, same timing), db=-12 before the -6 dB speaker trim (-18 dBFS at the PWM), carrier default, phyphox Audio Amplitude, background -72.6 dB (amp off), amp-on idle ~-69..-70 dB. Raw zip -> tools/results/002800343435511331323538/audio-20261119-sweep-newspk/. One outlier 45.6-46.1 s (5 samples, user-reported) removed -> Amplitudes_clean.csv.
+- Measured step period 3.50 s (ticks every 3.5 s; first tone 200 Hz at 26.6 s, last 90.0-93.0 s), not the 3.62 s default of phyphox_sweep.py -> analysed with --period 3.5.
+- Result rel. to 1-8 kHz median: 200-1000 Hz flat about -15..-19 dB (only 12-15 dB above background), 1250 -5, 1600 +10, 2000 -7, 2500 -10, 3150 -5, 4000 +5, 5000 +6, 6300 +21, 8000 +13, 10000 +8, 12500 -1. Different from the old speaker in the console (day: 1.6k +7, 2.5k -13, 3.15k +6, 6.3k -2). Caveat: broadband amplitude (harmonics count), mounting/baffle and mic distance not yet confirmed with the user.
+
+### 2026-11-20 07:52:07 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 1.03 s
+- cmd: @OK dfu
+
+### 2026-11-20 07:52:23 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.968
+- Output: Time elapsed during verifying operation: 00:00:02.010
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-20 07:52:23 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (288896 bytes), expected id: {'fw': '907b160+dirty', 'build': 1795150297}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=907b160+dirty build=1795150297, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=1.03s, program=15.47s, dfu_to_app=0.71s, total=17.31s
+
+### 2026-11-20 07:52:33 — Frequency response, NEW speaker IN THE CASE + speaker EQ (manual note)
+
+- The 2026-11-19 22:19 run had the speaker loose on its leads (no baffle) -> not representative (acoustic short circuit below ~1.5 kHz, 6.3 kHz +21 dB). Re-run with the speaker assembled in the case: audio.sweep (fmin 200), phyphox Audio Amplitude 10 cm, background -71.5 dB -> tools/results/002800343435511331323538/audio-20261120-sweep-case/ (grid checked on the plot).
+- Rel. to 1-8 kHz median: 200-400 Hz -27, 500 -24, 630 -24, 800 -18, 1000 -10, 1250 -2, 1600 +4, 2000 -3, 2500 +2, 3150 0, 4000 +14 (peak), 5000 +3, 6300 0, 8000 -2, 10000 -6, 12500 -3. Usable ~1-12.5 kHz, flat within +-4 dB except the 4 kHz peak.
+- media.play speaker EQ (eq=1 default): 2nd-order HP 600 Hz + peaking -12 dB at 4 kHz Q 3 (args eqhp/eqf/eqg/eqq); predicted 1.25-8 kHz within +-4 dB. phyphox_sweep.py default period 3.62 -> 3.5 s.

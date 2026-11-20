@@ -362,6 +362,9 @@ suite_verdict_t suite_audio_sweep(int argc, char **argv)
 {
     float db = argf(argc, argv, "db", -12.0f);
     uint32_t step_s = suite_arg_u32(argc, argv, "s", 3u);
+    /* fmin: tones below it are replaced by silence of the same length (timing grid unchanged for
+       phyphox_sweep.py); default 200 Hz protects the speaker (large excursion below ~200 Hz, F14) */
+    uint32_t fmin = suite_arg_u32(argc, argv, "fmin", 200u);
     sess_t se = sess_parse(argc, argv);
     if (!suite_user_start("audio.sweep", "audio.sweep: 25 tones 50 Hz-12.5 kHz, 3 s each, ~100 s. Phone near speaker. A=start", argc, argv))
         return SUITE_ABORT;
@@ -379,10 +382,12 @@ suite_verdict_t suite_audio_sweep(int argc, char **argv)
         snprintf(id, sizeof(id), "S%02u", i + 1u);
         snprintf(l1, sizeof(l1), "%u Hz", s_iso[i]);
         snprintf(l2, sizeof(l2), "%s dBFS  %s", b, g_aud_carriers[se.carrier].name);
-        step_begin(id, l1, l2, COLOR_YELLOW, step_s * 1000u, (float)s_iso[i], db);
-        tone_on((float)s_iso[i], db, AUD_GEN_SINE);
+        bool play = s_iso[i] >= fmin;
+        if (!play) snprintf(l2, sizeof(l2), "skipped (fmin %lu)", (unsigned long)fmin);
+        step_begin(id, l1, l2, COLOR_YELLOW, step_s * 1000u, (float)s_iso[i], play ? db : -120.0f);
+        if (play) tone_on((float)s_iso[i], db, AUD_GEN_SINE);
         ok = hold_until(step_s * 1000u);
-        tone_off();
+        if (play) tone_off();
         if (ok && i + 1u < N_ISO) {
             /* 0.5 s silence + 20 ms 1 kHz tick (boundary marker) + 0.1 s silence */
             res_printf("{\"t\":\"mark\",\"suite\":\"audio.sweep\",\"id\":\"%s\",\"ev\":\"gap\"}", id);

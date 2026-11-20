@@ -5,7 +5,7 @@ The sweep plays 25 ISO 1/3-octave tones (50 Hz .. 12.5 kHz), 3 s each, separated
 grid (period ~3.5 s) by maximising the tone/gap contrast, then take the median level of the
 middle of each tone window and compare it with the background (first seconds before the sweep).
 
-usage: py -3.14 tools/phyphox_sweep.py Amplitudes.csv OUTDIR [--period 3.62]
+usage: py -3.14 tools/phyphox_sweep.py Amplitudes.csv OUTDIR [--period 3.5]
 """
 import csv
 import statistics as st
@@ -51,7 +51,7 @@ def fit_grid(t, v, period):
 
 def main():
     src, out = Path(sys.argv[1]), Path(sys.argv[2])
-    period = float(sys.argv[sys.argv.index("--period") + 1]) if "--period" in sys.argv else 3.62
+    period = float(sys.argv[sys.argv.index("--period") + 1]) if "--period" in sys.argv else 3.5  # measured 2026-11-19/20: ticks every 3.50 s (3.62 misaligned the grid by one step)
     out.mkdir(parents=True, exist_ok=True)
     t, v = load(src)
     t0 = fit_grid(t, v, period)
