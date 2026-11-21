@@ -4,8 +4,8 @@ Single entry point for anyone writing game firmware for the STM-boy v0.1
 board. It collects every hardware fact and proven recipe found with the
 `stm32-hwtest` firmware so nothing has to be re-discovered.
 
-> Status: first draft, updated 2026-11-19. Sections that depend on work that has not
-> been done yet are marked "Not measured yet" or "Pending". Raw evidence lives
+> Status: v0.1 final, 2026-11-21 (test sessions 2026-11-13 to 2026-11-21). Items
+> still open are marked "Not measured yet" or "Pending". Raw evidence lives
 > in [software/stm32-hwtest/HW_LOG.md](../software/stm32-hwtest/HW_LOG.md) and
 > `software/stm32-hwtest/tools/results/<uid>/*.json`; the running findings list
 > is [software/stm32-hwtest/FINDINGS.md](../software/stm32-hwtest/FINDINGS.md).
@@ -44,7 +44,7 @@ UFQFPN48, 512 KB flash, 128 KB SRAM, 8 MHz HSE). Hardware identity:
 Test firmware: [software/stm32-hwtest](../software/stm32-hwtest) (branch
 `hwtest-firmware`), built with `arm-none-eabi-gcc` 13.3, `-O2`, results sent to
 the host as JSON over USB CDC. Dates in this document are the dates of the
-measurement sessions (2026-11-13 to 2026-11-18).
+measurement sessions (2026-11-13 to 2026-11-21).
 
 Instruments:
 
@@ -52,7 +52,9 @@ Instruments:
 | --- | --- |
 | Multimeter (series in the battery lead, 200 mA range) | Per-state currents, VBAT/3V3 ADC calibration |
 | Oscilloscope Tektronix TDS3032B (300 MHz, x10 probe) | SPI1 SCK, backlight PWM |
-| Phone (microphone) | Audio response (planned, not done) |
+| Oscilloscope OWON XDS3202A (x10 probes) | Amplifier-enable dip on +V/VBAT, 3V3 ripple, carrier leak at C24 |
+| iPhone + phyphox (Audio Amplitude) | Speaker frequency response, saturation, idle hiss (relative dB) |
+| ST-LINK (SWD) | Recovery of an interrupted DFU flash |
 | Visual inspection by the board owner | Orientation, colors, tearing, scrolling |
 | Firmware self-measurement (DWT cycle counter, TIM2 1 MHz) | CPU, DMA, flash, USB benchmarks |
 
@@ -200,8 +202,8 @@ compute-bound scenes a higher clock is more energy-efficient. Down-clocking
 96 -> 48 MHz saves only ~12 mA; **the backlight level dominates battery life.**
 
 
-> Warning: anything above 100 MHz is outside the datasheet. When results exist
-> they will be marked "not for release".
+> Warning: anything above 100 MHz is outside the datasheet and **not for
+> release**.
 
 #### Dynamic Frequency Guidance (DERIVED from the sweep and block C)
 
@@ -636,39 +638,54 @@ End-to-end procedure (button to light, planned):
 
 ### Chain
 
-Chain (DESIGN from the pins suite and schematic notes; electrical behaviour
-MEASURED):
+Chain (DESIGN from the schematic; electrical behaviour MEASURED 2026-11-19):
 
-`PA8 (TIM1_CH1)` -> R24 3k3 -> C24 2n2 to GND (RC low-pass, about 22 kHz) ->
-C25 / C26 1 uF DC block -> PAM8302A (class-D, bridged output, SD# = PB2, active
-high) -> speaker. 3V3-powered.
+`PA8 (TIM1_CH1)` -> R24 3k3 -> C24 2n2 to GND (1st-order RC, about 22 kHz) ->
+C25 1 uF -> R25 10k -> PAM8302A IN- ; IN+ via C26 + R26 10k to the ground at C24 ->
+PAM8302A (filterless class-D, bridged output, SD# = PB2, active high, 3V3 supply,
+C22 100 nF + C23 10 uF) -> FBS1810 speaker (J3, Molex).
 
-The bridged output must not be probed with the scope ground clip on a speaker
-terminal (shorts the amplifier).
+- **Gain.** PAM8302A (Diodes application note): `Av = 2 x 80k / (10k internal + Rin)`
+  with `Rin = R25 + R24 = 13.3k` -> about 6.9 (16.7 dB), DESIGN. MEASURED: the
+  1 kHz level stops rising at about **-8 dBFS** digital (the BTL stage clips), so
+  the top ~8 dB of the digital range is unusable on v0.1 (F12).
+- **The PWM high level is the 3V3 rail.** Any 3V3 noise is on the audio signal
+  (see Idle Hiss). The amplifier's own supply rejection is good (input grounded:
+  no hiss above background).
+- The bridged output must not be probed with the scope ground clip on a speaker
+  terminal (shorts the amplifier). Probe single-ended nodes (C24) or use A-B math.
 
 ### Carrier Options
 
-TIM1 up-counting, ARR = 2^bits - 1, timer clock 96 MHz:
+TIM1 up-counting, ARR = 2^bits - 1, timer clock 96 MHz. Carrier left at the
+amplifier input after the 1st-order RC (MEASURED 2026-11-19, scope at C24, about
+0.14 V of each value is probe/ground noise):
 
-| Carrier | Resolution | Name |
-| --- | --- | --- |
-| 750 kHz | 7 bit | `750k/7b` |
-| **375 kHz** | **8 bit** | `375k/8b` (default in tests) |
-| 187.5 kHz | 9 bit | `187k/9b` |
-| 93.75 kHz | 10 bit | `94k/10b` |
+| Carrier | Resolution | Leak at C24 (p-p) | Note |
+| --- | --- | --- | --- |
+| 750 kHz | 7 bit | 0.25 V | |
+| **375 kHz** | **8 bit** | 0.42 V | default for the noise-shaped engine |
+| 187.5 kHz | 9 bit | 0.74 V | default for engine B in `media.play eng=b` |
+| 93.75 kHz | 10 bit | 1.37 V | audible **whine** during silence (F15); avoid |
 
 ### Engines
 
 | Engine | Mechanism | Rate | Note |
 | --- | --- | --- | --- |
 | A | TIM5 update interrupt (priority 3) writes `TIM1->CCR1` per sample | any (tested 22.05 kHz) | Simple; per-sample IRQ overhead |
-| B | TIM1 repetition counter paces update events; TIM1_UP -> DMA2 S5 Ch6 circular buffer into `CCR1`; half/complete interrupt refills 512-sample halves | carrier / (RCR+1); 46.875 kHz at 375k/8b, RCR+1 = 8 | One interrupt per 512 samples (about 10.9 ms) |
+| B | TIM1 repetition counter paces update events; TIM1_UP -> DMA2 S5 Ch6 circular buffer into `CCR1` (OC1PE + ARPE preload: CCR changes latch on the update event, glitch-free) | carrier / (RCR+1) | Sample-and-hold at the sample rate; quantisation + TPDF dither noise is audible at 8-9 bit |
+| **NS** (2026-11-20) | Engine B hardware, but `CCR1` is rewritten **every carrier period** (RCR = 0): the PCM is upsampled (64-tap 4x polyphase FIR, then linear) to the carrier rate and quantised by a **2nd-order error-feedback noise shaper** (+-0.5 LSB TPDF) | 375 kHz / 8 bit (PCM 18 750 Hz) | Quantisation noise pushed above ~20 kHz; `Inc/ns_core.h`, host model `tools/ns_sim.py` |
 
 The synth mixer in `audio.c` has 4 voices, master gain with slew, a clip guard
-(default -6 dBFS peak, master -24 dBFS; real peaks must stay <= -9 dBFS, see below), and a quantiser to the carrier
-resolution with optional TPDF dither or first-order noise shaping.
+and the quantiser. **Speaker protection** (2026-11-19, below every caller): the
+master gain is trimmed by **-6 dB** and the clip guard can never exceed
+**-14 dBFS** (about 0.27 W sine), not even in `audio.clip`; `audio spk <trim>
+<ceil>` changes it live (ceiling at most -10 dBFS), not saved. All suite `db=`
+values are before the trim.
 
-### CPU Cost (MEASURED 2026-11-13, `audio.cpu`, SYSCLK 96 MHz)
+### CPU Cost
+
+MEASURED 2026-11-13 (`audio.cpu`, SYSCLK 96 MHz):
 
 | Engine | Voices | Cycles per sample | CPU load (incl. IRQ) |
 | --- | --- | --- | --- |
@@ -676,11 +693,15 @@ resolution with optional TPDF dither or first-order noise shaping.
 | A, 22.05 kHz | 4 (TPDF dither) | 380 | 10.9 % |
 | B, 46.875 kHz | 1 | 168 | 3.9 % |
 | B, 46.875 kHz | 4 (TPDF) | 337 | 7.8 % |
-| B, 46.875 kHz | 4 (noise-shaped) | 337 | 7.8 % |
 
-No late buffers and no DMA errors in any run. `bench.audio` mixing kernels (8
-channels PCM8 about 247 cycles/sample, synth 8 ch 224) are in
-[section 12](#12-capability-budget-and-benchmarks).
+MEASURED 2026-11-20 (`media.play mute=1`, video on, 96 MHz): **NS engine 70
+cycles per carrier period = 27.4 % CPU** (27.0 % without video); engine B on the
+same stream 4.6 %. Worst render block 41.9k of 48k cycles available; 0 audio or
+LCD DMA errors, 0 underruns, 15.03 fps. Not optimised yet (target about half:
+gain slew at the PCM rate, cheaper interpolation).
+
+`bench.audio` mixing kernels (8 channels PCM8 about 247 cycles/sample, synth
+8 ch 224) are in [section 12](#12-capability-budget-and-benchmarks).
 
 ### Sample Rate Accuracy
 
@@ -688,53 +709,85 @@ MEASURED 2026-11-13 with the TIM2 time base (same crystal as the PLL, so this
 checks the integer timer arithmetic, not the crystal): engine A 22.04869 kHz
 (expected 22.04869), engine B 46.87498 and 46.87503 kHz (expected 46.875, last
 two runs); one earlier engine B run read 46.95614 kHz (+0.17 %), not reproduced.
+`media.play` 2026-11-19: exactly 18 750 Hz (375 kHz / 20), 0 underruns.
 
-### Speaker, Level And Frequency Response (MEASURED 2026-11-19)
+### Speaker
 
-**Crackle (F14) was a damaged speaker**, not the electronics: a new speaker of the
-same type plays the video without crackle and without any extra high-pass. Do not
-desolder the speaker's own leads (the tinsel leads to the voice coil are easily
-damaged by heat or glue); splice the connector cable to the native leads and
-strain-relieve them. Gain: PWM-to-speaker gain is about 6.4 (PAM8302A
-150k/(10k + Rin), Rin = R25 10k + R24 3.3k), so the BTL stage clips at about
--10 dBFS by design; keep digital peaks <= -10 dBFS until R25/R26 are raised.
+FBS1810 (18 x 10 mm): 8 ohm +-20 %, **0.8 W rated / 1.0 W max**, f0 100 Hz,
+77 dB at 1 W / 0.1 m (datasheet DOC061610363). Low sensitivity and a tiny
+diaphragm: nothing useful below about 800 Hz.
 
-Speaker: FBS1810 (18x10 mm), 8 ohm, 0.8 W rated / 1.0 W max, f0 100 Hz, 77 dB at 1 W / 0.1 m (datasheet DOC061610363). Session: iPhone microphone at 10 cm,
-phyphox Audio Amplitude, fan background about -55 dB (relative scale of the
-app). Values are relative, not calibrated SPL.
+- **Do not desolder the speaker's own leads** and do not pot the tabs with glue:
+  the tinsel leads to the voice coil are easily damaged. Splice the connector
+  cable to the native leads and strain-relieve them. The first speaker was
+  damaged (lead rework and/or the 0 dBFS clip test, about 1.4 W) and crackled on
+  every low-frequency signal (F14, resolved by replacing it; the electronics were
+  cleared by a long list of elimination tests).
+- **Mounting changes the response completely**: a speaker hanging on its leads
+  (no baffle) measured +21 dB at 6.3 kHz and a flat -17 dB shelf below 1 kHz;
+  in the case the response is as below. Measure in the final enclosure.
 
-Stepped sine (the reference), relative to the median of 1-8 kHz:
+### Frequency Response In The Case (MEASURED 2026-11-20)
+
+New speaker assembled in the case; `audio.sweep` (stepped sine, ISO 1/3 octave,
+3 s steps, `fmin=200`: the 50-160 Hz steps are silent to protect the speaker),
+-12 dBFS before the -6 dB trim; iPhone + phyphox Audio Amplitude at 10 cm in a
+quiet room (background -71.5 dB). Relative to the median of 1-8 kHz, not
+calibrated SPL. Results `tools/results/<uid>/audio-20261120-sweep-case/`.
 
 | Freq | Level | Freq | Level |
 | --- | --- | --- | --- |
-| 400 Hz and below | in noise (>= 25 dB down) | 3.15 kHz | +6 dB |
-| 500 Hz | in noise (2.7 dB above background) | 4 kHz | +3 dB |
-| 630 Hz | -22 dB | 5 kHz | -7 dB |
-| 800 Hz | -16 dB | 6.3 kHz | -2 dB |
-| 1 kHz | -9 dB | 8 kHz | -2 dB |
-| 1.25 kHz | +3 dB | 10 kHz | -5 dB |
-| 1.6 kHz | +7 dB | 12.5 kHz | -11 dB |
-| 2 kHz | +2 dB | 2.5 kHz | -13 dB (not confirmed by chirp) |
+| 200-400 Hz | -27 dB | 2.5 kHz | +2 dB |
+| 500 / 630 Hz | -24 dB | 3.15 kHz | 0 dB |
+| 800 Hz | -18 dB | **4 kHz** | **+14 dB (resonance peak)** |
+| 1 kHz | -10 dB | 5 kHz | +3 dB |
+| 1.25 kHz | -2 dB | 6.3 kHz | 0 dB |
+| 1.6 kHz | +4 dB | 8 kHz | -2 dB |
+| 2 kHz | -3 dB | 10 / 12.5 kHz | -6 / -3 dB |
 
-- **Usable band about 800 Hz to 10 kHz.** Below 500 Hz nothing rises above the
-  background; the peak is at 1.25-3.15 kHz.
-- The chirp (`chirp_fr.csv`, plot `fr_combined.png`) is only a cross-check: the
-  phone samples the amplitude at about 10 Hz, so the chirp frequency axis is
-  misaligned. Do not use it for dips (the 2.5 kHz dip is suspect); the stepped
-  sine is the reference.
-- Saturation: the 1 kHz level stops rising between -8 and 0 dBFS digital; 200
-  Hz is inaudible below -10 dBFS and above that only distortion and rattle
-  appear.
-- Power: clean maximum about 0.5 W at -8 dBFS; 0 dBFS (clipped) is about 1.3 W
-  into 8 ohm. During the 0 dBFS 200 Hz clip test the speaker got **very hot**
-  (F12).
+- **Usable band about 1-12.5 kHz**, within +-4 dB except the 4 kHz peak (true
+  peak somewhere in 3.5-4.5 kHz at 1/3-octave resolution).
+- Amplitude mode counts harmonics too; the 200-630 Hz values may be partly
+  distortion products.
+- `tools/phyphox_sweep.py` default step period is now 3.50 s (measured; 3.62 s
+  misaligned the grid by one step).
+- The 2026-11-19 sweep of the first (damaged) speaker is kept in
+  `audio-20261119-sweep/` for reference only.
 
-Rules for game audio (DERIVED):
+### Speaker EQ (MEASURED by ear 2026-11-20)
 
-- Digital output peak **<= -9 dBFS**; sustained tones **<= -12 dBFS**.
-- High-pass at 400-500 Hz in the mixer; emulate bass with harmonics.
-- Never feed a full-scale or sustained low-frequency tone (section 15
-  recommends a hardware limit).
+`media.play eq=1` (default): 2nd-order Butterworth high-pass **600 Hz** + RBJ
+peaking cut **-12 dB at 4 kHz, Q 3**, applied to the PCM before the engine.
+Predicted result 1.25-8 kHz within +-4 dB. Listening: "more balanced" than
+`eq=0`. Parameters `eqhp`, `eqf`, `eqg`, `eqq`.
+
+### Idle Hiss (MEASURED 2026-11-20)
+
+`audio.hiss` + `media.play att=90` (engine running, signal -90 dB), phone 2 cm
+from the speaker in the case, night-quiet room. Level above "amplifier off"
+(`tools/results/<uid>/audio-20261120-hiss/hiss.md`):
+
+| Case | Above amp off |
+| --- | --- |
+| Amplifier on, PA8 low / PA8 hi-Z | +0.3 / -2.9 dB (amplifier self-noise inaudible) |
+| **Amplifier on, PA8 high (= 3V3)** | **+12.0 dB** |
+| Static 50 % PWM, 750 / 375 / 187.5 / 94 kHz | +7.7 / +11.0 / +18.8 / +14.0 dB |
+| **NS engine idle (375k/8b)** | **+9.8 dB** |
+| Engine B idle (187k/9b, TPDF) | +24.7 dB |
+
+- The NS engine is **15 dB quieter** than engine B on the real board (the host
+  simulation predicted 47 dB in-band; the board is limited by the next floor).
+- The remaining hiss equals "PA8 high" and the static 375 kHz PWM: it is **3V3
+  rail noise riding on the PWM high level**, not quantisation. Firmware cannot
+  remove it.
+- Fix (not done on this board, deferred): raise R25 = R26 to **82k** (gain 6.9 ->
+  ~1.7, -12 dB; both legs equal) and use the freed digital headroom; at the same
+  loudness the 3V3 hiss drops by about 12 dB and 0 dBFS can no longer overdrive
+  the speaker. Further: TPS63802 forced PWM while audio plays (3V3 ripple 60-70 ->
+  ~15 mV p-p, MEASURED 2026-11-19 with MODE pulled high; rework reverted), or a
+  PWM buffer powered from a clean reference rail (v0.2).
+
+### Amplifier Enable And Pause
 
 Amplifier enable (MEASURED by ear, 2026-11-19, `audio.pop`):
 
@@ -750,31 +803,37 @@ Pop-free recipe (default in `audio_amp_on`; HWCAL `amp_ramp_ms = 0`):
 3. Set SD# (PB2) high.
 4. Off: SD# low first, then stop the PWM.
 
-Idle hiss: the user hears hiss while the amplifier is on and idle; it stops
-when the amplifier is off. The phone at 2 cm could not show it (all cases within
-+-1 dB; 94 / 187 kHz carriers +2 / +1 dB): it is masked by the fan noise.
-Pending: repeat in a quiet room with a spectrum.
+Pause / silence with the amplifier on (MEASURED 2026-11-19, F15): fade the master
+gain out, then **float PA8** (`audio_pa8_float(true)`, input mode): no whine and
+no hiss (C24 100 mV p-p = probe noise). Resume: drive PA8 again, wait 5 ms,
+fade in.
 
-Measurement procedure: record with phyphox (Audio Amplitude) while the
-`audio.sweep`, `audio.chirp`, `audio.hiss` or `audio.clip` suite plays, export
-the CSV, then run `tools/phyphox_sweep.py` (stepped sine) or
-`tools/phyphox_chirp.py` (chirp) to get `fr.csv`, `fr.md` and `fr.png`.
-Results: `tools/results/<uid>/audio-20261119-sweep/`.
+### Rules For Game Audio (DERIVED)
+
+- Keep the driver's speaker protection (-6 dB trim, -14 dBFS ceiling) on v0.1.
+  Without it: digital peaks <= -10 dBFS, sustained tones <= -14 dBFS.
+- PCM 16-bit mono at 18 750 Hz into the NS engine (375 kHz / 8 bit) for the
+  lowest hiss, or engine B (4-8 % CPU) when CPU matters.
+- High-pass about 600 Hz and the 4 kHz cut (speaker EQ above) in the mixer;
+  emulate bass with harmonics. Never play a full-scale or sustained
+  low-frequency tone.
+- Float PA8 during longer silences; use the pop-free enable.
+- Measurement procedure: phyphox Audio Amplitude while `audio.sweep` /
+  `audio.hiss` / `audio.clip` plays, export CSV, `tools/phyphox_sweep.py`
+  (stepped sine) or `tools/phyphox_chirp.py`.
 
 ### Not Measured Yet
 
-THD, dither benefit and the quiet-room hiss spectrum per carrier state. SPL is
-not calibrated.
+THD, calibrated SPL, the effect of R25/R26 = 82k on hiss, an optimised NS
+engine.
 
 > Warning: the PAM8302A shutdown pin reads TIED_LOW instead of a weak 100k
 > pull-down (F2).
 
-> Warning: F6. Enabling the amplifier browned out the ATtiny (supplied from
-> +V) when the battery path had extra series resistance (about 7 ohm of the
-> multimeter), which reset the ATtiny and cut power. Do not enable the amplifier
-> suddenly on a weak, cold or low battery; ramp the carrier and test at low
-> charge without a meter in the lead. v0.2: soft-start or bulk capacitor on +V,
-> or ATtiny brown-out detection.
+> F6 (closed): enabling the amplifier only browned out the ATtiny with the
+> multimeter's ~7 ohm burden in the battery lead. On battery without the meter
+> the rails sag about 50 mV during a -12 dBFS tone (section 11), more than 10x
+> margin to a reset.
 
 ## 10. External Flash
 
@@ -867,18 +926,22 @@ full battery (4.09 V at 10 mA to 3.85 V at 40 mA at the board):
 | S13 | W25Q continuous read | 22.1 mA | 89 mW |
 | S14 | W25Q erase/program | 23.55 mA | 94 mW |
 | S15 | "Game mix" load | 31.6 mA | 124 mW |
-| S10/S11 | Amplifier on / 1 kHz tone | **Not measured yet** (F6 brown-out in the meter setup) | |
-| S12 | Max load: BL 100 % + LCD DMA + CPU | about 207 mW | DERIVED (sum of increments), not metered |
+| S10/S11 | Amplifier on / 1 kHz tone | **Not metered** (the meter's burden browned out the ATtiny, F6); rail sag on battery see below | |
+| S12 | Max load: BL 100 % + LCD DMA + CPU | **60.5 mA** | about 239 mW, MEASURED 2026-11-19 |
+| Menu | test UI, backlight 100 % | about 61 mA | MEASURED 2026-11-19 |
 | S16 | Charging current | See charging below | |
-| S17 | CPU maximum vs frequency | **Not measured yet** (block B) | |
-| Off | ATtiny asleep, regulator off | below the meter's 2 mA-range resolution (indirect) | MEASURED 2026-11-16 |
+| S17 | Current vs SYSCLK | see section 3 (0.19 mA/MHz) | MEASURED 2026-11-19 |
+| Off | ATtiny asleep, regulator off | **about 4 uA** (about 35 mAh per year) | MEASURED 2026-11-19 (uA range) |
 
-Idle current on USB, and exact deep-off current: Not measured yet (the items
-still open in the bring-up log).
+Idle current on USB: Not measured yet.
 
-Runtime estimates: `1.15 Wh / 124 mW` gives about 9 h for the game mix (DERIVED,
-HW_LOG 2026-11-16). The battery analysis tool computed longer values, see the
-caveat below.
+All per-state currents above were taken with the TPS63802 in its stock
+power-save mode (MODE = GND, R16 fitted). Forced PWM (MODE high) was tried
+2026-11-19 and reverted; its idle current was not measured.
+
+Runtime (MEASURED, see the discharge section): S12 max load **9 h 18 min**;
+S15 game mix **11.1 h from about 70-75 % SoC**, i.e. roughly 14-16 h from full
+(DERIVED, preliminary, cycle #2).
 
 ### No-Battery Operation (MEASURED 2026-11-19)
 
@@ -909,7 +972,11 @@ On USB power (VBUS present) amplifier enable, a 1 kHz -12 dBFS tone and
 amplifier off cause at most **14 mV** dip (PWM with amp off 8 mV, amp on idle
 13 mV, tone 14 mV, amp off 8 mV) against about +-6 mV noise at 24 kS/s. The ADC
 reads about 0.1 V for the first 45 ms after start (artefact; pre-roll used).
-**Pending: repeat on battery only** (F6).
+On battery without a meter (MEASURED 2026-11-19, scope on +V at C14 and VBAT at
+C15, trigger on AMP_SD): no step at amplifier enable; during the 1 kHz -12 dBFS
+tone both rails sag **about 50 mV** (envelope; firmware ADC minimum 75-79 mV),
+i.e. about 90 mA average x 0.3 ohm plus ripple. Maximum volume is estimated at
+100-130 mV: more than 10x margin to an ATtiny reset. F6 closed (meter artefact).
 
 ### Discharge Curve And OCV (MEASURED 2026-11-16 to 2026-11-17, `battlog`)
 
@@ -923,7 +990,8 @@ about 17:00:
 | Stop gap after cutoff | 4 h 42 min at 1.3 mA (6.1 mAh) |
 | Die temperature | 20.9-35.0 C over the cycle |
 | ADC cross-check at about 3.47 V | multimeter 3.47 V vs 3.460-3.480 V logged (within 10 mV) |
-| Delivered charge / energy (to cutoff) | 436 mAh / 1.63 Wh (DERIVED, see caveat) |
+| Delivered charge / energy (to cutoff) | about 500 mAh / 1.88 Wh (DERIVED from S12 60.5 mA, F13) |
+| Confirmation (cycle #2, 2026-11-20/21) | last 4 h (3.73 V -> cutoff) 4.13 h vs 4.30 h; first hour within 10-20 mV; plot `battlog-20261121-093251-analysis/cycle2.png` |
 
 OCV table (rested open-circuit voltage; from the end of rests, monotone fit;
 SoC axis from this cycle: 100 % = start, 0 % = loaded cutoff, not empty):
@@ -942,13 +1010,15 @@ Internal resistance, from load-to-rest steps: **291 mOhm** (+1 s median) and
 **376 mOhm** (+10 s median), n = 100; noisy per SoC bin (71-566 mOhm); the
 charger plug step gives 570-770 mOhm (upper bound). HWCAL holds 330 mOhm.
 
-> Caveat: the analysis tool took S12 = 207 mW (an estimate) to solve capacity,
-> giving 436 mAh, 41 % above the 310 mAh label, and runtime estimates of 13.2 h
-> (game mix), 16.5 h (BL 50 % static), 8.2 h (idle menu, BL 100 %), 328 h (Stop).
-> The measured 9 h 18 min together with 310 mAh and 3.7 V implies about 123 mW
-> average, so the real S12 power is probably lower than 207 mW, or the capacity
-> higher than labelled. Treat the tool's runtime table as an upper bound until a
-> game-mix discharge is logged.
+> Capacity (F13): the cell (LP233350, labelled 310 mAh) delivers about 500 mAh
+> to the 3.30 V loaded cutoff (S12 60.5 mA x 9.31 h, minus rests) and takes about
+> 470 mAh from empty in a full charge (cycle #2, preliminary: assumes the 175 mA
+> design charge current). Both say about 1.5x the label. A direct charge-current
+> reading would close F13.
+>
+> Logger note (F16, fixed 2026-11-21): a resume after a power-off used to restart
+> with default parameters and could land after stale records; logger time does not
+> count power-off periods.
 
 ### Charging (BQ24075)
 
@@ -957,7 +1027,7 @@ charger plug step gives 570-770 mOhm (upper bound). HWCAL holds 330 mOhm.
 | Fast-charge current | about 175 mA (ISET 5.1k, 174.5 mA nominal) | DESIGN; plug step and the CC phase of the log agree |
 | CHRG_STAT (PA0) | open-drain, low = charging, high = done / no charge / no USB; R9 10k up | MEASURED 2026-11-17 (`power.info`: CHG low charging) |
 | First-phase log | CC charge seen at 3.29 -> 3.73 V over about 50 min | MEASURED 2026-11-17 |
-| Full charge curve and termination time | **Not measured yet** (the logger was aborted by a host bug at about 50 min) | |
+| Full charge from empty (3.30 V loaded cutoff, A-C cable) | CC until 4.20 V at **about 143 min**, CV until CHG release at **194.7 min (3 h 15 min)**; about 470 mAh in (DERIVED, preliminary) | MEASURED 2026-11-21, cycle #2 |
 | Charge status without battery | the BAT node meanders; a window spread above 200 mV or a voltage outside 2.7-4.35 V means "no battery" | MEASURED bring-up |
 | Battery divider | 33k / 82k, gain 1.000 and offset 0 vs multimeter at 4.175 V; VDDA from VREFINT within 0.2 % (3.293 vs 3.300 V) | MEASURED 2026-11-13 |
 
@@ -1077,6 +1147,7 @@ Full generated tables are produced from the JSON results by
 | `stress.game` unlimited | 138.8 fps, still clean (2026-11-19 repeat: 138.9 fps, frame max 8.7 ms, CPU 87 %) |
 | `soak` 3 min | clean; die 29.4 C, Vbat 4.18 V |
 | `stream.video` 8bpp from W25Q | **140 fps** at SPI3 24 MHz (2.87 MB/s streamed, 2.99 MB/s alone); 71.7 fps at 12 MHz; 1bpp 133 fps (present-limited) |
+| `media.play` (2026-11-19/20) | Big Buck Bunny (c) Blender Foundation, CC-BY 3.0: 160x128 8bpp + per-frame palette, 15 fps, 16-bit 18 750 Hz audio, 12.6 MiB at W25Q 0x200000: **15.03 fps, 0 skipped / late frames, 0 audio underruns**, double-read verify 0 mismatches in 303 chunks, pause/resume clean (section 9) |
 | `display.colmod` | see section 6 |
 | Sleep, wake, amplifier dip | see section 11 |
 
@@ -1096,11 +1167,14 @@ bool plat_present_busy(void);        /* DMA chunk pipeline still running */
    9 POWER (= OFF_REQ asserted). Debounced (20 ms), updated at 1 kHz. */
 uint16_t plat_buttons(void);
 
-/* Audio: signed 16-bit mono at a fixed rate. Proposed: 46875 Hz, engine B,
-   8-bit effective carrier resolution (375 kHz); alternative 22050 Hz, engine A. */
+/* Audio: signed 16-bit mono at 18750 Hz. Proposed: NS engine (375 kHz carrier,
+   8 bit, 2nd-order noise shaping, ~27 % CPU today) or engine B (4-8 % CPU).
+   The platform owns speaker protection (-6 dB trim, -14 dBFS ceiling) and the
+   speaker EQ (HP 600 Hz, -12 dB at 4 kHz). */
 void plat_audio_push(const int16_t *mono, uint32_t n);
 uint32_t plat_audio_free(void);
-void plat_audio_amp(bool on);        /* ramped, F6-safe */
+void plat_audio_amp(bool on);        /* pop-free: PWM mid-scale, 30 ms, SD# high */
+void plat_audio_idle(bool on);       /* silence: fade out, float PA8 (no whine) */
 
 /* Storage: ROM data and saves in the W25Q (24 MHz, DMA read, 3 MB/s). */
 void plat_storage_read(uint32_t addr, void *dst, uint32_t n);
@@ -1114,9 +1188,9 @@ bool plat_power_off_requested(void);
 void plat_power_off_ack(void);
 ```
 
-Open decisions: audio rate (46.875 kHz engine B has the lowest CPU cost per
-sample, 22.05 kHz is the legacy Retro Port rate); whether the platform layer
-owns the 8bpp to RGB565 conversion (recommended, in the DMA ISR).
+Open decisions: NS engine vs engine B (hiss vs CPU; NS needs optimisation
+before games can afford it); whether the platform layer owns the 8bpp to RGB565
+conversion (recommended, in the DMA ISR).
 
 ## 14. Flashing And Recovery
 
@@ -1126,7 +1200,7 @@ owns the 8bpp to RGB565 conversion (recommended, in the DMA ISR).
 | Software DFU entry | `dfu` command, or a 1200-baud touch on the CDC port, or menu "Enter DFU" | MEASURED 20/20 cycles on 2026-11-13; app to DFU 0.61 s, DFU to app 0.71-0.76 s; flashing a 220 KB image about 12 s |
 | First flash / recovery | Hold BOOT0, tap RESET, release BOOT0; board appears as `0483:DF11`; `STM32_Programmer_CLI -c port=USB1 -w build/hwtest.bin 0x08000000 -v -s` | The ROM bootloader cannot be erased. Do not press buttons (CENTER = PA10 = bootloader USART RX) |
 | SWD | `make flash` (`STM32_Programmer_CLI -c port=SWD -w ... -rst`) | |
-| SWD, broken image | `STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst -w build/hwtest.hex -v -rst` | Connect under reset |
+| SWD, broken image | `STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst -w build/hwtest.bin 0x08000000 -v -rst` | Connect under reset. Used 2026-11-19: an interrupted DFU download had written only the first 4 KB (readback showed the rest erased), the board did not boot; SWD reflash with verify fixed it |
 
 Software DFU entry works by writing magic `0xDF11B007` into the `.noinit` block
 and resetting; `Reset_Handler` checks it before clock and RAM init and jumps to
@@ -1152,13 +1226,17 @@ Source: [FINDINGS.md](../software/stm32-hwtest/FINDINGS.md).
 | F3 | Backlight duty read 47.4 % for 50 % | **Closed** 2026-11-16: scope 1.000 kHz / 49.99 %, firmware artefact |
 | F4 | 4 KB erase (`0x20`) sometimes silently rejected (SR1 = 02, WEL stuck); `w25q_erase_sector()` returned in 11 us | **Mitigated** 2026-11-18: checked erase with retry; root cause unknown |
 | F5 | Button B release bounce up to 17.6 ms | Use 20 ms release debounce; check the switch |
-| F6 | Amplifier enable browns out the ATtiny with extra series resistance in the battery path | Open: USB-powered `power.ampdip` shows only 14 mV; repeat on battery at low charge without a meter |
+| F6 | Amplifier enable browns out the ATtiny with extra series resistance in the battery path | **Closed** 2026-11-19: meter artefact (~7 ohm burden); on battery the rails sag about 50 mV during a tone |
 | F7 | RTC wake flag clear stopped the RTC (Stop never woke) | Fixed in firmware |
 | F8 | Board back-feeds about 1.9-2.5 V onto +5V; USB-C sources check vSafe0V and refuse VBUS | Open (workaround: A-C cable) |
 | F9 | Battery log charge flag appeared absent | **Closed**: log was fine, analyzer bug; the logger time base excludes Stop |
-| F10 | Vbat, VDDA and die temperature ADC readings get much noisier during long low-load rests (BL off): spikes on all three together | Open: likely TPS63802 power-save (MODE = GND) burst ripple on 3V3/VDDA; BAT_STAT has no filter cap. Gauge: stronger averaging at low load |
+| F10 | Vbat, VDDA and die temperature ADC readings get much noisier during long low-load rests (BL off): spikes on all three together | **Explained** 2026-11-19: TPS63802 power-save bursts (~57 kHz at light load, 50-65 mV) seen on +V/VBAT; 3V3 sawtooth ~60-70 mV p-p. Gauge: stronger averaging at low load |
 | F11 | Landscape raw MADCTL tears diagonally | **Resolved**: native order `0x80` (default in the test UI) |
-| F12 | Audio chain saturates at about -8 dBFS; 0 dBFS (about 1.3 W into a 0.8 W rated / 1.0 W max speaker) made the speaker very hot | New: digital peak <= -9 dBFS, high-pass 400-500 Hz; hardware limit proposed for v0.2 |
+| F12 | Audio chain saturates at about -8 dBFS; 0 dBFS (about 1.3 W into a 0.8 W rated / 1.0 W max speaker) made the speaker very hot | Mitigated in firmware: driver trim -6 dB + ceiling -14 dBFS; hardware fix R25 = R26 = 82k |
+| F13 | Battery holds about 1.5x its 310 mAh label (about 500 mAh out, about 470 mAh in) | Preliminary; confirm with a direct charge-current reading |
+| F14 | Audio crackle on low frequencies | **Resolved** 2026-11-19: damaged speaker (lead rework / clip test); replaced |
+| F15 | Whine during audio silence (constant 50 % PWM): carrier leak + 3V3 noise | **Fixed** in firmware: 375 kHz carrier, PA8 floated during pause |
+| F16 | Battery logger resume used default parameters; stale records confused the resume position | **Fixed** 2026-11-21 (BCFG block, wipe on new start) |
 
 Other known hardware faults from [bring-up-log-v0.1.md](bring-up-log-v0.1.md):
 USB ESD part D2 dead (removed and bridged, so no ESD protection on D+/D-);
@@ -1174,9 +1252,15 @@ high without USB (internal pull-down workaround).
 | 22-33 ohm series resistors on SCK and MOSI near the MCU | 48 MHz edge ringing and EMI margin |
 | TE and MISO from the LCD to the MCU | Tear-free sync and LCD readback; free pins exist |
 | Filter capacitor on BAT_STAT (ADC input) | Source impedance of the divider with 480-cycle sampling; noise 68 mV p-p window; F10 |
-| Second-order audio filter | Hiss control |
+| Second-order audio filter | Carrier leak (F15) |
+| R25 = R26 = 82k (or a hardware volume divider) | 3V3 hiss -12 dB at equal loudness; speaker cannot be overdriven (F12) |
+| PWM buffer (e.g. single-gate 74LVC1G) powered from a filtered/LDO reference rail | Removes 3V3 noise from the audio signal entirely (the hiss floor measured 2026-11-20) |
+| TPS63802 MODE on a free GPIO | Forced PWM while audio plays or the ADC measures (ripple 60-70 -> 15 mV), power-save otherwise (F10) |
+| 1 uF at the PAM8302A VDD pin (datasheet), amplifier power-ground path | Datasheet recommendation; cleaner supply return |
+| Speaker: higher sensitivity (>= 85 dB 1 W / 0.1 m), larger diaphragm (20-28 mm), sealed back volume or an enclosed speaker-box module; splice leads, never solder the speaker tabs | FBS1810 77 dB, nothing below 800 Hz; F14 |
+| Display: IPS panel on ST7789 (e.g. 2.0" 320x240 with 2x pixel doubling of 160x120, or 1.54" 240x240 with 120x120), TE and MISO routed | TN ST7735S: narrow viewing angle, washed colours, no TE (F11) |
 | Amplifier soft-start and bulk capacitor | F6 (the pop-free firmware sequence covers clicks, not the supply dip) |
-| Hardware volume limit or input attenuator before the PAM8302A | F12: a firmware bug must not be able to overdrive the 0.8 W (1.0 W max) speaker (clipped 0 dBFS is about 1.3-1.4 W). Proposed: R25=R26 ~68k (gain 6.4 -> ~1.85, 0 dBFS lands at the amp clip point, ~0.55 W max) and C25=C26 ~4.7 nF (~400 Hz hardware high-pass, both legs matched) |
+| Hardware high-pass at the amplifier input | C25 = C26 about 4.7 nF with 82k gives about 400 Hz; both legs matched |
 | Filtering of VDDA and BAT_STAT (ferrite/RC); consider forced-PWM mode on the TPS63802 | F10 low-load ADC noise |
 | Bulk capacitor on +V or ATtiny brown-out detection | F6 |
 | SWO test point (PB3 is SPI3_SCK today) and UART pads | Debug without USB |
@@ -1190,11 +1274,14 @@ high without USB (internal pull-down workaround).
 | Topic | Sources | Resolution used here |
 | --- | --- | --- |
 | Raycaster render 5.1 ms / raytracer 41 fps vs 5.7 ms / 40 fps | demo 14:46 vs 15:20 (2026-11-17) | Latest listed first, earlier in brackets |
-| Game-mix runtime 9 h (1.15 Wh / 124 mW) vs 13.2 h (analysis tool) | HW_LOG 2026-11-16 vs `summary.md` | The tool depends on an assumed S12 power and 436 mAh; 9 h kept as the conservative estimate |
+| Game-mix runtime 9 h (1.15 Wh / 124 mW) vs 13.2 h (analysis tool) vs 14-16 h | HW_LOG 2026-11-16, `summary.md`, cycle #2 | Cycle #2 logged 11.1 h of S15 from about 70-75 % SoC -> 14-16 h from full (preliminary); the 9 h figure assumed 310 mAh |
+| Speaker 0.5 W | repo notes vs datasheet DOC061610363 | 0.8 W rated / 1.0 W max |
+| PAM8302A gain 150k/(10k + Rin) (review agent) | vs Diodes application note 2 x 80k/(10k + Rin) | Application note used (gain about 6.9); the hardware advice (82k) is unchanged |
+| `phyphox_sweep.py` step period 3.62 s | vs ticks every 3.50 s in the 2026-11-19/20 recordings | 3.50 s (new default) |
 | R_int 330 mOhm (HWCAL) vs 291 / 376 mOhm (analysis) | HW_LOG 2026-11-17 vs `summary.md` | Range given |
 | Test arena RAM "17.7 KB static" (README) vs about 50 KB (current build) | README vs `nm` 2026-11-18 | Current build used |
 | Hardware overview "includes USB ESD protection" | hardware-overview.md vs bring-up log | ESD part is dead / removed on this board |
 | F1 "hold-time check pending" | FINDINGS row text vs HW_LOG 2026-11-18 | Closed, user verified |
-| 2.5 kHz speaker dip -13 dB | stepped sine vs chirp (2026-11-19) | Listed with "not confirmed"; chirp axis is misaligned (10 Hz phone sampling) |
+| 2.5 kHz speaker dip -13 dB | stepped sine vs chirp (2026-11-19), first (damaged) speaker | Superseded by the in-case response of the new speaker (2026-11-20) |
 | Hardware scroll step 86-89 us vs 114 us | `display.vscroll` runs 2026-11-17 | 87 us (later run) used; 114 us run generated more per step |
 | Audio TX "ramp" recipe (`audio_amp_on(ramp_ms)` ramps after SD#) vs pop-free default | earlier draft vs HW_LOG 2026-11-19 | By-ear test: ramp with amp on pops; precharge then SD# is the default |

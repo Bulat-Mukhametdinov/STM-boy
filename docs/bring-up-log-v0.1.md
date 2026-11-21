@@ -143,13 +143,17 @@ The ATTINY13A soft-power handshake works end to end with the bring-up firmware:
 - The ATTINY cuts the rail immediately after the acknowledgement, well before
   its 2500 ms timeout.
 
-## Not Measured Yet
+## Measured Later (2026-11-13 to 2026-11-21)
 
-The following items from [bring-up.md](bring-up.md) still have no recorded
-numbers and should be filled in before a release package:
+The items that were open here were measured with the `stm32-hwtest` firmware;
+numbers and methods are in [hardware-reference-v0.1.md](hardware-reference-v0.1.md)
+(section 11) and [FINDINGS.md](../software/stm32-hwtest/FINDINGS.md):
 
-- Idle current on USB and on battery.
-- Current with display backlight at minimum and maximum.
-- Deep-off current in the ATTINY13A off state.
-- Battery charge current.
-- 3V3 ripple under display and audio load.
+- Idle current on battery: S2 (WFI, backlight off) 10.1 mA; Stop 1.3 mA.
+  Idle current on USB: still not measured.
+- Backlight: 13.05 mA at 10 % to 40.25 mA at 100 % (board total); max load
+  (S12) 60.5 mA.
+- Deep-off current (ATTINY13A off state): about 4 uA.
+- Battery charge: about 175 mA CC; full charge from empty 3 h 15 min.
+- 3V3 ripple: TPS63802 power-save bursts, about 60-70 mV p-p sawtooth at light
+  load (F10); about 15 mV p-p in forced PWM (MODE high, tried and reverted).
