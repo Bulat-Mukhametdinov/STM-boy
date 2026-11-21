@@ -47,12 +47,22 @@ w25q_status_t w25q_media_erase_block(uint32_t addr);               /* 64 KB alig
 w25q_status_t w25q_media_program(uint32_t addr, const void *buf, size_t len);
 const char *w25q_status_str(w25q_status_t s);
 
+/* Write-path health counters (R1/F4): erase retries = erase opcodes that were not executed the first time;
+   prog_ignored = page programs that left WEL set (opcode ignored) and were repeated. */
+typedef struct {
+    uint32_t erases, erase_retries, erase_fails, programs, prog_ignored;
+} w25q_stats_t;
+extern w25q_stats_t g_w25q_stats;
+void w25q_set_cs_hold(bool on);       /* default on: >= 200 ns CS high after every command (tSHSL) */
+bool w25q_cs_hold(void);
+
 /* P3/P5 extensions. Writes (program/erase) are refused below W25Q_HWTEST_BASE. */
 uint8_t w25q_read_reg(uint8_t cmd);                 /* 0x05 SR1, 0x35 SR2, 0x15 SR3 */
 uint8_t w25q_read_lock(uint32_t addr);               /* 0x3D individual lock bit */
 void w25q_global_unlock(void);                       /* 0x98: volatile individual lock bits -> unlocked */
 w25q_status_t w25q_read_sfdp(uint8_t *buf, size_t n);
 w25q_status_t w25q_erase_cmd(uint8_t cmd, uint32_t addr, uint32_t *us); /* 0x20/0x52/0xD8 */
+w25q_status_t w25q_erase_cmd_nohold(uint8_t cmd, uint32_t addr, uint32_t *us); /* A/B test: pre-fix CS timing */
 w25q_status_t w25q_program_page_timed(uint32_t addr, const void *buf, size_t len, uint32_t *us);
 w25q_status_t w25q_read_ex(uint32_t addr, void *buf, size_t len, bool fast); /* 0x03 / 0x0B polled */
 void w25q_release_pd_nodelay(void);

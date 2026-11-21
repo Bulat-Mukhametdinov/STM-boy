@@ -7,6 +7,7 @@
 #include "stm32f4xx_hal.h"
 
 #define QUEUE_LEN 32u   /* power of two */
+#define INPUT_PRESS_MS 1u   /* press accepted after 2 equal samples (R14 eager press) */
 
 typedef struct {
     GPIO_TypeDef *port;
@@ -110,9 +111,16 @@ void input_tick_1ms(void)
         if (s_stable_ms[i] < 255u) {
             s_stable_ms[i]++;
         }
-        if (s_stable_ms[i] >= deb && ((raw ^ held) & m)) {
-            held ^= m;
-            push((uint8_t)i, (raw & m) ? 1u : 0u, now);
+        /* R14 (review 2026-11-21): eager press, debounced release. A press is reported once the level has
+           been stable for INPUT_PRESS_MS (1 ms = two consecutive samples, rejects single-sample spikes)
+           instead of the full window; the release still needs `deb` ms of stable level, so contact bounce
+           after the press (and the up-to-17.6 ms release bounce of B, F5) never produces a second event. */
+        if ((raw ^ held) & m) {
+            bool pressing = (raw & m) != 0u;
+            if (s_stable_ms[i] >= (pressing ? INPUT_PRESS_MS : deb)) {
+                held ^= m;
+                push((uint8_t)i, pressing ? 1u : 0u, now);
+            }
         }
     }
     s_raw = raw;

@@ -613,7 +613,12 @@ void lcd_colmod(uint8_t mode)
     lcd_cmd_raw(0x3A, &mode, 1);
 }
 
-/* Sleep mode (P2 current measurement): DISPOFF + SLPIN, or SLPOUT (120 ms) + DISPON. */
+/* Sleep mode (P2 current measurement): DISPOFF + SLPIN, or SLPOUT (120 ms) + DISPON.
+   R27 (review 2026-11-21): ST7735S needs 120 ms after SLPIN before SLPOUT (and before removing power);
+   only 5 ms are spent here (next command allowed), the remainder is enforced before a wake. */
+static uint32_t s_slpin_t;
+static bool s_slpin;
+
 void lcd_sleep(bool on)
 {
     if (on) {
@@ -621,8 +626,15 @@ void lcd_sleep(bool on)
         lcd_end();
         cmd(0x10);
         lcd_end();
+        s_slpin_t = HAL_GetTick();
+        s_slpin = true;
         HAL_Delay(5);
     } else {
+        if (s_slpin) {
+            uint32_t since = HAL_GetTick() - s_slpin_t;
+            if (since < 120u) HAL_Delay(120u - since);
+            s_slpin = false;
+        }
         cmd(0x11);
         lcd_end();
         HAL_Delay(120);

@@ -450,6 +450,52 @@ static void dispatch(char *line, bool restricted)
         } else {
             proto_err("lcd", "usage: lcd div <2|4|8|16|32>");
         }
+    } else if (strcmp(c, "w25q") == 0 && !restricted && argc >= 2 &&
+               (strcmp(argv[1], "stat") == 0 || strcmp(argv[1], "csdelay") == 0 || strcmp(argv[1], "div") == 0 ||
+                strcmp(argv[1], "stress") == 0)) {
+        /* w25q stat | csdelay 0|1 | div N | stress <n> [blk]: F4/R1 write-path A/B test in 0xF80000-0xFDFFFF.
+           Other w25q sub-commands (id/read/crc/erase4k/lock/scan) fall through to cmd_w25q() below. */
+        const char *sub = argv[1];
+        if (strcmp(sub, "csdelay") == 0 && argc >= 3) {
+            w25q_set_cs_hold(strtoul(argv[2], NULL, 0) != 0u);
+        } else if (strcmp(sub, "div") == 0 && argc >= 3) {
+            w25q_set_div((uint16_t)strtoul(argv[2], NULL, 0));   /* 2 = 24 MHz (media.play), 4 = 12 MHz (default) */
+        } else if (strcmp(sub, "stress") == 0) {
+            uint32_t n = argc >= 3 ? strtoul(argv[2], NULL, 0) : 100u;
+            bool blk = argc >= 4 && strcmp(argv[3], "blk") == 0;
+            if (n > 2000u) n = 2000u;
+            uint32_t first_ignored = 0, retries_left = 0, verify_bad = 0, fails = 0;
+            uint8_t *pg = g_arena, *rb = g_arena + 256;   /* arena is free outside suites */
+            const uint32_t base = 0xF80000u, span = 0x60000u, step = blk ? 0x10000u : 0x1000u;
+            for (uint32_t i = 0; i < n; i++) {
+                uint32_t a = base + (i * step) % span;
+                uint32_t us = 0;
+                w25q_status_t st = w25q_cs_hold() ? w25q_erase_cmd(blk ? 0xD8u : 0x20u, a, &us)
+                                                   : w25q_erase_cmd_nohold(blk ? 0xD8u : 0x20u, a, &us);
+                if (st == W25Q_OK && us < 1000u) {   /* first attempt not executed */
+                    first_ignored++;
+                    st = w25q_erase_cmd(blk ? 0xD8u : 0x20u, a, &us);
+                    if (st == W25Q_OK && us < 1000u) retries_left++;
+                }
+                if (st != W25Q_OK) fails++;
+                for (unsigned k = 0; k < 256u; k++) pg[k] = (uint8_t)(i * 7u + k);
+                if (w25q_program(a + 256u * (i % 16u), pg, 256) != W25Q_OK) fails++;
+                w25q_read(a + 256u * (i % 16u), rb, 256);
+                if (memcmp(pg, rb, 256) != 0) verify_bad++;
+                if ((i & 15u) == 0u) sys_service();
+            }
+            res_printf("{\"t\":\"w25q_stress\",\"n\":%lu,\"blk\":%s,\"cs_hold\":%s,\"first_ignored\":%lu,\"ignored_twice\":%lu,"
+                       "\"verify_bad\":%lu,\"fails\":%lu,\"prog_ignored_total\":%lu}",
+                       (unsigned long)n, blk ? "true" : "false", w25q_cs_hold() ? "true" : "false",
+                       (unsigned long)first_ignored, (unsigned long)retries_left, (unsigned long)verify_bad,
+                       (unsigned long)fails, (unsigned long)g_w25q_stats.prog_ignored);
+        }
+        res_printf("{\"t\":\"w25q_stat\",\"cs_hold\":%s,\"erases\":%lu,\"erase_retries\":%lu,\"erase_fails\":%lu,"
+                   "\"programs\":%lu,\"prog_ignored\":%lu}",
+                   w25q_cs_hold() ? "true" : "false", (unsigned long)g_w25q_stats.erases,
+                   (unsigned long)g_w25q_stats.erase_retries, (unsigned long)g_w25q_stats.erase_fails,
+                   (unsigned long)g_w25q_stats.programs, (unsigned long)g_w25q_stats.prog_ignored);
+        proto_ok("w25q");
     } else if (strcmp(c, "audio") == 0) {           /* audio spk [<trim_db> <ceil_db>]: speaker protection, live, not saved */
         if (argc >= 4 && strcmp(argv[1], "spk") == 0) {
             audio_set_spk_limits(strtof(argv[2], NULL), strtof(argv[3], NULL));

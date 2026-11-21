@@ -383,6 +383,8 @@ void audio_stats_reset(void)
     g_aud_stats.cyc_min = 0xFFFFFFFFu;
 }
 
+static uint32_t s_mid_t;   /* HAL tick when the PWM output last went to mid-scale (R24) */
+
 static void wait_force(uint32_t ms)
 {
     uint32_t t0 = time_us(), w = ms * 1000u;
@@ -430,6 +432,7 @@ void audio_pwm_start(unsigned carrier, bool at_mid)
     TIM1->RCR = 0;
     TIM1->CCMR1 = TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1PE;
     TIM1->CCR1 = at_mid ? audio_mid() : 0u;
+    s_mid_t = HAL_GetTick();
     TIM1->CCER = TIM_CCER_CC1E;
     TIM1->BDTR = TIM_BDTR_MOE;
     TIM1->CNT = 0;
@@ -495,10 +498,15 @@ bool audio_amp_on(uint32_t ramp_ms)
         /* Pop-free recipe (user listening test 2026-11-19): bring PWM to mid-scale with the amp
            OFF, let the 10k x 1uF input coupling settle (tau 10 ms), then enable the amp; its own
            soft-start handles the rest. Ramping PWM with the amp already on was audible (thump). */
+        /* R24 (review 2026-11-21): always give the input network 30 ms at mid-scale, also when the PWM
+           was started at mid just before (audio_pwm_start(c, true)): previously SD# rose immediately in
+           that case while C25 was still charging (tau ~13 ms). */
         if (s_pwm_on && TIM1->CCR1 != audio_mid()) {
             TIM1->CCR1 = audio_mid();
-            wait_force(30);
+            s_mid_t = HAL_GetTick();
         }
+        uint32_t since = HAL_GetTick() - s_mid_t;
+        if (s_pwm_on && since < 30u) wait_force(30u - since);
         audio_amp_raw(true);
         return true;
     }

@@ -21,6 +21,24 @@
 static bool s_present;
 static uint16_t s_div = 4;
 
+/* R1 (independent review 2026-11-21) / F4: the W25Q128JV needs tSHSL >= 50 ns of CS high before a
+   write/erase opcode. Without a delay the WREN -> opcode CS-high pulse was two back-to-back BSRR stores
+   (~10-20 ns at 96 MHz): the chip latched WEL but ignored the erase/program (SR1 = 02 afterwards, the
+   retry worked). end() now holds CS high for >= ~200 ns. s_cs_hold = false restores the old timing for
+   A/B tests (`w25q csdelay 0`). */
+static volatile bool s_cs_hold = true;
+w25q_stats_t g_w25q_stats;
+
+static inline void cs_deselect_hold(void)
+{
+    uint32_t n = SystemCoreClock / 20000000u + 2u;   /* >= 4 cycles per iteration -> >= 200 ns */
+    for (volatile uint32_t i = 0; i < n; i++) {
+    }
+}
+
+void w25q_set_cs_hold(bool on) { s_cs_hold = on; }
+bool w25q_cs_hold(void) { return s_cs_hold; }
+
 #define CS_LOW()  gpio_clr(FLASH_CS_PORT, FLASH_CS_PIN)
 #define CS_HIGH() gpio_set(FLASH_CS_PORT, FLASH_CS_PIN)
 
@@ -38,12 +56,17 @@ static uint8_t xfer(uint8_t b)
     return *(volatile uint8_t *)&SPI3->DR;
 }
 
-static void end(void)
+static inline __attribute__((always_inline)) void end(void)
 {
     uint32_t n = 0;
     while ((SPI3->SR & SPI_SR_BSY) && ++n < SPI_SPIN_LIMIT) {
     }
-    CS_HIGH();
+    if (s_cs_hold) {
+        CS_HIGH();
+        cs_deselect_hold();
+    } else {
+        CS_HIGH();   /* exact pre-fix timing: nothing between CS high and the caller's next CS low */
+    }
 }
 
 static void spi3_setup(uint16_t div)
@@ -78,8 +101,19 @@ bool w25q_init(void)
     spi3_setup(4); /* PCLK1 48 MHz / 4 = 12 MHz */
 
     (void)w25q_release_power_down();
-    uint32_t id = w25q_read_jedec();
-    s_present = (id != 0u) && (id != 0xFFFFFFu) && ((id & 0xFFu) == 0x18u);
+    /* R5: after a warm reset (IWDG, fault, DFU, NVIC_SystemReset) the chip may still be inside an erase
+       (4 KB up to 400 ms, 64 KB up to 2 s) and then ignores 9Fh. Poll BUSY first (SR1 reads are allowed
+       while busy; a dead/absent chip reads 0xFF or 0x00 and is handled by the JEDEC check), then retry. */
+    uint32_t t0 = HAL_GetTick();
+    while ((w25q_read_sr1() & SR1_BUSY) && w25q_read_sr1() != 0xFFu && (uint32_t)(HAL_GetTick() - t0) < 3000u) {
+    }
+    uint32_t id = 0;
+    for (int i = 0; i < 3; i++) {
+        id = w25q_read_jedec();
+        s_present = (id != 0u) && (id != 0xFFFFFFu) && ((id & 0xFFu) == 0x18u);
+        if (s_present) break;
+        HAL_Delay(2);
+    }
     return s_present;
 }
 
@@ -132,7 +166,7 @@ static w25q_status_t wait_ready(uint32_t timeout_ms)
     }
 }
 
-static void write_enable(void)
+static inline __attribute__((always_inline)) void write_enable(void)
 {
     CS_LOW();
     xfer(CMD_WRITE_ENABLE);
@@ -185,12 +219,15 @@ w25q_status_t w25q_media_erase_block(uint32_t addr)   /* 64 KB aligned, BUSY-pol
 {
     s_media_open = true;
     w25q_status_t st = W25Q_ERR_TIMEOUT;
+    g_w25q_stats.erases++;
     for (int attempt = 0; attempt < 3; attempt++) {   /* F4: an erase that "finishes" in < 1 ms was not executed */
         uint32_t us = 0;
+        if (attempt) g_w25q_stats.erase_retries++;
         st = w25q_erase_cmd(0xD8u, addr, &us);
         if (st != W25Q_OK || us >= 1000u) break;
         st = W25Q_ERR_TIMEOUT;
     }
+    if (st != W25Q_OK) g_w25q_stats.erase_fails++;
     s_media_open = false;
     return st;
 }
@@ -216,16 +253,23 @@ w25q_status_t w25q_program(uint32_t addr, const void *buf, size_t len)
         if (st != W25Q_OK) {
             return st;
         }
-        write_enable();
-        CS_LOW();
-        send_cmd_addr(CMD_PAGE_PROGRAM, addr);
-        for (uint32_t i = 0; i < chunk; i++) {
-            xfer(p[i]);
-        }
-        end();
-        st = wait_ready(TIMEOUT_PAGE_MS);
-        if (st != W25Q_OK) {
-            return st;
+        g_w25q_stats.programs++;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            write_enable();
+            CS_LOW();
+            send_cmd_addr(CMD_PAGE_PROGRAM, addr);
+            for (uint32_t i = 0; i < chunk; i++) {
+                xfer(p[i]);
+            }
+            end();
+            st = wait_ready(TIMEOUT_PAGE_MS);
+            if (st != W25Q_OK) {
+                return st;
+            }
+            /* A program clears WEL when it completes; WEL still set = the opcode was ignored (F4/R1).
+               Nothing was written in that case, so repeating the page program is safe. */
+            if ((w25q_read_sr1() & SR1_WEL) == 0u) break;
+            g_w25q_stats.prog_ignored++;
         }
         addr += chunk;
         p += chunk;
@@ -242,16 +286,20 @@ w25q_status_t w25q_erase_sector(uint32_t addr)
     /* F4: the 0x20 erase was sometimes silently not executed (returned in ~11 us,
        WEL left set, data unchanged). A real 4K erase takes >= ~40 ms (typ 45, seen
        53-89 ms), so an erase that "finishes" in < 1 ms is treated as rejected and retried. */
+    g_w25q_stats.erases++;
     for (int attempt = 0; attempt < 3; attempt++) {
         uint32_t us = 0;
+        if (attempt) g_w25q_stats.erase_retries++;
         w25q_status_t st = w25q_erase_cmd(CMD_SECTOR_ERASE, addr, &us);
         if (st != W25Q_OK) {
+            g_w25q_stats.erase_fails++;
             return st;
         }
         if (us >= 1000u) {
             return W25Q_OK;
         }
     }
+    g_w25q_stats.erase_fails++;
     return W25Q_ERR_TIMEOUT;
 }
 
@@ -322,6 +370,38 @@ w25q_status_t w25q_erase_cmd(uint8_t cmd, uint32_t addr, uint32_t *us)
     write_enable();
     CS_LOW();
     send_cmd_addr(cmd, addr);
+    end();
+    uint32_t t0 = DWT->CYCCNT;
+    st = wait_ready(4000u);
+    if (us) {
+        *us = (DWT->CYCCNT - t0) / (SystemCoreClock / 1000000u);
+    }
+    return st;
+}
+
+/* A/B test only (R1/F4): the PRE-FIX command sequence with CS high for just one store between WREN and
+   the erase opcode (back-to-back BSRR writes, ~10-20 ns), exactly as the old inlined code did. */
+w25q_status_t w25q_erase_cmd_nohold(uint8_t cmd, uint32_t addr, uint32_t *us)
+{
+    uint32_t size = (cmd == 0x20u) ? 0x1000u : (cmd == 0x52u) ? 0x8000u : (cmd == 0xD8u) ? 0x10000u : 0u;
+    if (size == 0u || (addr % size) != 0u || !write_ok(addr, size)) {
+        return W25Q_ERR_PARAM;
+    }
+    w25q_status_t st = wait_ready(TIMEOUT_ERASE_MS);
+    if (st != W25Q_OK) {
+        return st;
+    }
+    CS_LOW();
+    xfer(CMD_WRITE_ENABLE);
+    uint32_t n = 0;
+    while ((SPI3->SR & SPI_SR_BSY) && ++n < SPI_SPIN_LIMIT) {
+    }
+    CS_HIGH();
+    CS_LOW();
+    xfer(cmd);
+    xfer((uint8_t)(addr >> 16));
+    xfer((uint8_t)(addr >> 8));
+    xfer((uint8_t)addr);
     end();
     uint32_t t0 = DWT->CYCCNT;
     st = wait_ready(4000u);

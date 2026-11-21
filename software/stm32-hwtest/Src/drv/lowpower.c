@@ -207,9 +207,11 @@ uint32_t lp_stop(uint32_t timeout_s, uint32_t mask)
             }
         }
         HAL_PWREx_DisableFlashPowerDown();
+        /* R21 (review 2026-11-21): resume the tick BEFORE the HSE/PLL bring-up so the HAL timeouts inside
+           clock_init_96mhz() can fire (SysTick runs ~6x slow on HSI until the switch: still bounded). */
+        HAL_ResumeTick();
         clock_init_96mhz();
         lp_last_stop.clk_cyc = DWT->CYCCNT - c0;
-        HAL_ResumeTick();
     }
     cause = s_wake_flags & mask;
     lp_last_stop.cause = cause;

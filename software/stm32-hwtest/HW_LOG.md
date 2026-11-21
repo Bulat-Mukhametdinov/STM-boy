@@ -8263,3 +8263,467 @@ git-ignored; .txt hexdumps next to them).
 - User: board stayed on USB for hours after charge end, laptop battery died, board found off, user resumed. Dump: battlog-20261121-093251 (22331 records, 6 frames, 0 write errors). Analysis + plot: battlog-20261121-093251-analysis/ (summary.md, cycle2.png).
 - S12 discharge confirms cycle #1 (3.73 V -> cutoff 4.13 h vs 4.30 h; top hour within 10-20 mV). Full charge from empty: CC to 4.20 V ~143 min, CHG release 194.7 min; ~470 mAh in (preliminary) -> F13 consistent with ~500 mAh. Second resume ran ls=15 (S15 game mix): 11.1 h from 3.998 V loaded.
 - F16 fixed and verified on the board: BCFG run-parameter block restored on resume (ls=12), new=1 wipes stale record sectors (88), resume numbering continues correctly (5 -> 6) after reset + prompt.
+
+### 2026-11-21 10:56:47 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:56:54 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:56:59 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:05 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:11 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:17 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:23 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:29 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:35 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:41 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:48 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:53 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:57:59 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:58:05 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: none
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:58:11 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 10:58:13 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-21 10:58:28 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:13.009
+- Output: Time elapsed during verifying operation: 00:00:02.056
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-21 10:58:29 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (290448 bytes), expected id: {'fw': '4c46700+dirty', 'build': 1795247772}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=4c46700+dirty build=1795247772, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=15.50s, dfu_to_app=0.73s, total=16.90s
+
+### 2026-11-21 10:58:30 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q csdelay 0" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 0, "prog_ignored": 0}
+
+### 2026-11-21 10:58:48 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 300" --timeout 120`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 300, "blk": false, "cs_hold": false, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 300, "prog_ignored": 0}
+
+### 2026-11-21 10:58:58 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 30 blk" --timeout 200`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 30, "blk": true, "cs_hold": false, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 330, "prog_ignored": 0}
+
+### 2026-11-21 10:58:59 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q csdelay 1" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 330, "prog_ignored": 0}
+
+### 2026-11-21 10:59:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 300" --timeout 120`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 300, "blk": false, "cs_hold": true, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 630, "prog_ignored": 0}
+
+### 2026-11-21 10:59:28 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 30 blk" --timeout 200`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 30, "blk": true, "cs_hold": true, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 660, "prog_ignored": 0}
+
+### 2026-11-21 10:59:29 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q csdelay 1" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 660, "prog_ignored": 0}
+
+### 2026-11-21 11:03:27 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 11:03:28 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-21 11:03:44 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:13.056
+- Output: Time elapsed during verifying operation: 00:00:02.024
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-21 11:03:45 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (291952 bytes), expected id: {'fw': '4c46700+dirty', 'build': 1795248163}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=4c46700+dirty build=1795248163, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=15.53s, dfu_to_app=0.71s, total=16.93s
+
+### 2026-11-21 11:03:45 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q div 4" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 0, "prog_ignored": 0}
+
+### 2026-11-21 11:03:46 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q csdelay 0" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 0, "prog_ignored": 0}
+
+### 2026-11-21 11:04:06 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 300" --timeout 120`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 300, "blk": false, "cs_hold": false, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 300, "prog_ignored": 0}
+
+### 2026-11-21 11:04:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 30 blk" --timeout 200`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 30, "blk": true, "cs_hold": false, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 330, "prog_ignored": 0}
+
+### 2026-11-21 11:04:17 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q div 4" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 330, "prog_ignored": 0}
+
+### 2026-11-21 11:04:18 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q csdelay 1" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 330, "prog_ignored": 0}
+
+### 2026-11-21 11:04:38 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 300" --timeout 120`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 300, "blk": false, "cs_hold": true, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 630, "prog_ignored": 0}
+
+### 2026-11-21 11:04:49 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 30 blk" --timeout 200`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 30, "blk": true, "cs_hold": true, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 660, "prog_ignored": 0}
+
+### 2026-11-21 11:04:50 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q div 2" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 660, "prog_ignored": 0}
+
+### 2026-11-21 11:04:51 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q csdelay 0" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 660, "prog_ignored": 0}
+
+### 2026-11-21 11:05:12 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 300" --timeout 120`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 300, "blk": false, "cs_hold": false, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 960, "prog_ignored": 0}
+
+### 2026-11-21 11:05:23 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 30 blk" --timeout 200`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 30, "blk": true, "cs_hold": false, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 990, "prog_ignored": 0}
+
+### 2026-11-21 11:05:24 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q div 2" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": false, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 990, "prog_ignored": 0}
+
+### 2026-11-21 11:05:25 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q csdelay 1" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 990, "prog_ignored": 0}
+
+### 2026-11-21 11:05:46 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 300" --timeout 120`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 300, "blk": false, "cs_hold": true, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 1290, "prog_ignored": 0}
+
+### 2026-11-21 11:05:57 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stress 30 blk" --timeout 200`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=3
+- @R {"t": "w25q_stress", "n": 30, "blk": true, "cs_hold": true, "first_ignored": 0, "ignored_twice": 0, "verify_bad": 0, "fails": 0, "prog_ignored_total": 0}
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 1320, "prog_ignored": 0}
+
+### 2026-11-21 11:05:57 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q div 4" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 1320, "prog_ignored": 0}
+
+### 2026-11-21 11:05:58 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q csdelay 1" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 1320, "prog_ignored": 0}
+
+### 2026-11-21 11:08:26 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.60 s
+- cmd: @OK dfu
+
+### 2026-11-21 11:08:42 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:13.054
+- Output: Time elapsed during verifying operation: 00:00:02.024
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-21 11:08:42 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (292024 bytes), expected id: {'fw': '4c46700+dirty', 'build': 1795248502}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=4c46700+dirty build=1795248502, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.60s, program=15.53s, dfu_to_app=0.71s, total=16.91s
+
+### 2026-11-21 11:08:53 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q id" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q id lines=2
+- @R {"t": "w25q_id", "jedec": "EF4018", "uid": "E463A8F31B121931", "sr1": "00", "spi_hz": 12000000}
+
+### 2026-11-21 11:08:54 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock FE0000" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lock lines=2
+- @R {"t": "w25q_lock", "addr": "FE0000", "lock": "01", "sr1": "00", "sr2": "02", "sr3": "60"}
+
+### 2026-11-21 11:08:54 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock FFF000" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lock lines=2
+- @R {"t": "w25q_lock", "addr": "FFF000", "lock": "01", "sr1": "00", "sr2": "02", "sr3": "60"}
+
+### 2026-11-21 11:08:55 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock F80000" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lock lines=2
+- @R {"t": "w25q_lock", "addr": "F80000", "lock": "01", "sr1": "00", "sr2": "02", "sr3": "60"}
+
+### 2026-11-21 11:08:56 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q lock 200000" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lock lines=2
+- @R {"t": "w25q_lock", "addr": "200000", "lock": "01", "sr1": "00", "sr2": "02", "sr3": "60"}
+
+### 2026-11-21 11:08:57 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "w25q stat" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK w25q lines=2
+- @R {"t": "w25q_stat", "cs_hold": true, "erases": 0, "erase_retries": 0, "erase_fails": 0, "programs": 0, "prog_ignored": 0}
+
+### 2026-11-21 11:12:40 — Run suite power.sleep stop=0 (start) [auto]
+
+- Command: `run power.sleep stop=0`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4c46700+dirty build=1795248502 busy=idle
+
+### 2026-11-21 11:12:41 — hwtest.py run [auto]
+
+- Command: `hwtest.py run "power.sleep stop=0" --timeout 120`
+- Result: OK (exit code 0)
+- Suite power.sleep stop=0: PASS results=8 pass=0 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261121-111240-power.sleep_stop_0.json
+
+### 2026-11-21 11:13:53 — Fixes from the independent review (manual note)
+
+- Review report: reports/2026-11-21-independent-review.md (R1-R38).
+- R1/F4 A/B on the board: exact pre-fix CS timing (w25q_erase_cmd_nohold: CS high for one store, ~20-30 ns, disassembly checked) vs new >= 200 ns deselect hold; 300 x 4 KB + 30 x 64 KB erases with program + verify each, at SPI3 12 and 24 MHz: 0 ignored erases, 0 verify errors, 0 ignored programs in all 4 combinations (1320 erases). The tSHSL hypothesis is NOT confirmed; F4 did not reproduce in 0xF80000-0xFDFFFF (historical failures: 4 KB at 0xFE0000/0xFFF000, 64 KB on the first media upload). Protection ruled out: SR1 00, SR2 02, SR3 60 (WPS = 0, individual lock bits read 01 but are not honoured). The hold stays (datasheet tSHSL), plus new WEL-after-program check with one retry and write-path counters (`w25q stat`).
+- R5: w25q_init polls BUSY (<= 3 s) and retries JEDEC 3x. R14: eager press (accepted after 2 equal 1 ms samples), release still debounced 20 ms. R24: amp enable always waits 30 ms after PWM went to mid-scale. R27: LCD SLPIN -> SLPOUT >= 120 ms enforced (power.sleep: sleep_out 247 ms right after sleep_in, was 132). R21: HAL tick resumed before the clock bring-up after Stop.
+- Regression caught and fixed before commit: the new `w25q stat|csdelay|div|stress` branch shadowed the existing `w25q id/read/crc/erase4k/lock/scan` commands; now only the new sub-commands are matched. selftest pass, power.sleep stop=0 pass.
