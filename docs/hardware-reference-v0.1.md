@@ -8,7 +8,10 @@ board. It collects every hardware fact and proven recipe found with the
 > still open are marked "Not measured yet" or "Pending". Raw evidence lives
 > in [software/stm32-hwtest/HW_LOG.md](../software/stm32-hwtest/HW_LOG.md) and
 > `software/stm32-hwtest/tools/results/<uid>/*.json`; the running findings list
-> is [software/stm32-hwtest/FINDINGS.md](../software/stm32-hwtest/FINDINGS.md).
+> is [software/stm32-hwtest/FINDINGS.md](../software/stm32-hwtest/FINDINGS.md). An
+> independent gap review (38 items R1-R38, with a proposed next test session) is
+> in [reports/2026-11-21-independent-review.md](../software/stm32-hwtest/reports/2026-11-21-independent-review.md);
+> items marked R<n> in this document refer to it.
 
 ## Contents
 
@@ -130,7 +133,7 @@ pinout notes; the table above is the corrected, verified assignment.
 | PA10 = USART1_RX of ROM bootloader | CENTER button | Do not press buttons while the board is in the ROM bootloader |
 | No UART, no SWO | PB3 (SWO) is SPI3_SCK; no spare UART pads | Debug output only over USB CDC, or SWD halt/read |
 | PA9 / USB VBUS | VBUS divider node floats near 1.7 V without USB (F8) | Internal pull-down on PA9 gives about 1.1 V idle |
-| BOR is off | Option byte BOR level 3 (1.8-2.1 V) | Consider enabling a higher BOR for battery use (needs SWD, not done by hwtest) |
+| BOR is off | Option byte BOR level 3 (1.8-2.1 V) | Enable BOR level 3 (about 2.7 V) for battery use: the W25Q needs 2.7 V or more and writes during a decaying rail can corrupt saves. It can be programmed **from the application** (FLASH->OPTCR, OPTSTRT) as a guarded one-time first-boot step with read-back; not done yet (R6) |
 
 ## 3. Clocks
 
@@ -219,6 +222,11 @@ compute-bound scenes a higher clock is more energy-efficient. Down-clocking
 - A switch costs about 1 ms plus a USB stop/start and re-enumeration (about
   350 ms, see section 11); switch on scene changes, never per frame.
 - Never make the game depend on turbo: it is chip-specific and out of spec.
+- **Clock scaling changes the audio timer clock** (TIM1 runs from APB2 x2).
+  The NS engine needs 375 kHz / 8 bit, which at 48 MHz becomes 187.5 kHz and
+  costs about 55 % CPU. Rule: fix the audio engine and rate per clock profile
+  (NS only at 96 or 144 MHz); stop audio or switch to engine B before scaling
+  down (R13).
 
 ## 4. Peripheral Allocation
 
@@ -325,7 +333,8 @@ firmware CRC trailer). The firmware never writes internal flash or option bytes.
 | Range | Owner | Use | Basis |
 | --- | --- | --- | --- |
 | `0x000000-0x0FFFFF` | stm32-retroport | Settings log (`RFS1` at `0x000000-0x001000`) | MEASURED 2026-11-13 (read-only scan) |
-| `0x100000-0xEFFFFF` | stm32-retroport | ROM pack `RPRP` v2 (142 ROMs, 205.6 KB at `0x100000-0x133670`); 14 MiB reserved | MEASURED 2026-11-13 |
+| `0x100000-0x1FFFFF` | stm32-retroport | ROM pack `RPRP` v2 (142 ROMs, 205.6 KB at `0x100000-0x133670`) | MEASURED 2026-11-13 |
+| `0x200000-0xEFFFFF` | stm32-hwtest | Media container for `media.play` (Big Buck Bunny, 12.6 MiB from `0x200000`). **Overlaps the 14 MiB that stm32-retroport reserves for its ROM pack** (`0x100000-0xEFFFFF`): a larger ROM pack would be overwritten by a media upload and vice versa | MEASURED 2026-11-19 (R17) |
 | `0xF00000-0xFDFFFF` | stm32-hwtest | Scratch for destructive tests, power-handshake breadcrumbs, battery log | DESIGN (policy) |
 | `0xFE0000-0xFEFFFF` | stm32-hwtest | Overclock / bus-limit journal (32-byte records) | DESIGN (block B) |
 | `0xFF0000-0xFFEFFF` | - | Unassigned | |
@@ -337,6 +346,25 @@ origin, since overwritten by HWCAL) when scanned on 2026-11-13.
 > Warning: a game firmware that reuses the 15th MiB must treat HWCAL as board
 > calibration (display offsets, ADC gain, OCV table). Keep sector `0xFFF000` or
 > move the record deliberately; see [section 11](#11-power-and-battery).
+
+There is **no save-game region yet** (R4). Before the first game, decide one
+authoritative map (ROM data, media, saves, settings, HWCAL, test scratch) and
+follow these rules (DESIGN, from the review and F4):
+
+- Saves: a dedicated region of 64 KB or more, written as a log of records with
+  `{magic, seq, len, crc32}` in at least two sectors (newest valid record wins;
+  write the magic last). Never erase the only valid copy.
+- Keep the board calibration (HWCAL) **write-once** and separate from runtime
+  state (gauge level, settings): today both share sector `0xFFF000`, so every
+  second runtime save erases the calibration sector (about 50 ms window), and a
+  failed save resets the in-RAM calibration to defaults (`hwcal_load()`), which
+  the next save then persists (R3).
+- After `OFF_REQ` the ATtiny cuts power after about 2.5 s (RC clock +-10 %):
+  finish saves within about 2 s; never start a 64 KB erase after `OFF_REQ`.
+- Enable BOR (section 2) so that no write runs on a rail below 2.7 V.
+- Erase and program only through the checked driver calls (erase retry when it
+  "finished" under 1 ms, WEL check after a page program) and verify by reading
+  back.
 
 HWCAL contents ([hwcal.h](../software/stm32-hwtest/Inc/hwcal.h)): header
 `{"HWC1", version, len, seq, crc32 (zlib)}` plus payload with display
@@ -354,6 +382,15 @@ the highest `seq`; saves ping-pong between halves.
 > the erase finishes in under 1 ms; three consecutive `hwcal save` including a
 > sector erase passed. The root cause of the rejected `0x20` command is still
 > unknown: check that the erase really took 50+ ms, and retry once.
+>
+> 2026-11-21: the review's hypothesis (CS high shorter than tSHSL 50 ns between
+> WREN and the erase opcode) was tested with the exact pre-fix sequence: 0 of
+> 1320 erases ignored (4 KB and 64 KB, SPI 12 and 24 MHz, `0xF80000-0xFDFFFF`),
+> so it is not the cause; block protection is off (SR3 WPS = 0). The driver now
+> also holds CS high at least 200 ns (datasheet), checks WEL after every page
+> program (retries an ignored program) and counts retries (`w25q stat`). F4 was
+> only ever seen at `0xFE0000` / `0xFFF000` (4 KB) and on the first media upload
+> (64 KB).
 
 ## 6. Display Recipe
 
@@ -604,6 +641,11 @@ Recommendation: 1 kHz scan from SysTick, per-button debounce of **20 ms**, at
 least for release. The auto-derived 5 ms value (`max(2 x p95, 5 ms)` over all
 buttons) is not safe for B. 20 ms is also what HWCAL stores (`debounce_ms`).
 Check the B switch in the next revision.
+
+Since 2026-11-21 the debounce is **asymmetric** (R14): a press is reported after
+two equal 1 ms samples (about 1-2 ms), the release only after 20 ms of stable
+level. Before, every press was delayed by the full 20 ms window. One unexplained
+spurious B press was seen on 2026-11-19 (R15, not reproduced).
 
 ### Input Latency
 
@@ -871,10 +913,15 @@ continuously.
 Patterns 0x55, 0xAA, address and LFSR over 64 KB: 0 mismatches. The hwtest
 driver refuses program/erase below `0xF00000`.
 
-> Warning: F4 erase quirk (mitigated, see section 5): a 4 KB erase can be
-> rejected and finish in microseconds. Use the checked erase (waits for BUSY,
-> retries if it took under 1 ms) and verify; use the 64 KB erase where
-> possible.
+> Warning: F4 erase quirk (mitigated, cause unknown, see section 5): a 4 KB
+> **or 64 KB** erase can be rejected and finish in microseconds (all 203 first
+> 64 KB erases of the first media upload). Always use the checked erase (waits
+> for BUSY, retries if it took under 1 ms) and verify; the 64 KB erase is **not**
+> a safe alternative.
+>
+> `w25q_init()` polls BUSY (up to 3 s) before the JEDEC check since 2026-11-21:
+> after a warm reset during an erase the chip ignores `9Fh`, and the flash used
+> to look absent for that boot (R5).
 
 ## 11. Power And Battery
 
@@ -939,9 +986,17 @@ All per-state currents above were taken with the TPS63802 in its stock
 power-save mode (MODE = GND, R16 fitted). Forced PWM (MODE high) was tried
 2026-11-19 and reverted; its idle current was not measured.
 
-Runtime (MEASURED, see the discharge section): S12 max load **9 h 18 min**;
-S15 game mix **11.1 h from about 70-75 % SoC**, i.e. roughly 14-16 h from full
-(DERIVED, preliminary, cycle #2).
+Runtime (MEASURED, see the discharge section; both runs are pulsed: 9 min
+load / 1 min rest plus 15 min rests near 75 / 50 / 25 / 10 %):
+
+- S12 max load: **9 h 18 min including 1.77 h of rests**; continuous maximum load
+  is about **7.85 h** (DERIVED: 1876 mWh / 239 mW) (R9).
+- S15 game mix (cycle #2): 11.1 h from about **82 % SoC** (first end-of-rest
+  4001 mV), including 2.16 h of rests. With the 2026-11-16 S15 power (124 mW)
+  this implies only about 396 mAh against about 500 mAh from S12, so the S15
+  power or the capacity is off by about 25 %: **do not quote a game-mix runtime
+  yet** (R10). S15 contains **no audio**; amplifier and speaker current were never
+  metered (R11).
 
 ### No-Battery Operation (MEASURED 2026-11-19)
 
@@ -956,7 +1011,7 @@ Firmware must not trust Vbat when the gauge says `NO_BATT`.
 | Item | Value |
 | --- | --- |
 | `DISPOFF` / `DISPON` / `SLPIN` / `SLPOUT` command | 2 us each (SPI) |
-| LCD sleep-in wait / sleep-out incl. 120 ms wait | 5 ms / 132 ms |
+| LCD sleep-in wait / sleep-out incl. 120 ms wait | 5 ms / 132 ms; since 2026-11-21 SLPIN -> SLPOUT is held to at least 120 ms as the ST7735S requires (sleep-out right after sleep-in: 247 ms) (R27) |
 | Backlight off / on (PWM) | instant |
 | Stop entry | 3 us |
 | Stop wake: HSE + PLL back at 96 MHz | about 14.5k cycles at HSI = **0.9 ms** |
@@ -1006,9 +1061,11 @@ SoC axis from this cycle: 100 % = start, 0 % = loaded cutoff, not empty):
 
 (Short 1-min rests are not fully relaxed and bias the table a few mV low.)
 
-Internal resistance, from load-to-rest steps: **291 mOhm** (+1 s median) and
-**376 mOhm** (+10 s median), n = 100; noisy per SoC bin (71-566 mOhm); the
-charger plug step gives 570-770 mOhm (upper bound). HWCAL holds 330 mOhm.
+Internal resistance, from load-to-rest steps with the measured S12 current:
+**244 mOhm** (+1 s median) and **315 mOhm** (+10 s median), n = 100
+(`battlog-20261117-080333-analysis-p12meas`); noisy per SoC bin; the charger plug
+step gives about 550-770 mOhm (upper bound). HWCAL holds 330 mOhm. (An earlier
+analysis with an assumed 207 mW gave 291 / 376 mOhm, R23.)
 
 > Capacity (F13): the cell (LP233350, labelled 310 mAh) delivers about 500 mAh
 > to the 3.30 V loaded cutoff (S12 60.5 mA x 9.31 h, minus rests) and takes about
@@ -1057,10 +1114,20 @@ Voltage-only gauge ([Inc/gauge.h](../software/stm32-hwtest/Inc/gauge.h),
    CHARGING never falls and is capped at 4/5 until FULL; FULL (CHG released with
    VBUS) shows 5/5 with a plug; RELAX freezes the level for 3 min after unplug;
    NO_BATT as above.
-7. Persistence: `{level, mode, seq}` in HWCAL on level change and before ACK.
-8. Low battery: below 3.50 V compensated for 10 s = warning; below 3.40 V
-   compensated (or below 3.30 V loaded, 3 samples) = save, show "connect USB",
-   sleep, Stop mode.
+7. Persistence (**DESIGN, not implemented**, R2): `{level, mode, seq}` saved on
+   level change and before ACK. `hwcal_save()` is only reachable from the
+   command line today; see the save rules in section 5 before implementing it.
+8. Low battery (**DESIGN; only the battlog suite acts on it**, R2): below 3.50 V
+   compensated for 10 s = warning; below 3.40 V compensated (or below 3.30 V
+   loaded, 3 samples) = save, show "connect USB", power down.
+   - Do **not** park in Stop after the cutoff: Stop draws 1.3 mA and empties the
+     about 25 mAh left below the cutoff in about a day, then the cell protection
+     trips (R7). Prefer Standby (MCU a few uA, wake on RTC to check VBUS/CHG) or
+     the ATtiny power-off; Standby current was never measured.
+   - VBUS sense idles at about 1.1 V without a cable (back-feed, F8), right at the
+     F411 VIL maximum (about 1.12 V). A false VBUS disables the load compensation
+     and the low-battery alarms. Cross-check VBUS with CHG and USB activity before
+     trusting it (R8).
 
 Replay of the real discharge log on the host (`tools/gauge_replay.c`,
 2026-11-17): 0 segment reversals; segment drops at SoC 81 / 61 / 42 / 22 / 2.7 %.
@@ -1078,15 +1145,21 @@ stated). One 30 fps frame is 3.2 Mcycles, one 60 fps frame 1.6 Mcycles.
 | --- | --- | --- |
 | Frame cycles | 3,200,000 | 1,600,000 |
 | 8bpp to RGB565 convert (124k cycles) | 3.9 % | 7.8 % |
-| Audio, 4 voices at 22 kHz | 2.9 % | 2.9 % (of one frame: 46.7k cycles) |
-| Housekeeping (1 kHz tick, button scan) | 16.7k cycles | 8.3k cycles |
-| **Left for the game** | **2.97 Mcycles (92.7 %)** | **1.42 Mcycles (88.8 %)** |
+| Audio engine B, 4 voices (`audio.cpu`) | 7.8 % | 7.8 % |
+| Audio NS engine, 18 750 Hz PCM (`media.play`) | 27.4 % | 27.4 % |
+| Housekeeping (1 kHz tick, button scan) | 16.7k cycles (0.5 %) | 8.3k cycles (0.5 %) |
+| **Left for the game, engine B** | **2.81 Mcycles (87.8 %)** | **1.34 Mcycles (83.9 %)** |
+| **Left for the game, NS engine** | **2.18 Mcycles (68.2 %)** | **1.03 Mcycles (64.3 %)** |
 | LCD present (DMA, runs in parallel) | 7.0 ms of 33 ms | 7.0 ms of 16.7 ms |
 | W25Q streaming (DMA, 24 MHz) | 99 KB | 49 KB |
 | Tilemap 20x16 full scroll | 59.7k cycles | 59.7k cycles |
 
-Sprites per frame from the remaining cycles at 60 fps (1.42 Mcycles), DERIVED
-from per-sprite cycles:
+(Until 2026-11-21 this table used the 2.9 % mixing-kernel figure for audio
+instead of the measured engine cost, R12.)
+
+Sprites per frame from the remaining cycles at 60 fps (1.42 Mcycles without
+audio; scale by 0.94 with engine B or 0.73 with NS), DERIVED from per-sprite
+cycles:
 
 | Sprite | Cycles each | Per 60 fps frame |
 | --- | --- | --- |
@@ -1192,6 +1265,13 @@ Open decisions: NS engine vs engine B (hiss vs CPU; NS needs optimisation
 before games can afford it); whether the platform layer owns the 8bpp to RGB565
 conversion (recommended, in the DMA ISR).
 
+> Warning (R16): the existing engine header `software/stm32-core/engine/platform.h`
+> still describes a 128x160 portrait screen, 7 buttons including `BTN_START`
+> with different bit values, and `plat_millis()`. This proposal (160x128
+> landscape, 10-bit mask, no Start: POWER is not a usable button) must replace it
+> before game code is written; map "Start" to CENTER or a chord, and add
+> `plat_millis()` and a save API (`plat_save_read/write`, section 5 rules).
+
 ## 14. Flashing And Recovery
 
 | Method | Command | Notes |
@@ -1209,7 +1289,13 @@ exits with `-s`, a single clean reset is performed (`info.boot` shows
 `bootloader_exit`).
 
 Notes: ST-Link V2 clones may read their own supply as target voltage (3.25 V
-reported with no 3V3 wire). Hard faults store PC, LR, CFSR, HFSR in `.noinit` and
+reported with no 3V3 wire). The F411 ROM bootloader also probes USART2 (PA2/PA3 =
+OFF_REQ/OFF_ACK), I2C1 (PB6/PB7 = RIGHT/LEFT), SPI2 (PB12-PB15 = X/A/B/Y) and
+I2C3: **press no button** while it runs (R29). The 1200-baud touch resets into
+DFU from any host program that opens the port at 1200 baud: keep it in
+development builds only (R30). The `.noinit` fault breadcrumbs have no checksum
+and held garbage after the overclock sweep (`fault_count` 0x20002081, PCs
+0x2800219x): validate them with a magic/CRC before trusting them (R19). Hard faults store PC, LR, CFSR, HFSR in `.noinit` and
 reset (`info.faults`). The IWDG is used only by the overclock sweep; a failed
 frequency attempt is detected after reset from the journal.
 
@@ -1266,6 +1352,9 @@ high without USB (internal pull-down workaround).
 | SWO test point (PB3 is SPI3_SCK today) and UART pads | Debug without USB |
 | Current-sense option in the battery lead | No ammeter needed for power work |
 | ATtiny: honour OFF_ACK in the running state | Lets firmware power itself off after a low-battery cutoff |
+| ATtiny brown-out detection (HFUSE today 0xFF = BOD off) | Defined behaviour of the power controller on a sagging cell (R31) |
+| Battery temperature sense (BQ24075 TS is tied to a fixed 10k) | No thermal qualification while charging in a warm case (R32) |
+| LSE crystal or a calibrated LSI | No real-time clock; Stop/Standby timers run on an uncalibrated LSI (R33) |
 | BOR enabled in option bytes (firmware or factory step) | Brown-out on a sagging cell |
 | Re-check the B button switch | 17.6 ms release bounce |
 
