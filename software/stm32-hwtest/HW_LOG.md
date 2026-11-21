@@ -8074,3 +8074,192 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-20 08:32:13 — Battery cycle #2 started (manual note)
 
 - Previous flash log (9702 records) verified saved as battlog-20261117-080333.csv before overwrite. `battlog start new=1 ls=12` with USB still connected (CC/CV top-off, power.info: 4182 mV, CHG active); first records 4193-4196 mV, fl=3 (CHG|VBUS). Plan: unplug USB when CHG ends (host watcher), discharge at S12 (expected ~9.3 h like cycle #1), then charge from empty on an A-C cable (F8) to settle F13. Board state differs from cycle #1 only by the new speaker (amp off during S12) and the restored R16.
+
+### 2026-11-21 09:32:25 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-21 09:32:26 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog status" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog status lines=2
+- @R {"t": "battlog_status", "running": false, "dry": false, "phase": "-", "t_s": 0, "records": 0, "hdr": true, "ended": true, "flash_records": 22331, "dry_records": 0, "write_errors": 0, "vbat_mv": 0, "es
+
+### 2026-11-21 09:32:51 — hwtest.py battlog [auto]
+
+- Command: `hwtest.py battlog dump --src flash`
+- Result: OK (exit code 0)
+- battlog dump: 22331 records -> C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\battlog-20261121-093251.csv ok=True
+
+### 2026-11-21 09:39:03 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.59 s
+- cmd: @OK dfu
+
+### 2026-11-21 09:39:19 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.5 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.951
+- Output: Time elapsed during verifying operation: 00:00:02.016
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-21 09:39:20 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (289208 bytes), expected id: {'fw': '998fe77+dirty', 'build': 1795243133}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=998fe77+dirty build=1795243133, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.59s, program=15.46s, dfu_to_app=0.71s, total=16.84s
+
+### 2026-11-21 09:39:43 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog start new=1 ls=12 load=20 rest=10 xrest=10" --timeout 12`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=3
+- @R {"t": "battlog", "event": "start", "dry": false, "resume": false, "load_s": 20, "rest_s": 10, "records": 0}
+- @R {"t": "bl", "n": 1, "t_s": 5, "vbat": 4188, "vcomp": 4188, "st": 12, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 2, "t_s": 10, "vbat": 4195, "vcomp": 4195, "st": 12, "fl": 2, "ok": true}
+
+### 2026-11-21 09:39:44 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd reset --timeout 5`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK reset lines=1
+
+### 2026-11-21 09:40:11 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "answer battlog_resume ok" --timeout 12`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK answer lines=1
+
+### 2026-11-21 09:40:20 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog status" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog status lines=2
+- @R {"t": "battlog_status", "running": false, "dry": false, "phase": "-", "t_s": 0, "records": 0, "hdr": true, "ended": false, "flash_records": 22331, "dry_records": 0, "write_errors": 0, "vbat_mv": 0, "e
+
+### 2026-11-21 09:41:00 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog start resume=1" --timeout 12`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=4
+- @R {"t": "battlog", "event": "resume_cfg", "restored": true, "ls": 12, "load_s": 20, "rest_s": 10, "cut_mv": 3300}
+- @R {"t": "battlog", "event": "start", "dry": false, "resume": true, "load_s": 20, "rest_s": 10, "records": 22331}
+- @R {"t": "bl", "n": 22332, "t_s": 107091, "vbat": 4190, "vcomp": 4190, "st": 12, "fl": 18, "ok": true}
+- @R {"t": "bl", "n": 22333, "t_s": 107096, "vbat": 4189, "vcomp": 4189, "st": 12, "fl": 2, "ok": true}
+
+### 2026-11-21 09:41:15 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog stop" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog stop lines=1
+
+### 2026-11-21 09:41:56 — Enter DFU from application (cmd) [auto]
+
+- Command: `dfu command on COM10 (sn=315A356C3435)`
+- Result: OK DFU device USB1 sn=315A356C3435 after 0.58 s
+- cmd: @OK dfu
+
+### 2026-11-21 09:42:12 — STM32_Programmer_CLI [auto]
+
+- Command: `STM32_Programmer_CLI -c port=USB1 sn=315A356C3435 -w build\hwtest.bin 0x08000000 -v -s 0x08000000`
+- Result: OK (exit code 0, 15.4 s)
+- Output: DFU protocol: 1.1
+- Output: Device ID : 0x431
+- Output: Device name : STM32F411xC/E
+- Output: Flash size : 512 KBytes (default)
+- Output: File download complete
+- Output: Time elapsed during download operation: 00:00:12.949
+- Output: Time elapsed during verifying operation: 00:00:02.008
+- Output: Download verified successfully
+- Output: Start operation achieved successfully
+
+### 2026-11-21 09:42:12 — hwtest.py flash [auto]
+
+- Command: `hwtest.py flash build/hwtest.bin`
+- Result: OK (exit code 0)
+- Image: build\hwtest.bin (289312 bytes), expected id: {'fw': '998fe77+dirty', 'build': 1795243312}
+- Programmer: exit code 0, verified=True
+- App after start: running fw=998fe77+dirty build=1795243312, CDC enumerations=1
+- Timing: info_before=0.05s, app_to_dfu=0.58s, program=15.40s, dfu_to_app=0.71s, total=16.76s
+
+### 2026-11-21 09:42:48 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog start new=1 ls=12 load=20 rest=10 xrest=10" --timeout 25`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=5
+- @R {"t": "battlog", "event": "wipe", "sectors": 88}
+- @R {"t": "battlog", "event": "start", "dry": false, "resume": false, "load_s": 20, "rest_s": 10, "records": 0}
+- @R {"t": "bl", "n": 1, "t_s": 5, "vbat": 4192, "vcomp": 4192, "st": 12, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 2, "t_s": 10, "vbat": 4188, "vcomp": 4188, "st": 12, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 3, "t_s": 15, "vbat": 4181, "vcomp": 4181, "st": 12, "fl": 2, "ok": true}
+
+### 2026-11-21 09:42:49 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd reset --timeout 5`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK reset lines=1
+
+### 2026-11-21 09:43:00 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog status" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog status lines=2
+- @R {"t": "battlog_status", "running": false, "dry": false, "phase": "-", "t_s": 0, "records": 0, "hdr": true, "ended": false, "flash_records": 5, "dry_records": 0, "write_errors": 0, "vbat_mv": 0, "est_p
+
+### 2026-11-21 09:43:01 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog start resume=1" --timeout 12`
+- Result: FAIL (exit code 1)
+- COM10: status=err final=@ERR battlog busy lines=1
+
+### 2026-11-21 09:43:02 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog stop" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog stop lines=1
+
+### 2026-11-21 09:43:29 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog status" --timeout 10`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK battlog status lines=2
+- @R {"t": "battlog_status", "running": false, "dry": false, "phase": "-", "t_s": 0, "records": 0, "hdr": true, "ended": true, "flash_records": 5, "dry_records": 0, "write_errors": 0, "vbat_mv": 0, "est_pc
+
+### 2026-11-21 09:44:07 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd "battlog start new=1 ls=12 load=20 rest=10 xrest=10" --timeout 20`
+- Result: FAIL (exit code 2)
+- COM10: status=timeout final=none (timeout) lines=5
+- @R {"t": "battlog", "event": "wipe", "sectors": 1}
+- @R {"t": "battlog", "event": "start", "dry": false, "resume": false, "load_s": 20, "rest_s": 10, "records": 0}
+- @R {"t": "bl", "n": 1, "t_s": 5, "vbat": 4190, "vcomp": 4190, "st": 12, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 2, "t_s": 10, "vbat": 4183, "vcomp": 4183, "st": 12, "fl": 2, "ok": true}
+- @R {"t": "bl", "n": 3, "t_s": 15, "vbat": 4192, "vcomp": 4192, "st": 12, "fl": 2, "ok": true}
+
+### 2026-11-21 09:44:08 — hwtest.py cmd [auto]
+
+- Command: `hwtest.py cmd reset --timeout 5`
+- Result: OK (exit code 0)
+- COM10: status=ok final=@OK reset lines=1
+
+### 2026-11-21 09:45:27 — Battery cycle #2 dumped and analysed; logger resume bugs fixed (manual note)
+
+- User: board stayed on USB for hours after charge end, laptop battery died, board found off, user resumed. Dump: battlog-20261121-093251 (22331 records, 6 frames, 0 write errors). Analysis + plot: battlog-20261121-093251-analysis/ (summary.md, cycle2.png).
+- S12 discharge confirms cycle #1 (3.73 V -> cutoff 4.13 h vs 4.30 h; top hour within 10-20 mV). Full charge from empty: CC to 4.20 V ~143 min, CHG release 194.7 min; ~470 mAh in (preliminary) -> F13 consistent with ~500 mAh. Second resume ran ls=15 (S15 game mix): 11.1 h from 3.998 V loaded.
+- F16 fixed and verified on the board: BCFG run-parameter block restored on resume (ls=12), new=1 wipes stale record sectors (88), resume numbering continues correctly (5 -> 6) after reset + prompt.

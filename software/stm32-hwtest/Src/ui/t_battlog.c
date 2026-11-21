@@ -208,6 +208,40 @@ static const uint16_t k_offs_step[] = {1, 10};
 static const uint16_t k_offs_chg[] = {1, 10, 60};
 
 static cfg_t C;
+
+/* Run parameters, stored next to the header (same sector, written once after write_hdr) so that a resume
+   after a power loss continues with the ORIGINAL load profile. Before 2026-11-21 a resume silently used the
+   defaults (ls=15 game mix instead of ls=12, cycle #2). Separate block: the host header parser is unchanged. */
+#define BL_CFG       0xF00200u
+#define BL_CFG_MAGIC 0x47464342u   /* "BCFG" */
+typedef struct {
+    uint32_t magic, ls, load_s, rest_s, xrest_s, load_samp_s, cut_mv, chg_end_s, crc;
+} blcfg_t;
+
+static void write_cfg(void)
+{
+    blcfg_t c = {BL_CFG_MAGIC, C.ls, C.load_s, C.rest_s, C.xrest_s, C.load_samp_s, C.cut_mv, C.chg_end_s, 0};
+    c.crc = crc32_zlib(0, &c, sizeof(c) - 4u);
+    w25q_program(BL_CFG, &c, sizeof(c));
+}
+
+static bool restore_cfg(void)
+{
+    blcfg_t c;
+    if (w25q_read(BL_CFG, &c, sizeof(c)) != W25Q_OK || c.magic != BL_CFG_MAGIC ||
+        c.crc != crc32_zlib(0, &c, sizeof(c) - 4u)) {
+        return false;
+    }
+    C.ls = c.ls;
+    C.load_s = c.load_s;
+    C.rest_s = c.rest_s;
+    C.xrest_s = c.xrest_s;
+    C.load_samp_s = c.load_samp_s;
+    C.cut_mv = c.cut_mv;
+    C.chg_end_s = c.chg_end_s;
+    return true;
+}
+
 static phase_t s_ph;
 static uint32_t s_ph_t0, s_cal_done, s_xr_done, s_cal_due_until, s_cut_cnt;
 static uint32_t s_used_x10s;
@@ -363,6 +397,9 @@ suite_verdict_t suite_battlog(int argc, char **argv)
                 res_printf("{\"t\":\"skip\",\"suite\":\"battlog\",\"reason\":\"no unfinished log to resume\"}");
                 return SUITE_ABORT;
             }
+            bool cfg_ok = restore_cfg();
+            res_printf("{\"t\":\"battlog\",\"event\":\"resume_cfg\",\"restored\":%s,\"ls\":%u,\"load_s\":%u,\"rest_s\":%u,\"cut_mv\":%u}",
+                       cfg_ok ? "true" : "false", (unsigned)C.ls, (unsigned)C.load_s, (unsigned)C.rest_s, (unsigned)C.cut_mv);
             blrec_t last;
             w25q_read(BL_DATA + (cnt - 1u) * 16u, &last, 16);
             s_n = cnt;
@@ -385,6 +422,23 @@ suite_verdict_t suite_battlog(int argc, char **argv)
                 }
             }
             write_hdr();
+            write_cfg();
+            /* Wipe stale records of the previous log: store() erases a sector only when it starts writing it,
+               so old records beyond the write position used to survive and fool flash_count()'s binary search
+               on resume (cycle #2, 2026-11-21: resume landed on a sector boundary, 44 empty slots). Records
+               are written sequentially from each sector start, so a sector whose first word is 0xFFFFFFFF is
+               already blank. */
+            unsigned wiped = 0;
+            for (uint32_t a = BL_DATA; a < BL_LIMIT; a += 0x1000u) {
+                uint32_t w = 0;
+                w25q_read(a, &w, 4);
+                if (w != 0xFFFFFFFFu) {
+                    w25q_erase_sector(a);
+                    wiped++;
+                }
+                sys_service();
+            }
+            res_printf("{\"t\":\"battlog\",\"event\":\"wipe\",\"sectors\":%u}", wiped);
         }
     }
     ui_con_begin("battlog");
