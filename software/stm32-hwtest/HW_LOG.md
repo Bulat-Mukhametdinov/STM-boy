@@ -8799,3 +8799,12 @@ git-ignored; .txt hexdumps next to them).
 ### 2026-11-23 21:11:14 — Charge current on the 10 A range; 200 mA range burden (manual note)
 
 - With the 200 mA range still in the battery lead the board read Vbat 4101 mV and CHG released a few minutes after the 172 mA reading (the cell could not have charged 3.6 -> 4.1 V in that time). Moved the meter to the 10 A range: **0.17 A**, board Vbat 3801 mV, CHG active again. -> CC charge current about 170-172 mA confirmed by both ranges (design 174.5 mA). The 200 mA range shunt is about 1.8 ohm (DERIVED, preliminary: 0.3 V / 0.17 A, cell charged a little between readings): it lifts the BAT node and makes the charger taper early, and it is the same burden that browned out the ATtiny at amp enable (F6). Use the 10 A range for charge current; for discharge states use the 200 mA range with a bypass jumper.
+
+### 2026-11-23 21:39:07 — Discharge currents on the current build, Vbat about 3.6 V (manual note)
+
+- Battery only, multimeter in the battery lead (200 mA range unless noted; the 10 A range resolves only about +-30 mA at these levels: S10/S11 0.02 A, S15 0.04 A, menu 0.06 A). After R25 = R26 = 82k, Vbat 3.59 V at the end.
+- Menu (test UI, BL 100 %): 67-68 mA stable (one 100 mA glimpse = meter outlier). 2026-11-19 ~61 mA at a higher Vbat -> consistent with constant power.
+- S10 amp on, silent: 21.1 mA. S11 amp 1 kHz (asked -6 dBFS, driver trim/ceiling apply, new gain): 20.4 mA. Amp + carrier adds about 11 mA to S2 (10.1 mA).
+- S15 game mix: **52 mA** (about 187 mW) vs 31.6 mA on 2026-11-16 -> the old S15 value was too low (review R10).
+- media.play (video + NS audio, new speaker): **78 mA** (about 280 mW).
+- On the 200 mA range (shunt about 1.8 ohm) S10 shuts the board down within seconds (21 -> 14 -> 0 mA, twice); the first attempts (S10 and S11) needed RESET to recover -> MCU apparently hung instead of a clean reset (BOR off, review R6). S11 completed on the second try. Same mechanism as F6 (meter burden + amp current step); not seen without the meter (scope 2026-11-19).

@@ -972,10 +972,11 @@ full battery (4.09 V at 10 mA to 3.85 V at 40 mA at the board):
 | S9 | LCD DMA continuous, backlight 50 % | 29.7 mA | 116 mW |
 | S13 | W25Q continuous read | 22.1 mA | 89 mW |
 | S14 | W25Q erase/program | 23.55 mA | 94 mW |
-| S15 | "Game mix" load | 31.6 mA | 124 mW |
-| S10/S11 | Amplifier on / 1 kHz tone | **Not metered** (the meter's burden browned out the ATtiny, F6); rail sag on battery see below | |
+| S15 | "Game mix" load | 31.6 mA (2026-11-16, too low) / **52 mA at 3.6 V (2026-11-23)** | 124 / **about 187 mW** |
+| S10/S11 | Amplifier on, silent / 1 kHz tone (after R25 = R26 = 82k) | **21.1 / 20.4 mA** at 3.6 V (amp + carrier about +11 mA over S2) | MEASURED 2026-11-23; the 200 mA shunt can shut the board down at amp enable (F17) |
+| Video | `media.play`, NS audio, new speaker | **78 mA** at 3.6 V | about 280 mW, MEASURED 2026-11-23 |
 | S12 | Max load: BL 100 % + LCD DMA + CPU | **60.5 mA** | about 239 mW, MEASURED 2026-11-19 |
-| Menu | test UI, backlight 100 % | about 61 mA | MEASURED 2026-11-19 |
+| Menu | test UI, backlight 100 % | about 61 mA (2026-11-19) / 67-68 mA at 3.6 V (2026-11-23) | constant-power load: current rises as Vbat falls |
 | S16 | Charging current | See charging below | |
 | S17 | Current vs SYSCLK | see section 3 (0.19 mA/MHz) | MEASURED 2026-11-19 |
 | Off | ATtiny asleep, regulator off | **about 4 uA** (about 35 mAh per year) | MEASURED 2026-11-19 (uA range) |
@@ -994,9 +995,11 @@ load / 1 min rest plus 15 min rests near 75 / 50 / 25 / 10 %):
 - S15 game mix (cycle #2): 11.1 h from about **82 % SoC** (first end-of-rest
   4001 mV), including 2.16 h of rests. With the 2026-11-16 S15 power (124 mW)
   this implies only about 396 mAh against about 500 mAh from S12, so the S15
-  power or the capacity is off by about 25 %: **do not quote a game-mix runtime
-  yet** (R10). S15 contains **no audio**; amplifier and speaker current were never
-  metered (R11).
+  power or the capacity is off by about 25 % (R10). Re-metered 2026-11-23: S15 is
+  **52 mA (about 187 mW)** at 3.6 V, not 124 mW, which resolves most of the gap.
+- Estimates from the 2026-11-23 currents and about 470 mAh (DERIVED, preliminary):
+  video with sound (78 mA) about 6 h, menu at backlight 100 % (67 mA) about 7 h,
+  S15 game mix without sound (52 mA) about 9 h. The amplifier adds about 11 mA.
 
 ### No-Battery Operation (MEASURED 2026-11-19)
 
@@ -1081,7 +1084,7 @@ analysis with an assumed 207 mW gave 291 / 376 mOhm, R23.)
 
 | Item | Value | Basis |
 | --- | --- | --- |
-| Fast-charge current | about 175 mA (ISET 5.1k, 174.5 mA nominal) | DESIGN; plug step and the CC phase of the log agree |
+| Fast-charge current | **172 mA** (200 mA range) / 0.17 A (10 A range) at about 3.6-3.8 V; design 174.5 mA (ISET 5.1k) | MEASURED 2026-11-23. The 200 mA range shunt (about 1.8 ohm) lifts the BAT node and makes the charger taper early: measure charge current on a low-burden range |
 | CHRG_STAT (PA0) | open-drain, low = charging, high = done / no charge / no USB; R9 10k up | MEASURED 2026-11-17 (`power.info`: CHG low charging) |
 | First-phase log | CC charge seen at 3.29 -> 3.73 V over about 50 min | MEASURED 2026-11-17 |
 | Full charge from empty (3.30 V loaded cutoff, A-C cable) | CC until 4.20 V at **about 143 min**, CV until CHG release at **194.7 min (3 h 15 min)**; about 470 mAh in (DERIVED, preliminary) | MEASURED 2026-11-21, cycle #2 |
