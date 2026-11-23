@@ -8727,3 +8727,75 @@ git-ignored; .txt hexdumps next to them).
 - R1/F4 A/B on the board: exact pre-fix CS timing (w25q_erase_cmd_nohold: CS high for one store, ~20-30 ns, disassembly checked) vs new >= 200 ns deselect hold; 300 x 4 KB + 30 x 64 KB erases with program + verify each, at SPI3 12 and 24 MHz: 0 ignored erases, 0 verify errors, 0 ignored programs in all 4 combinations (1320 erases). The tSHSL hypothesis is NOT confirmed; F4 did not reproduce in 0xF80000-0xFDFFFF (historical failures: 4 KB at 0xFE0000/0xFFF000, 64 KB on the first media upload). Protection ruled out: SR1 00, SR2 02, SR3 60 (WPS = 0, individual lock bits read 01 but are not honoured). The hold stays (datasheet tSHSL), plus new WEL-after-program check with one retry and write-path counters (`w25q stat`).
 - R5: w25q_init polls BUSY (<= 3 s) and retries JEDEC 3x. R14: eager press (accepted after 2 equal 1 ms samples), release still debounced 20 ms. R24: amp enable always waits 30 ms after PWM went to mid-scale. R27: LCD SLPIN -> SLPOUT >= 120 ms enforced (power.sleep: sleep_out 247 ms right after sleep_in, was 132). R21: HAL tick resumed before the clock bring-up after Stop.
 - Regression caught and fixed before commit: the new `w25q stat|csdelay|div|stress` branch shadowed the existing `w25q id/read/crc/erase4k/lock/scan` commands; now only the new sub-commands are matched. selftest pass, power.sleep stop=0 pass.
+
+### 2026-11-23 20:53:28 — BOARD REWORK: R25 = R26 = 82k (manual note)
+
+- User replaced R25 and R26 (PAM8302A input resistors, IN- and IN+ legs) 10k -> 82k. Expected gain 2 x 80k / (10k + 3.3k + 82k) = 1.68 vs 6.87 before (-12.2 dB, DESIGN). Firmware speaker protection (trim -6 dB, ceiling -14 dBFS) unchanged so far; next: sweep and hiss at the 2026-11-20 settings to measure the real change.
+
+### 2026-11-23 20:53:30 — hwtest.py ports [auto]
+
+- Command: `hwtest.py ports`
+- Result: OK (exit code 0)
+- CDC: COM10 sn=315A356C3435
+- DFU (CLI): none
+- DFU (PnP): none
+
+### 2026-11-23 20:55:52 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4c46700+dirty build=1795248502 busy=idle
+
+### 2026-11-23 20:55:55 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261123-205552-power.info.json
+
+### 2026-11-23 21:08:44 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4c46700+dirty build=1795248502 busy=idle
+
+### 2026-11-23 21:08:47 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261123-210844-power.info.json
+
+### 2026-11-23 21:08:47 — Charge current, direct reading (manual note)
+
+- USB (A-C) charging, CC phase, Vbat about 3.6 V (power.info 3604 mV with USB): multimeter 200 mA range in series with the battery lead = **172 mA** into the cell (design ISET 174.5 mA). The shunt burden can only lower the reading slightly; the value matches the design within 1.5 %. F13 charge-in recomputed: 172 mA x 143 min = 410 mAh CC + about 55-60 mAh CV = about 465-470 mAh.
+
+### 2026-11-23 21:08:54 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4c46700+dirty build=1795248502 busy=idle
+
+### 2026-11-23 21:08:57 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261123-210854-power.info.json
+
+### 2026-11-23 21:10:45 — Run suite power.info (start) [auto]
+
+- Command: `run power.info`
+- Result: started on COM10 sn=315A356C3435
+- Firmware: fw=4c46700+dirty build=1795248502 busy=idle
+
+### 2026-11-23 21:10:47 — hwtest.py run [auto]
+
+- Command: `hwtest.py run power.info`
+- Result: OK (exit code 0)
+- Suite power.info: PASS results=1 pass=1 fail=0
+- Results file: C:\Users\Bool\Projects\STM-boy\.claude\worktrees\hwtest-firmware\software\stm32-hwtest\tools\results\002800343435511331323538\20261123-211045-power.info.json
+
+### 2026-11-23 21:11:14 — Charge current on the 10 A range; 200 mA range burden (manual note)
+
+- With the 200 mA range still in the battery lead the board read Vbat 4101 mV and CHG released a few minutes after the 172 mA reading (the cell could not have charged 3.6 -> 4.1 V in that time). Moved the meter to the 10 A range: **0.17 A**, board Vbat 3801 mV, CHG active again. -> CC charge current about 170-172 mA confirmed by both ranges (design 174.5 mA). The 200 mA range shunt is about 1.8 ohm (DERIVED, preliminary: 0.3 V / 0.17 A, cell charged a little between readings): it lifts the BAT node and makes the charger taper early, and it is the same burden that browned out the ATtiny at amp enable (F6). Use the 10 A range for charge current; for discharge states use the 200 mA range with a bypass jumper.
